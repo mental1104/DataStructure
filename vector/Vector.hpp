@@ -365,7 +365,7 @@ void Vector<T>::mergeSortB(Rank lo, Rank hi){
 
 template<typename T>
 void Vector<T>::quickSort(Rank lo, Rank hi){
-    //unsort(lo, hi);
+    unsort(lo, hi);
     quick(lo, hi-1);
 }
 
@@ -385,9 +385,6 @@ Rank Vector<T>::partition(Rank lo, Rank hi){
         while(_elem[++i] < v)   if(i == hi) break;
         while(v < _elem[--j])   if(j == lo) break;
         if(i >= j) break;
-        T temp = _elem[i];
-        _elem[i] = _elem[j];
-        _elem[j] = temp;
         swap(_elem[i], _elem[j]);
     }
     swap(_elem[lo],_elem[j]);
