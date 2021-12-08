@@ -9,7 +9,10 @@ int main(int argc, char** argv){
 
     Vector<int> vec;
     std::string s("./");
-    s = s + argv[2] + argv[3] + "ints.txt";
+    if(argv[3][0] == 'N')
+        s = s + argv[2] + "ints.txt";
+    else 
+        s = s + argv[2] + argv[3] + "ints.txt";
     std::ifstream stream(s);
 
     std::ofstream output;
@@ -44,6 +47,9 @@ int main(int argc, char** argv){
             break;
         case 7:
             val = vec.sort(Sort::Quick3way);
+            break;
+        case 8:
+            val = vec.sort(Sort::QuickSortB);
             break;
         default:
             val = vec.sort(Sort::BubbleSort);
