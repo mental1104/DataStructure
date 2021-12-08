@@ -2,6 +2,17 @@
 
 #include "../util/def.hpp"
 
+enum class Sort {
+    BubbleSort,
+    SelectionSort,
+    InsertionSort,
+    ShellSort,
+    MergeSortA,
+    MergeSortB,
+    QuickSort,
+    Quick3way,
+};
+
 template<typename T>
 class Vector{
 public:
@@ -62,8 +73,8 @@ public:
     Rank insert(Rank r, T const& e);//常规
     Rank insert(T const& e) {   return insert(_size, e);  }//常规
 
-    void sort() {   sort(0, _size); }
-    void sort(Rank lo, Rank hi);
+    double sort(Sort method = Sort::QuickSort) {   return sort(0, _size, method); }
+    double sort(Rank lo, Rank hi, Sort method);
     void unsort(Rank lo, Rank hi);
     void unsort() { unsort(0, _size); }
     int deduplicate();
@@ -229,42 +240,45 @@ Rank Vector<T>::fibSearch (T* A, T const& e, Rank lo, Rank hi) const{
 }
 
 template<typename T>
-void Vector<T>::sort(Rank lo, Rank hi){
-    
-    switch(dice(2021)%8){
-        case 1: 
-            printf("BubbleSort.\n");
+double Vector<T>::sort(Rank lo, Rank hi, Sort method){
+    clock_t start, end;
+    start = clock();
+    switch(method){
+        case Sort::BubbleSort: 
+            //printf("BubbleSort.\n");
             bubbleSort(lo, hi); 
             break;
-        case 2: 
-            printf("SelectionSort.\n");
+        case Sort::SelectionSort: 
+            //printf("SelectionSort.\n");
             selectionSort(lo, hi); 
             break;
-        case 3:
-            printf("InsertionSort.\n");
+        case Sort::InsertionSort:
+            //printf("InsertionSort.\n");
             insertionSort(lo, hi);
             break;
-        case 4:
-            printf("ShellSort.\n"); 
+        case Sort::ShellSort:
+            //printf("ShellSort.\n"); 
             shellSort(lo, hi); 
             break;
-        case 5:
-            printf("MergeSort(Top-down).\n"); 
+        case Sort::MergeSortA:
+            //printf("MergeSort(Top-down).\n"); 
             mergeSortA(lo, hi); 
             break;
-        case 6:
-            printf("MergeSort(Bottom-Up).\n"); 
+        case Sort::MergeSortB:
+            //printf("MergeSort(Bottom-Up).\n"); 
             mergeSortB(lo, hi); 
             break;
-        case 7: 
-            printf("QuickSort(3-way).\n");
+        case Sort::Quick3way: 
+            //printf("QuickSort(3-way).\n");
             quick3way(lo, hi);
             break;
         default:
-            printf("QuickSort.\n");
+            //printf("QuickSort.\n");
             quickSort(lo, hi);
             break;
     }
+    end = clock();
+    return double(end-start)/CLOCKS_PER_SEC;
 }
 
 template<typename T>
@@ -365,7 +379,7 @@ void Vector<T>::mergeSortB(Rank lo, Rank hi){
 
 template<typename T>
 void Vector<T>::quickSort(Rank lo, Rank hi){
-    unsort(lo, hi);
+    //unsort(lo, hi);
     quick(lo, hi-1);
 }
 
@@ -408,8 +422,8 @@ void Vector<T>::quick3way(Rank lo, Rank hi){
 template<typename T>
 void Vector<T>::evaluateSorting(){
     clock_t start, end;
-
-    // /* O(n^2) Algorithm 
+    /*
+    // O(n^2) Algorithm 
     unsort();
     start = clock();
     bubbleSort(0, _size);
@@ -428,7 +442,7 @@ void Vector<T>::evaluateSorting(){
     end = clock();
     printf("InsertionSort took  %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
     
-    //  O(n^2) Algorithm  */
+    //  O(n^2) Algorithm  
     unsort();
     start = clock();
     shellSort(0, _size);
@@ -446,18 +460,18 @@ void Vector<T>::evaluateSorting(){
     mergeSortB(0, _size);
     end = clock();
     printf("MergeSortB took     %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-
+    */
     unsort();
     start = clock();
     quickSort(0, _size);
     end = clock();
     printf("QuickSort took      %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-
+    /*
     unsort();
     start = clock();
     quick3way(0, _size);
     end = clock();
     printf("QuickSort3way took  %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-
+*/
     return;
 }
