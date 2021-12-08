@@ -11,6 +11,7 @@ enum class Sort {
     MergeSortB,
     QuickSort,
     Quick3way,
+    QuickSortB,
 };
 
 template<typename T>
@@ -39,6 +40,10 @@ public:
     Rank partition(Rank lo, Rank hi);//排序
     void quick(Rank lo, Rank hi);
     void quickSort(Rank lo, Rank hi);//排序
+
+    void quickB(Rank lo, Rank hi);
+    void quickSortB(Rank lo, Rank hi);
+
     void quick3way(Rank lo, Rank hi);
 public:
     //构造函数
@@ -82,8 +87,6 @@ public:
 
     void traverse(void(*)(T&));//常规
     template<typename VST> void traverse(VST&&);//常规
-
-    void evaluateSorting();
 };
 
 template<typename T>
@@ -272,6 +275,10 @@ double Vector<T>::sort(Rank lo, Rank hi, Sort method){
             //printf("QuickSort(3-way).\n");
             quick3way(lo, hi);
             break;
+        case Sort::QuickSortB:
+            //printf("QuickSortB.\n");
+            quickSortB(lo, hi);
+            break;
         default:
             //printf("QuickSort.\n");
             quickSort(lo, hi);
@@ -420,58 +427,18 @@ void Vector<T>::quick3way(Rank lo, Rank hi){
 }
 
 template<typename T>
-void Vector<T>::evaluateSorting(){
-    clock_t start, end;
-    /*
-    // O(n^2) Algorithm 
-    unsort();
-    start = clock();
-    bubbleSort(0, _size);
-    end = clock();
-    printf("BubbleSort took     %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
+void Vector<T>::quickSortB(Rank lo, Rank hi){
+    //unsort(lo, hi);
+    quickB(lo, hi-1);
+}
 
-    unsort();
-    start = clock();
-    selectionSort(0, _size);
-    end = clock();
-    printf("SelectionSort took  %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-
-    unsort();
-    start = clock();
-    insertionSort(0, _size);
-    end = clock();
-    printf("InsertionSort took  %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-    
-    //  O(n^2) Algorithm  
-    unsort();
-    start = clock();
-    shellSort(0, _size);
-    end = clock();
-    printf("ShellSort took      %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-
-    unsort();
-    start = clock();
-    mergeSortA(0, _size);
-    end = clock();
-    printf("MergeSortA took     %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-
-    unsort();
-    start = clock();
-    mergeSortB(0, _size);
-    end = clock();
-    printf("MergeSortB took     %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-    */
-    unsort();
-    start = clock();
-    quickSort(0, _size);
-    end = clock();
-    printf("QuickSort took      %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-    /*
-    unsort();
-    start = clock();
-    quick3way(0, _size);
-    end = clock();
-    printf("QuickSort3way took  %lf seconds\n", double(end-start)/CLOCKS_PER_SEC);
-*/
-    return;
+template<typename T>
+void Vector<T>::quickB(Rank lo, Rank hi){
+    if (lo + 15 >= hi) {
+        insertionSort(lo, hi);
+        return;
+    }
+    Rank j = partition(lo, hi);
+    quickB(lo, j-1);
+    quickB(j+1, hi);
 }
