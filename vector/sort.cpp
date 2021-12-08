@@ -51,6 +51,9 @@ int main(int argc, char** argv){
         case 8:
             val = vec.sort(Sort::QuickSortB);
             break;
+        case 9:
+            val = vec.sort(Sort::HeapSort);
+            break;
         default:
             val = vec.sort(Sort::BubbleSort);
             break;
