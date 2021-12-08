@@ -1,7 +1,7 @@
 import os
 import matplotlib.pyplot as plt
 
-print("It may take several minutes...Please wait...")
+print("It may take half an hour...Please wait...")
 
 # For tiny scale of numbers like 2K - 128K.
 # This can include those O(n^2) Algorithm and they won't cost too much time.
@@ -19,7 +19,7 @@ for i in range(0,n):
     os.system('./random {} {}'.format(a, 'K'))
     a = a*times # 2, 4, 8, 16, 32, 64, 128
 
-for method in range(0,8):
+for method in range(0,10):
     a = init
     for scale in range(0,n):
         os.system('./sort {} {} {}'.format(method,a,'K'))
@@ -65,6 +65,8 @@ plt.plot(xstick, container[4], c='blue', label="MergeSort(Top-down)")
 plt.plot(xstick, container[5], c='blue', linestyle='--', label="MergeSort(Bottom-up)")
 plt.plot(xstick, container[6], c='purple', label="QuickSort")
 plt.plot(xstick, container[7], c='purple', linestyle='--', label="QuickSort(3way)")
+plt.plot(xstick, container[8], c='purple', linestyle='-.', label="QuickSortB")
+plt.plot(xstick, container[9], c='pink', linestyle='--', label="HeapSort")
 
 #散点图
 plt.scatter(xstick, container[0], c='red')
@@ -75,6 +77,8 @@ plt.scatter(xstick, container[4], c='blue')
 plt.scatter(xstick, container[5], c='blue')
 plt.scatter(xstick, container[6], c='purple')
 plt.scatter(xstick, container[7], c='purple')
+plt.scatter(xstick, container[8], c='purple')
+plt.scatter(xstick, container[9], c='pink')
 
 plt.legend()
 plt.savefig("./tiny.png")
@@ -95,7 +99,7 @@ for i in range(0,n):
     os.system('./random {} {}'.format(a, 'M'))
     a = a*times # 1M, 10M, 100M, 1Billion
 
-for method in range(3,8):
+for method in range(3,10):
     a = init
     for scale in range(0,n):
         os.system('./sort {} {} {}'.format(method,a,'M'))
@@ -136,6 +140,8 @@ plt.plot(xstick, container[1], c='blue', label="MergeSort(Top-down)")
 plt.plot(xstick, container[2], c='blue', linestyle='--', label="MergeSort(Bottom-up)")
 plt.plot(xstick, container[3], c='purple', label="QuickSort")
 plt.plot(xstick, container[4], c='purple', linestyle='--', label="QuickSort(3way)")
+plt.plot(xstick, container[5], c='purple', linestyle='-.', label="QuickSortB")
+plt.plot(xstick, container[6], c='pink', linestyle='--', label="HeapSort")
 
 #散点图
 plt.scatter(xstick, container[0], c='green')
@@ -143,6 +149,8 @@ plt.scatter(xstick, container[1], c='blue')
 plt.scatter(xstick, container[2], c='blue')
 plt.scatter(xstick, container[3], c='purple')
 plt.scatter(xstick, container[4], c='purple')
+plt.scatter(xstick, container[5], c='purple')
+plt.scatter(xstick, container[6], c='pink')
 
 plt.legend()
 plt.savefig("./large.png")
@@ -264,12 +272,12 @@ plt.title("The Comparison between Different Sorting Method", fontdict={'size': 2
 
 plt.plot(xstick, container[0], c='purple', label="QuickSort")
 plt.plot(xstick, container[1], c='purple', linestyle='--', label="QuickSort(3way)")
-plt.plot(xstick, container[2], c='pink',  label="QuickSortB")
+plt.plot(xstick, container[2], c='purple',  linestyle='-.',label="QuickSortB")
 
 #散点图
 plt.scatter(xstick, container[0], c='purple')
 plt.scatter(xstick, container[1], c='purple')
-plt.scatter(xstick, container[2], c='pink')
+plt.scatter(xstick, container[2], c='purple')
 
 plt.legend()
 plt.savefig("./quickSort.png")
@@ -329,12 +337,12 @@ plt.title("The Comparison between Different Sorting Method", fontdict={'size': 2
 
 plt.plot(xstick, container[0], c='purple', label="QuickSort")
 plt.plot(xstick, container[1], c='purple', linestyle='--', label="QuickSort(3way)")
-plt.plot(xstick, container[2], c='pink',  label="QuickSortB")
+plt.plot(xstick, container[2], c='purple', linestyle='-.', label="QuickSortB")
 
 #散点图
 plt.scatter(xstick, container[0], c='purple')
 plt.scatter(xstick, container[1], c='purple')
-plt.scatter(xstick, container[2], c='pink')
+plt.scatter(xstick, container[2], c='purple')
 
 plt.legend()
 plt.savefig("./quickCompare.png")

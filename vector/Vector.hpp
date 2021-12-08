@@ -12,6 +12,7 @@ enum class Sort {
     QuickSort,
     Quick3way,
     QuickSortB,
+    HeapSort,
 };
 
 template<typename T>
@@ -20,6 +21,7 @@ public:
     int _size;
     int _capacity;
     T* _elem;
+    int heap;
 
     void copyFrom(T const* A, Rank lo, Rank hi);
     void expand();//扩容
@@ -45,6 +47,10 @@ public:
     void quickSortB(Rank lo, Rank hi);
 
     void quick3way(Rank lo, Rank hi);
+
+    void sink(Rank k);
+    void heapSort(Rank lo, Rank hi);
+
 public:
     //构造函数
     Vector(int c = DEFAULT_CAPACITY, int s = 0, T v = T()){
@@ -279,6 +285,9 @@ double Vector<T>::sort(Rank lo, Rank hi, Sort method){
             //printf("QuickSortB.\n");
             quickSortB(lo, hi);
             break;
+        case Sort::HeapSort:
+            //printf("HeapSort.\n");
+            heapSort(lo, hi);
         default:
             //printf("QuickSort.\n");
             quickSort(lo, hi);
@@ -441,4 +450,26 @@ void Vector<T>::quickB(Rank lo, Rank hi){
     Rank j = partition(lo, hi);
     quickB(lo, j-1);
     quickB(j+1, hi);
+}
+
+template<typename T>
+void Vector<T>::sink(Rank k){
+    while(2*k <= heap){
+        int j = 2*k;
+        if(j < heap && _elem[j] < _elem[j+1]) j++;
+        if(!_elem[k] < _elem[j]) break;
+        swap(_elem[k], _elem[j]);
+        k = j;
+    }
+}
+
+template<typename T>
+void Vector<T>::heapSort(Rank lo, Rank hi){
+    heap = hi - lo - 1;
+    for(int k = heap/2; k >= 1; k--)
+        sink(k);
+    while(heap > 1){
+        swap(_elem[1], _elem[heap--]);
+        sink(1);
+    }
 }
