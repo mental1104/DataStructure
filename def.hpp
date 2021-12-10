@@ -11,4 +11,6 @@ using Rank = int;
 #include "./util/release.hpp"
 #include "./dp/Fib.hpp"
 #include "./vector/Vector.hpp"
+#include "./list/ListNode.hpp"
+#include "./list/List.hpp"
 #include "./print/print.hpp"
