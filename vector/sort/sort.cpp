@@ -1,4 +1,4 @@
-#include "./Vector.hpp"
+#include "../Vector.hpp"
 #include <cstdio>
 
 int main(int argc, char** argv){
