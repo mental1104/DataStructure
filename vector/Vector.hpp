@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../util/def.hpp"
+#include "../def.hpp"
 
 enum class Sort {
     BubbleSort,
