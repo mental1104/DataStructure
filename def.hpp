@@ -13,4 +13,5 @@ using Rank = int;
 #include "./vector/Vector.hpp"
 #include "./list/ListNode.hpp"
 #include "./list/List.hpp"
+#include "./stack/Stack.hpp"
 #include "./print/print.hpp"
