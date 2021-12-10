@@ -5,6 +5,7 @@ using Rank = int;
 #include <fstream>
 #include <unistd.h>
 #include <ctime>
+#include <cstring>
 #include "./util/common.hpp"
 #include "./util/func.hpp"
 #include "./util/rand.hpp"
