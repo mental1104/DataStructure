@@ -1,5 +1,6 @@
 #pragma once 
 
+using size_type = unsigned;
 
 /* Fundamental Operation */
 template<typename T>
