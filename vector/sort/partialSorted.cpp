@@ -1,4 +1,4 @@
-#include "Vector.hpp"
+#include "../Vector.hpp"
 
 //param[1] = method(bubble/selection/insertion), param[2] = length of sequence
 int main(int argc, char**argv){

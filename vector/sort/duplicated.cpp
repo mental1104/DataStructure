@@ -1,4 +1,4 @@
-#include "./Vector.hpp"
+#include "../Vector.hpp"
 
 int main(int argc, char** argv){
     if(argc!=2){
