@@ -129,9 +129,9 @@ bool labyrinth ( Cell Laby[LABY_MAX][LABY_MAX], Cell* s, Cell* t ) {
       /*DSA*/displayLaby(); /*path.traverse(printLabyCell); printLabyCell(path.top());*/ getchar();
       Cell* c = path.top(); //检查当前位置（栈顶）
       if ( c == t ) return true; //若已抵达终点，则找到了一条通路；否则，沿尚未试探的方向继续试探
-      while ( NO_WAY > ( c->outgoing = nextESWN ( c->outgoing ) ) ) //逐一检查所有方向
+      while ( ( c->outgoing = nextESWN ( c->outgoing ) ) < NO_WAY) //逐一检查所有方向
          if ( AVAILABLE == neighbor ( c )->status ) break; //试图找到尚未试探的方向
-      if ( NO_WAY <= c->outgoing ) //若所有方向都已尝试过
+      if ( c->outgoing >= NO_WAY) //若所有方向都已尝试过
          { c->status = BACKTRACKED; c = path.pop(); }//则向后回溯一步
       else //否则，向前试探一步
          { path.push ( c = advance ( c ) ); c->outgoing = UNKNOWN; c->status = ROUTE; }
@@ -141,7 +141,7 @@ bool labyrinth ( Cell Laby[LABY_MAX][LABY_MAX], Cell* s, Cell* t ) {
 
 int main(){
    srand ( ( unsigned int ) time ( NULL ) ); //设置随机种子
-   readLaby (const_cast<char*>("./laby/laby_03.txt")) ; //使用指定迷宫文件，或随机生成
+   readLaby (const_cast<char*>("./laby/laby_00.txt")) ; //使用指定迷宫文件，或随机生成
    labyrinth ( laby, startCell, goalCell ) ? //启动算法
    printf ( "\nRoute found\a\n" ) :
    printf ( "\nNo route found\a\n" );
