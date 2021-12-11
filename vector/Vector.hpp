@@ -150,8 +150,8 @@ void Vector<T>::unsort(Rank lo, Rank hi){
 
 template<typename T>
 Rank Vector<T>::find(T const& e, Rank lo, Rank hi) const{
-    while((lo < hi) && (e!=_elem[hi]))
-        hi--;
+    while((lo < hi--) && (e!=_elem[hi]))
+        ;
     return hi;
 }
 

@@ -2,6 +2,7 @@
 
 #define DEFAULT_CAPACITY 10
 using Rank = int;
+#include <iostream>
 #include <fstream>
 #include <unistd.h>
 #include <ctime>
