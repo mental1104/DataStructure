@@ -21,5 +21,8 @@ using Rank = int;
 #include "./entry/Entry.hpp"
 #include "./bt/BinNode.hpp"
 #include "./bt/BinTree.hpp"
+#include "./bst/BST.hpp"
+#include "./bst/AVL.hpp"
+#include "./bst/Splay.hpp"
 //#include "./string/String.hpp"
 #include "./print/print.hpp"

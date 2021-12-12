@@ -21,7 +21,7 @@ void UniPrint::p ( BinTree<T> & bt ) { //引用
    printf ( "\n" );
 }
 
-/*
+
 
 template <typename T> //元素类型
 void UniPrint::p ( BST<T> & bt ) { //引用
@@ -31,6 +31,7 @@ void UniPrint::p ( BST<T> & bt ) { //引用
    release ( branchType ); 
    printf ( "\n" );
 }
+
 
 template <typename T> //元素类型
 void UniPrint::p ( AVL<T> & avl ) { //引用
@@ -50,7 +51,6 @@ void UniPrint::p ( Splay<T> & bt ) { //引用
    printf ( "\n" );
 }
 
-*/
 
 
 
