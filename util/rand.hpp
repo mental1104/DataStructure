@@ -4,7 +4,7 @@
 
 std::random_device rd;
 std::mt19937 eng(rd());
-std::uniform_int_distribution<int> dis(0, 99999999);
+std::uniform_int_distribution<int> dis(0, 99999);
 
 /******************************************************************************************
  * 在[0, range)内随机生成一个数
