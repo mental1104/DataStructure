@@ -24,5 +24,8 @@ using Rank = int;
 #include "./bst/BST.hpp"
 #include "./bst/AVL.hpp"
 #include "./bst/Splay.hpp"
+#include "./btree/BTNode.hpp"
+#include "./btree/BTree.hpp"
+#include "./bst/RedBlack.hpp"
 //#include "./string/String.hpp"
 #include "./print/print.hpp"
