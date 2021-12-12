@@ -17,6 +17,9 @@ public:
    template <typename K, typename V> static void p ( Entry<K, V>& ); //Entry
    template <typename T> static void p ( BinNode<T>&); //BinTree节点
    template <typename T> static void p ( BinTree<T>& ); //二叉树
+   template <typename T> static void p ( BST<T> &);
+   template <typename T> static void p ( AVL<T> &);
+   template <typename T> static void p ( Splay<T> &);
 
    template <typename T> static void p ( T& ); //向量、列表等支持traverse()遍历操作的线性结构
    template <typename T> static void p ( T* s ) //所有指针
