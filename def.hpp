@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEFAULT_CAPACITY 10
+#define DEFAULT_CAPACITY 1024
 using Rank = int;
 #include <iostream>
 #include <fstream>
@@ -32,5 +32,7 @@ using Rank = int;
 #include "./ht/QuadlistNode.hpp"
 #include "./ht/Quadlist.hpp"
 #include "./ht/Skiplist.hpp"
+#include "./graph/Graph.hpp"
+#include "./graph/GraphMatrix.hpp"
 //#include "./string/String.hpp"
 #include "./print/print.hpp"
