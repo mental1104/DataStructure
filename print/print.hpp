@@ -22,7 +22,9 @@ public:
    template <typename T> static void p ( Splay<T> &);
    template <typename T> static void p ( BTree<T>& ); //B-树
    template <typename T> static void p ( RedBlack<T>& ); //红黑树
-
+   template <typename T> static void p ( Quadlist<T>& ); //Quadlist
+   template <typename K, typename V> static void p ( Skiplist<K, V>& ); //Skiplist
+   template <typename K, typename V> static void p ( Hashtable<K, V>& ); //Hashtable
    template <typename T> static void p ( T& ); //向量、列表等支持traverse()遍历操作的线性结构
    template <typename T> static void p ( T* s ) //所有指针
    {  s ? p ( *s ) : print ( "<NULL>" ); } //统一转为引用
@@ -53,3 +55,8 @@ template<typename T> struct Print{
 #include "./print_bintree.hpp"
 #include "./print_btree.hpp"
 #include "./print_RBTree.hpp"
+#include "./print_Entry.hpp"
+#include "./primeNLT.hpp"
+#include "./print_HashTable.hpp"
+#include "./print_QuadList.hpp"
+#include "./print_SkipList.hpp"
