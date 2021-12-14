@@ -42,11 +42,13 @@ void test_DFS(GraphMatrix<Tv, Te>& matrix){
 
 int main(int argc, char** argv){
     
-    putchar('\n');
+
 
     std::ifstream stream("./files/tinyG.txt");
     GraphMatrix<int,int> tinyG(stream, GType::UNDIGRAPH);
 
+    printf("%d\n", tinyG.connectedComponents());
+    /*
     std::cout << argv[1] << std::endl;
     //print(tinyG);
     //bfs
@@ -67,6 +69,7 @@ int main(int argc, char** argv){
     std::cout << "TSort:    " << std::endl;
     test_tsort(tinyG);
     //print(tinyG);
+    */
 
     return 0;
 }
