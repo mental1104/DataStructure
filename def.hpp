@@ -2,11 +2,14 @@
 
 #define DEFAULT_CAPACITY 1024
 using Rank = int;
+
+
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
 #include <ctime>
 #include <cstring>
+#include "./print/declare.hpp"
 #include "./bitmap/Bitmap.hpp"
 #include "./util/common.hpp"
 #include "./util/func.hpp"
@@ -34,5 +37,6 @@ using Rank = int;
 #include "./ht/Skiplist.hpp"
 #include "./graph/Graph.hpp"
 #include "./graph/GraphMatrix.hpp"
-//#include "./string/String.hpp"
 #include "./print/print.hpp"
+//#include "./string/String.hpp"
+
