@@ -43,11 +43,13 @@ void test_DFS(GraphMatrix<Tv, Te>& matrix){
 
 int main(int argc, char** argv){
     
-    std::ifstream stream("./files/tinyDG.txt");
+    std::ifstream stream("./files/dicycle.txt");
     GraphMatrix<int,int> tinyG(stream, GType::DIGRAPH);
     
     //print(tinyG);
-    test_tsort(tinyG);
+    print(tinyG);
+    tinyG.reverse();
+    print(tinyG);
     /*
     std::cout << argv[1] << std::endl;
     //print(tinyG);
