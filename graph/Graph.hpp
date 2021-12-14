@@ -62,11 +62,12 @@ private:
         }
     }
     void BFS(int, int& );//广度优先搜索
-    void DFS(int, int& );//深度优先搜索
+    void DFS(int, int&);//深度优先搜索
     void BCC(int, int&, Stack<int>& );//双连通分量分解
     bool TSort(int, int&, Stack<Tv>* );//拓扑排序
     template<typename PU> void PFS(int, PU);//优先级搜索
-
+    void CC(int, Vector<int>&, Vector<bool>&, int&);//连通分量
+    
 public:
     //顶点接口
     int n;
@@ -98,6 +99,7 @@ public:
     void prim(int);//最小生成树
     void dijkstra(int);//最短路径
     template<typename PU> void pfs(int, PU);
+    int connectedComponents(bool flag = false);
 }; 
 
 template<typename Tv, typename Te>
@@ -212,4 +214,40 @@ bool Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
     status(v) = VStatus::VISITED;
     S->push(vertex(v));
     return true;
+}
+
+template<typename Tv, typename Te>
+int Graph<Tv, Te>::connectedComponents(bool flag){
+    Vector<bool> marked{this->n,this->n, false};
+    Vector<int> id{this->n, this->n, 0};
+    int count = 0;
+
+    for(int s = 0; s < this->n; s++){
+        if(!marked[s])
+        {
+            CC(s, id, marked, count);
+            count++;
+        }
+    }
+    if(flag){
+        for(int i = 0; i < count; i++){
+            for(int j = 0; j < id.size(); j++){
+                if(id[j] == i)
+                    printf("%d ", j);
+            }
+            printf("\n");
+        }
+    }
+    return count;
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::CC(int v, Vector<int>& id, Vector<bool>& marked, int& count){
+    marked[v] = true;
+    id[v] = count;
+    for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u)){
+        if(!marked[u]){
+            CC(u, id, marked, count);
+        }
+    }
 }
