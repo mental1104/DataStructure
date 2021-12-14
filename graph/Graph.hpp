@@ -100,6 +100,7 @@ public:
     void dijkstra(int);//最短路径
     template<typename PU> void pfs(int, PU);
     int connectedComponents(bool flag = false);
+    bool connectedComponents(int v, int w);
 }; 
 
 template<typename Tv, typename Te>
@@ -180,7 +181,7 @@ Stack<Tv>* Graph<Tv, Te>::tSort(int s){
     reset();
     int clock = 0;
     int v = s;
-    Stack<Tv>* S = new Stack<Tv>;
+    Stack<Tv> S = new Stack<Tv>;
     do {
         if(VStatus::UNDISCOVERED == status(v))
             if(!TSort(v, clock, S)){
@@ -229,6 +230,7 @@ int Graph<Tv, Te>::connectedComponents(bool flag){
             count++;
         }
     }
+
     if(flag){
         for(int i = 0; i < count; i++){
             for(int j = 0; j < id.size(); j++){
@@ -239,6 +241,22 @@ int Graph<Tv, Te>::connectedComponents(bool flag){
         }
     }
     return count;
+}
+
+template<typename Tv, typename Te>
+bool Graph<Tv, Te>::connectedComponents(int v, int w){
+    Vector<bool> marked{this->n,this->n, false};
+    Vector<int> id{this->n, this->n, 0};
+    int count = 0;
+
+    for(int s = 0; s < this->n; s++){
+        if(!marked[s])
+        {
+            CC(s, id, marked, count);
+            count++;
+        }
+    }
+    return id[v] == id[w];
 }
 
 template<typename Tv, typename Te>
