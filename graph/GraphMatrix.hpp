@@ -6,32 +6,11 @@
 
 using std::ifstream;
 
-template<typename Tv>
-struct Vertex {
-    Tv data;
-    int inDegree{0};
-    int outDegree{0};
-    VStatus status{VStatus::UNDISCOVERED};
-    int dTime{-1};
-    int fTime{-1};
-    int parent{-1};
-    int priority{INT_MAX};
-    Vertex(Tv const& d = Tv(0)):data{d}{}
-};
-
-template<typename Te>
-struct Edge {
-    Te data;
-    double weight;
-    EType type{EType::UNDETERMINED};
-    Edge(Te const& d, double w):data{d}, weight{w} {}
-};
-
 template<typename Tv, typename Te>
 class GraphMatrix: public Graph<Tv, Te> {
 private:
-    Vector<Vertex<Tv>> _V{1000};//顶点集
-    Vector<Vector<Edge<Te>*>> _E{1000};//边集
+    Vector<Vertex<Tv>> _V;//顶点集
+    Vector<Vector<Edge<Te>*>> _E;//边集
 public:
     GraphMatrix() { 
         this->n = 0;
@@ -49,9 +28,9 @@ public:
     virtual Tv& vertex(int i) { return _V[i].data; }
     virtual int inDegree(int i) {   return _V[i].inDegree; }
     virtual int outDegree(int i) {  return _V[i].outDegree; }
-    virtual int firstNbr(int i) {   return nextNbr(i, this->n); }
+    virtual int firstNbr(int i) {   return nextNbr(i, -1); }
     virtual int nextNbr(int i, int j){//相对于顶点j的下一邻接顶点
-        while((-1 < j) && (!exists(i, --j)))
+        while((j < this->n) && (!exists(i, ++j)))
             ; 
         return j;
     }
@@ -81,25 +60,34 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
     int eNum = 0;
     alg4 >> vNum >> eNum;
     for(int i = 0; i < vNum; i++)
-        this->insert(Tv());
+        this->insert(Tv(i));
     
     int src = 0, det = 0;
     double weg = 0.0;
-
+    int cnt = 0;
     switch(type){
-        case GType::GRAPH:
+        case GType::DIGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det;
-                this->insert(Te(), src, det, weg);
+                this->insert(Te(), src, det);
             }
             break;
-        
+        case GType::UNDIGRAPH:
+            for(int i = 0; i < eNum; i++){
+                alg4 >> src >> det;
+                this->insert(Te(), src, det);
+                this->insert(Te(), det, src);
+            }
+            break;
         case GType::WEIGHTEDGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det >> weg;
                 this->insert(Te(), src, det, weg);
             }
     }
+    this->n = vNum;
+    this->e = eNum; 
+
 }
 
 template<typename Tv, typename Te>
@@ -119,15 +107,17 @@ Tv GraphMatrix<Tv, Te>::remove(int i){
         if(exists(i, j)){
             delete _E[i][j];
             _V[j].inDegree--;
+            this->e--;
         }
     _E.remove(i);
     this->n--;
     Tv vBak = vertex(i);
     _V.remove(i);
     for(int j = 0; j < this->n; j++)
-        if(Edge<Te>* e = _E[j].remove(i)){
-            delete e;
+        if(Edge<Te>* edge = _E[j].remove(i)){
+            delete edge;
             _V[j].outDegree--;
+            this->e--;
         }
     return vBak;
 }
