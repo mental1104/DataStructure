@@ -47,7 +47,7 @@ int main(int argc, char** argv){
     std::ifstream stream("./files/tinyG.txt");
     GraphMatrix<int,int> tinyG(stream, GType::UNDIGRAPH);
 
-    printf("%d\n", tinyG.connectedComponents());
+    printf("%d\n", tinyG.connectedComponents(true));
     /*
     std::cout << argv[1] << std::endl;
     //print(tinyG);
