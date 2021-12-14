@@ -51,6 +51,8 @@ public:
     //边的动态操作
     virtual void insert(Te const& edge, int i, int j, int w = 0);
     virtual Te remove(int i, int j);
+
+    virtual void reverse();
 };
 
 
@@ -69,20 +71,20 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
         case GType::DIGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det;
-                this->insert(Te(), src, det);
+                this->insert(Te(1), src, det);
             }
             break;
         case GType::UNDIGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det;
-                this->insert(Te(), src, det);
-                this->insert(Te(), det, src);
+                this->insert(Te(1), src, det);
+                this->insert(Te(1), det, src);
             }
             break;
         case GType::WEIGHTEDGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det >> weg;
-                this->insert(Te(), src, det, weg);
+                this->insert(Te(weg), src, det, weg);
             }
     }
     this->n = vNum;
@@ -147,6 +149,26 @@ Te GraphMatrix<Tv, Te>::remove(int i, int j){
     return eBak;  
 }
 
+template<typename Tv, typename Te>
+void GraphMatrix<Tv, Te>::reverse(){
+    Vector<Vector<bool>> marked{this->n, this->n, Vector<bool>(this->n, this->n, false)};
+
+    for(int i = 0; i < this->n; i++){
+        for(int j = 0; j < this->n; j++){
+            if(_E[i][j])
+                marked[i][j] = true;
+        }
+    }
+
+    for(int i = 0; i < this->n; i++){
+        for(int j = 0; j < this->n; j++){
+            if(marked[i][j]){
+                insert(remove(i, j), j, i);
+            }
+        }
+    }
+
+}
 
 
 

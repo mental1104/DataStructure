@@ -96,6 +96,7 @@ public:
     virtual EType& type(int, int) = 0;
     virtual Te& edge(int, int) = 0;
     virtual double& weight(int, int) = 0;
+    virtual void reverse() = 0;
     //算法
     void bfs(int);//广度优先搜索
     void bfsPath();
@@ -108,7 +109,7 @@ public:
     template<typename PU> void pfs(int, PU);
     int connectedComponents(bool flag = false);//连通分量生成
     bool connectedComponents(int v, int w);//判断两点是否连通
-    
+    void kosarajuSCC();
 
 }; 
 
@@ -353,4 +354,9 @@ void Graph<Tv, Te>::DirectedCycle(
         }
     }
     onStack[v] = false;
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::kosarajuSCC(){
+
 }
