@@ -1,7 +1,5 @@
 #pragma once
-
-#include "../stack/Stack.hpp"
-#include "../queue/Queue.hpp"
+#include "../def.hpp"
 
 #include <climits>
 enum class VStatus {
@@ -64,10 +62,17 @@ private:
     void BFS(int, int& );//广度优先搜索
     void DFS(int, int&);//深度优先搜索
     void BCC(int, int&, Stack<int>& );//双连通分量分解
-    bool TSort(int, int&, Stack<Tv>* );//拓扑排序
+    void TSort(int, int&, Stack<Tv>* );//拓扑排序
     template<typename PU> void PFS(int, PU);//优先级搜索
+
+    void Cycle(int, int, bool&, Vector<bool>&);
+    bool cycle();//无向图判断是否有环
+    void DirectedCycle(int, Vector<bool>&, Vector<int>&, Stack<int>&, Vector<bool>&);
+    bool directedCycle(bool flag = false);
+
     void CC(int, Vector<int>&, Vector<bool>&, int&);//连通分量
     
+
 public:
     //顶点接口
     int n;
@@ -93,14 +98,18 @@ public:
     virtual double& weight(int, int) = 0;
     //算法
     void bfs(int);//广度优先搜索
+    void bfsPath();
     void dfs(int);//深度优先搜索
+    void dfsPath();
     void vcc(int);//双连通分量分解
     Stack<Tv>* tSort(int);//基于DFS的拓扑排序
     void prim(int);//最小生成树
     void dijkstra(int);//最短路径
     template<typename PU> void pfs(int, PU);
-    int connectedComponents(bool flag = false);
-    bool connectedComponents(int v, int w);
+    int connectedComponents(bool flag = false);//连通分量生成
+    bool connectedComponents(int v, int w);//判断两点是否连通
+    
+
 }; 
 
 template<typename Tv, typename Te>
@@ -179,22 +188,26 @@ void Graph<Tv, Te>::DFS(int v, int& clock) {
 template<typename Tv, typename Te>
 Stack<Tv>* Graph<Tv, Te>::tSort(int s){
     reset();
+    
     int clock = 0;
     int v = s;
-    Stack<Tv> S = new Stack<Tv>;
+    Stack<Tv>* S = new Stack<Tv>;
+
+    if(directedCycle()){
+        return S;
+    }
+
+    printf("n = %d\n", n);
     do {
         if(VStatus::UNDISCOVERED == status(v))
-            if(!TSort(v, clock, S)){
-                while(!S->empty())
-                    S->pop();
-                break;
-            }
+            TSort(v, clock, S);  
     } while(s != (v = (++v % n)));
+
     return S;
 }
 
 template<typename Tv, typename Te>
-bool Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
+void Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
     dTime(v) = ++clock;
     status(v) = VStatus::DISCOVERED;
     for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u))
@@ -202,19 +215,18 @@ bool Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
             case VStatus::UNDISCOVERED:
                 parent(u) = v;
                 type(v, u) = EType::TREE;
-                if(!TSort(u, clock, S))
-                    return false;
+                TSort(u, clock, S);
                 break;
             case VStatus::DISCOVERED:
                 type(v, u) = EType::BACKWARD;
-                return false;
+                return;
             default:
                 type(v, u) = (dTime(v) < dTime(u)) ? EType::FORWARD : EType::CROSS;
                 break;
         }
     status(v) = VStatus::VISITED;
     S->push(vertex(v));
-    return true;
+    return;
 }
 
 template<typename Tv, typename Te>
@@ -268,4 +280,77 @@ void Graph<Tv, Te>::CC(int v, Vector<int>& id, Vector<bool>& marked, int& count)
             CC(u, id, marked, count);
         }
     }
+}
+
+template<typename Tv, typename Te>
+bool Graph<Tv, Te>::cycle(){
+    bool c = false;
+    Vector<bool> marked{this->n, this->n, false};
+    for(int s = 0; s < this->n; s++)
+        if(!marked[s])
+            Cycle(s, s, c, marked);
+
+    return c;
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::Cycle(int v, int u, bool& c, Vector<bool>& marked){
+    marked[v] = true;
+    for(int w = firstNbr(v); w < this->n; w = nextNbr(v, w))
+        if(!marked[w])
+            Cycle(w, v, c, marked);
+        else if(w != u)
+            c = true;
+}
+
+template<typename Tv, typename Te>
+bool Graph<Tv, Te>::directedCycle(bool flag){
+    Vector<bool> marked{this->n, this->n, false};
+    Vector<int> edgeTo{this->n, this->n, -1};
+    Stack<int> cycle;
+    Vector<bool> onStack(this->n, this->n, false);
+
+    for(int v = 0; v < this->n; v++){
+        if(!marked[v]) DirectedCycle(v, marked, edgeTo, cycle, onStack);
+    }
+
+    if(flag){
+        print(cycle);
+    }
+
+    bool res = false;
+    if(!cycle.empty()){
+        res = true;
+    }
+
+    return res;
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::DirectedCycle(
+    int v, 
+    Vector<bool>& marked, 
+    Vector<int>& edgeTo, 
+    Stack<int>& cycle, 
+    Vector<bool>& onStack)
+{
+    onStack[v] = true;
+    marked[v] = true;
+
+    
+    for(int w = firstNbr(v); w < this->n; w = nextNbr(v, w)){
+        if(!cycle.empty()){
+            return;
+        }
+        else if(marked[w] == false){
+            edgeTo[w] = v;
+            DirectedCycle(w, marked, edgeTo, cycle, onStack);
+        } else if(onStack[w]){
+            for(int x = v; x != w; x = edgeTo[x])
+                cycle.push(x);
+            cycle.push(w);
+            cycle.push(v);
+        }
+    }
+    onStack[v] = false;
 }

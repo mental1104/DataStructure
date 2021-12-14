@@ -8,6 +8,7 @@ template<typename Tv, typename Te>
 void test_tsort(GraphMatrix<Tv, Te>& matrix){
     Stack<Tv>* S = matrix.tSort(0);
     print(S);
+    release(S);
 }
 
 template<typename Tv, typename Te>
@@ -42,12 +43,11 @@ void test_DFS(GraphMatrix<Tv, Te>& matrix){
 
 int main(int argc, char** argv){
     
-
-
-    std::ifstream stream("./files/tinyG.txt");
-    GraphMatrix<int,int> tinyG(stream, GType::UNDIGRAPH);
-
-    printf("%d\n", tinyG.connectedComponents(true));
+    std::ifstream stream("./files/tinyDG.txt");
+    GraphMatrix<int,int> tinyG(stream, GType::DIGRAPH);
+    
+    //print(tinyG);
+    test_tsort(tinyG);
     /*
     std::cout << argv[1] << std::endl;
     //print(tinyG);
@@ -69,7 +69,6 @@ int main(int argc, char** argv){
     std::cout << "TSort:    " << std::endl;
     test_tsort(tinyG);
     //print(tinyG);
-    */
-
+    */   
     return 0;
 }
