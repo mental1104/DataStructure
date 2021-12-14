@@ -28,9 +28,9 @@ public:
     virtual Tv& vertex(int i) { return _V[i].data; }
     virtual int inDegree(int i) {   return _V[i].inDegree; }
     virtual int outDegree(int i) {  return _V[i].outDegree; }
-    virtual int firstNbr(int i) {   return nextNbr(i, -1); }
+    virtual int firstNbr(int i) {   return nextNbr(i, this->n); }
     virtual int nextNbr(int i, int j){//相对于顶点j的下一邻接顶点
-        while((j < this->n) && (!exists(i, ++j)))
+        while((-1 < j) && (!exists(i, --j)))
             ; 
         return j;
     }
@@ -157,14 +157,17 @@ void GraphMatrix<Tv, Te>::reverse(){
         for(int j = 0; j < this->n; j++){
             if(_E[i][j])
                 marked[i][j] = true;
+            else
+                marked[i][j] = false;
         }
     }
 
     for(int i = 0; i < this->n; i++){
         for(int j = 0; j < this->n; j++){
-            if(marked[i][j]){
-                insert(remove(i, j), j, i);
-            }
+            if(marked[i][j] && !marked[j][i]){
+                remove(i, j);
+                insert(Te(), j, i);
+            } 
         }
     }
 

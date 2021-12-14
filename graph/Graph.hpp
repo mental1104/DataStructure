@@ -70,10 +70,14 @@ private:
     void DirectedCycle(int, Vector<bool>&, Vector<int>&, Stack<int>&, Vector<bool>&);
     bool directedCycle(bool flag = false);
 
+    void ReversePost(int, Vector<bool>&, Stack<int>*&);
+    Stack<int>* reversePost();
+
     void CC(int, Vector<int>&, Vector<bool>&, int&);//连通分量
-    
+    void KosarajuSCC(int, int&, Vector<bool>&, Vector<int>&);
 
 public:
+    
     //顶点接口
     int n;
     virtual int insert(Tv const& ) = 0;//插入顶点，返回编号
@@ -109,7 +113,7 @@ public:
     template<typename PU> void pfs(int, PU);
     int connectedComponents(bool flag = false);//连通分量生成
     bool connectedComponents(int v, int w);//判断两点是否连通
-    void kosarajuSCC();
+    int kosarajuSCC(bool flga = false);//强连通图
 
 }; 
 
@@ -134,7 +138,7 @@ void Graph<Tv, Te>::BFS(int v, int& clock) {
     while(!Q.empty()) {
         int v = Q.dequeue();
         dTime(v) = ++clock;
-        for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u))
+        for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
             if(VStatus::UNDISCOVERED == status(u)){
                 status(u) = VStatus::DISCOVERED;
                 Q.enqueue(u);
@@ -168,7 +172,7 @@ template<typename Tv, typename Te>
 void Graph<Tv, Te>::DFS(int v, int& clock) {
     dTime(v) = ++clock;
     status(v) = VStatus::DISCOVERED;
-    for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u))
+    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
         switch(status(u)){
             case VStatus::UNDISCOVERED:
                 type(v, u) = EType::TREE;
@@ -194,11 +198,11 @@ Stack<Tv>* Graph<Tv, Te>::tSort(int s){
     int v = s;
     Stack<Tv>* S = new Stack<Tv>;
 
+    
     if(directedCycle()){
         return S;
     }
 
-    printf("n = %d\n", n);
     do {
         if(VStatus::UNDISCOVERED == status(v))
             TSort(v, clock, S);  
@@ -211,7 +215,7 @@ template<typename Tv, typename Te>
 void Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
     dTime(v) = ++clock;
     status(v) = VStatus::DISCOVERED;
-    for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u))
+    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
         switch(status(u)){
             case VStatus::UNDISCOVERED:
                 parent(u) = v;
@@ -276,7 +280,7 @@ template<typename Tv, typename Te>
 void Graph<Tv, Te>::CC(int v, Vector<int>& id, Vector<bool>& marked, int& count){
     marked[v] = true;
     id[v] = count;
-    for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u)){
+    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)){
         if(!marked[u]){
             CC(u, id, marked, count);
         }
@@ -297,7 +301,7 @@ bool Graph<Tv, Te>::cycle(){
 template<typename Tv, typename Te>
 void Graph<Tv, Te>::Cycle(int v, int u, bool& c, Vector<bool>& marked){
     marked[v] = true;
-    for(int w = firstNbr(v); w < this->n; w = nextNbr(v, w))
+    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w))
         if(!marked[w])
             Cycle(w, v, c, marked);
         else if(w != u)
@@ -339,7 +343,7 @@ void Graph<Tv, Te>::DirectedCycle(
     marked[v] = true;
 
     
-    for(int w = firstNbr(v); w < this->n; w = nextNbr(v, w)){
+    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w)){
         if(!cycle.empty()){
             return;
         }
@@ -357,6 +361,66 @@ void Graph<Tv, Te>::DirectedCycle(
 }
 
 template<typename Tv, typename Te>
-void Graph<Tv, Te>::kosarajuSCC(){
+Stack<int>* Graph<Tv, Te>::reversePost(){
+    Stack<int>* order = new Stack<int>();
+    Vector<bool> marked(this->n, this->n, false);
+    for(int v = 0; v < this->n; v++)
+        if(!marked[v])
+            ReversePost(v, marked, order);
+    return order;
+}
 
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::ReversePost(int v, Vector<bool>& marked, Stack<int>*& order){
+    marked[v] = true;
+    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w)){
+        if(!marked[w])
+            ReversePost(w, marked, order);
+    }
+    order->push(v);
+}
+
+template<typename Tv, typename Te>
+int Graph<Tv, Te>::kosarajuSCC(bool flag){
+    if(!directedCycle()){
+        return 0;
+    }
+    
+    Vector<bool> marked(this->n, this->n, false);
+    Vector<int> id(this->n, this->n, -1);
+    int count = 0;
+    reverse();
+    Stack<int>* order = reversePost();
+    reverse();
+    int size = order->size();
+    for(int i = 0; i < size; i++){
+        int s = order->pop();
+        if(!marked[s]){
+            KosarajuSCC(s, count, marked, id);
+            ++count;
+        }
+    }
+    
+    if(flag){
+        for(int i = 0; i < count; i++){
+            for(int j = 0; j < this->n; j++){
+                if(id[j] == i)
+                    printf("%d ",j);
+            }
+            printf("\n");
+        }
+    }
+
+    return count;
+
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::KosarajuSCC(int v, int& count, Vector<bool>& marked, Vector<int>& id){
+    marked[v] = true;
+    id[v] = count;
+    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w)){
+        if(!marked[w])
+            KosarajuSCC(w, count, marked, id);
+    }
 }
