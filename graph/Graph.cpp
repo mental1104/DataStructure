@@ -44,10 +44,10 @@ int main(int argc, char** argv){
     
     putchar('\n');
 
-    std::ifstream stream("./files/mediumG.txt");
-    GraphMatrix<char,int> tinyG(stream, GType::GRAPH);
+    std::ifstream stream("./files/tinyG.txt");
+    GraphMatrix<int,int> tinyG(stream, GType::UNDIGRAPH);
 
-    std::cout << "TinyG:  " << std::endl;
+    std::cout << argv[1] << std::endl;
     //print(tinyG);
     //bfs
     std::cout << "BFS:  " << std::endl;
@@ -55,12 +55,14 @@ int main(int argc, char** argv){
     //print(tinyG);
     std::cout << "==========================" << std::endl;
 
+    print(tinyG);
     //dfs
     std::cout << "DFS:  " << std::endl;
     test_DFS(tinyG);
     //print(tinyG);
     std::cout << "==========================" << std::endl;
 
+    print(tinyG);
     //tSort
     std::cout << "TSort:    " << std::endl;
     test_tsort(tinyG);

@@ -20,8 +20,30 @@ enum class EType {
 };//边状态
 
 enum class GType {
-    GRAPH,
+    UNDIGRAPH,
+    DIGRAPH,
     WEIGHTEDGRAPH
+};
+
+template<typename Tv>
+struct Vertex {
+    Tv data;
+    int inDegree{0};
+    int outDegree{0};
+    VStatus status{VStatus::UNDISCOVERED};
+    int dTime{-1};
+    int fTime{-1};
+    int parent{-1};
+    int priority{INT_MAX};
+    Vertex(Tv const& d = Tv(0)):data{d}{}
+};
+
+template<typename Te>
+struct Edge {
+    Te data;
+    double weight;
+    EType type{EType::UNDETERMINED};
+    Edge(Te const& d, double w):data{d}, weight{w} {}
 };
 
 template<typename Tv, typename Te>
@@ -84,9 +106,9 @@ void Graph<Tv, Te>::bfs(int s) {
     int clock = 0;
     int v = s;
     do 
-        if(VStatus::UNDISCOVERED == status(v)){
-            BFS(v, clock); 
-            status(v) = VStatus::SOURCE;
+        if(VStatus::UNDISCOVERED == status(v)){//如果没有访问过
+            BFS(v, clock); //执行BFS
+            status(v) = VStatus::SOURCE;//第一个节点设为起点
         }
     while(s != (v = (++v%n)));
 }
@@ -99,7 +121,7 @@ void Graph<Tv, Te>::BFS(int v, int& clock) {
     while(!Q.empty()) {
         int v = Q.dequeue();
         dTime(v) = ++clock;
-        for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
+        for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u))
             if(VStatus::UNDISCOVERED == status(u)){
                 status(u) = VStatus::DISCOVERED;
                 Q.enqueue(u);
@@ -108,6 +130,7 @@ void Graph<Tv, Te>::BFS(int v, int& clock) {
             } else {
                 type(v, u) = EType::CROSS;
             }
+
         if(status(v)!=VStatus::SOURCE)
             status(v) = VStatus::VISITED;
     }
@@ -132,7 +155,7 @@ template<typename Tv, typename Te>
 void Graph<Tv, Te>::DFS(int v, int& clock) {
     dTime(v) = ++clock;
     status(v) = VStatus::DISCOVERED;
-    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
+    for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u))
         switch(status(u)){
             case VStatus::UNDISCOVERED:
                 type(v, u) = EType::TREE;
@@ -171,7 +194,7 @@ template<typename Tv, typename Te>
 bool Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
     dTime(v) = ++clock;
     status(v) = VStatus::DISCOVERED;
-    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
+    for(int u = firstNbr(v); u < this->n; u = nextNbr(v, u))
         switch(status(u)){
             case VStatus::UNDISCOVERED:
                 parent(u) = v;
