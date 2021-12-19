@@ -113,9 +113,10 @@ public:
     void prim(int);//最小生成树
     void dijkstra(int);//最短路径
     template<typename PU> void pfs(int, PU);
-    int connectedComponents(bool flag = false);//连通分量生成
-    bool connectedComponents(int v, int w);//判断两点是否连通
-    int kosarajuSCC(bool flag = false);//有向图-强连通子图
+
+    int connectedComponents(bool flag = false);//无向图-连通分量生成
+    bool connectedComponents(int v, int w);//无向图-判断两点是否连通
+    int kosarajuSCC(bool flag = false);//有向图-强连通子图统计
 
 }; 
 

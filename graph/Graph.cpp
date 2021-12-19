@@ -43,12 +43,9 @@ void test_DFS(GraphMatrix<Tv, Te>& matrix){
 
 int main(int argc, char** argv){
     
-    std::ifstream stream("./files/tinyDG.txt");
-    GraphMatrix<int,int> tinyG(stream, GType::DIGRAPH);
-    
-    //print(tinyG);
-    
-    printf("%d\n", tinyG.kosarajuSCC(true));
+    std::ifstream stream("./files/tinyG.txt");
+    GraphMatrix<int,int> tinyG(stream, GType::UNDIGRAPH);
+    printf("%d\n", tinyG.connectedComponents(true));
     /*
     std::cout << argv[1] << std::endl;
     //print(tinyG);
