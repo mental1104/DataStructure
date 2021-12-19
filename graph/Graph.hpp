@@ -74,7 +74,8 @@ private:
     void ReversePost(int, Vector<bool>&, Stack<int>*&);
     Stack<int>* reversePost();//给出逆序的拓扑排序序列（没有必须无环的限制）
 
-    void CC(int, Vector<int>&, Vector<bool>&, int&);//连通分量遍历
+    void CC(int, Vector<int>&, Vector<bool>&, int&);//无向图-连通分量遍历
+    void RC(int, Vector<bool>&);//有向图-可达分量遍历
 
     void KosarajuSCC(int, int&, Vector<bool>&, Vector<int>&);//强连通子图遍历
 
@@ -116,6 +117,9 @@ public:
 
     int connectedComponents(bool flag = false);//无向图-连通分量生成
     bool connectedComponents(int v, int w);//无向图-判断两点是否连通
+
+    void reachableComponents(int s);//有向图-可达分量生成
+
     int kosarajuSCC(bool flag = false);//有向图-强连通子图统计
 
 }; 
@@ -290,6 +294,33 @@ void Graph<Tv, Te>::CC(int v, Vector<int>& id, Vector<bool>& marked, int& count)
     }
 }
 
+//Digraph - reachability in digraphs in Algorithm 4.4
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::reachableComponents(int s){
+    Vector<bool> marked(this->n, this->n, false);
+    RC(s, marked);
+
+
+    for(int i = 0; i < this->n; i++){
+        if(marked[i] == true)
+            printf("%d ", i);
+    }
+    printf("\n");
+
+    return;
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::RC(int v, Vector<bool>& marked){
+    marked[v] = true;
+    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w)){
+        if(!marked[w])
+            RC(w, marked);
+
+    }
+    return;
+}
+
 //undigraph cycle
 template<typename Tv, typename Te>
 bool Graph<Tv, Te>::cycle(){
@@ -415,9 +446,7 @@ int Graph<Tv, Te>::kosarajuSCC(bool flag){
             printf("\n");
         }
     }
-
     return count;
-
 }
 
 template<typename Tv, typename Te>
