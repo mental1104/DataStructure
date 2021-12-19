@@ -65,16 +65,18 @@ private:
     void TSort(int, int&, Stack<Tv>* );//拓扑排序
     template<typename PU> void PFS(int, PU);//优先级搜索
 
-    void Cycle(int, int, bool&, Vector<bool>&);
+    void Cycle(int, int, bool&, Vector<bool>&);//无向图有环遍历
     bool cycle();//无向图判断是否有环
-    void DirectedCycle(int, Vector<bool>&, Vector<int>&, Stack<int>&, Vector<bool>&);
-    bool directedCycle(bool flag = false);
+
+    void DirectedCycle(int, Vector<bool>&, Vector<int>&, Stack<int>&, Vector<bool>&);//有向图有环遍历
+    bool directedCycle(bool flag = false);//有向图判断是否有环
 
     void ReversePost(int, Vector<bool>&, Stack<int>*&);
-    Stack<int>* reversePost();
+    Stack<int>* reversePost();//给出逆序的拓扑排序序列（没有必须无环的限制）
 
-    void CC(int, Vector<int>&, Vector<bool>&, int&);//连通分量
-    void KosarajuSCC(int, int&, Vector<bool>&, Vector<int>&);
+    void CC(int, Vector<int>&, Vector<bool>&, int&);//连通分量遍历
+
+    void KosarajuSCC(int, int&, Vector<bool>&, Vector<int>&);//强连通子图遍历
 
 public:
     
@@ -103,9 +105,9 @@ public:
     virtual void reverse() = 0;
     //算法
     void bfs(int);//广度优先搜索
-    void bfsPath();
+    void bfsPath();//输出广度优先搜索路径
     void dfs(int);//深度优先搜索
-    void dfsPath();
+    void dfsPath();//输出深度优先搜索路径
     void vcc(int);//双连通分量分解
     Stack<Tv>* tSort(int);//基于DFS的拓扑排序
     void prim(int);//最小生成树
@@ -113,7 +115,7 @@ public:
     template<typename PU> void pfs(int, PU);
     int connectedComponents(bool flag = false);//连通分量生成
     bool connectedComponents(int v, int w);//判断两点是否连通
-    int kosarajuSCC(bool flga = false);//强连通图
+    int kosarajuSCC(bool flag = false);//有向图-强连通子图
 
 }; 
 
@@ -287,6 +289,7 @@ void Graph<Tv, Te>::CC(int v, Vector<int>& id, Vector<bool>& marked, int& count)
     }
 }
 
+//undigraph cycle
 template<typename Tv, typename Te>
 bool Graph<Tv, Te>::cycle(){
     bool c = false;
@@ -360,6 +363,7 @@ void Graph<Tv, Te>::DirectedCycle(
     onStack[v] = false;
 }
 
+//output a reverse sequence
 template<typename Tv, typename Te>
 Stack<int>* Graph<Tv, Te>::reversePost(){
     Stack<int>* order = new Stack<int>();

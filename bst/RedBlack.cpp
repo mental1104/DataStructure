@@ -7,7 +7,6 @@ int main(){
 
     for(int i = 0; i < 100000; i++){
         temp = dice(10000);
-        //printf("Insert: %d\n\n", temp);
         tree.insert(temp);
         //sleep(1);
         //system("clear");
