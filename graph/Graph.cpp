@@ -5,14 +5,14 @@
 using std::cout;
 
 template<typename Tv, typename Te>
-void test_tsort(GraphMatrix<Tv, Te>& matrix){
+void testTsort(GraphMatrix<Tv, Te>& matrix){
     Stack<Tv>* S = matrix.tSort(0);
     print(S);
     release(S);
 }
 
 template<typename Tv, typename Te>
-void test_BFS(GraphMatrix<Tv, Te>& matrix){
+void testBFS(GraphMatrix<Tv, Te>& matrix){
     matrix.bfs(0);
     int n = matrix.n;
     for(int i = 0; i < n; i++){
@@ -27,7 +27,7 @@ void test_BFS(GraphMatrix<Tv, Te>& matrix){
 }
 
 template<typename Tv, typename Te>
-void test_DFS(GraphMatrix<Tv, Te>& matrix){
+void testDFS(GraphMatrix<Tv, Te>& matrix){
     matrix.dfs(0);
     int n = matrix.n;
     for(int i = 0; i < n; i++){
