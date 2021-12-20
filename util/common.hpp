@@ -17,11 +17,13 @@ void swap(T* ls, T* rs){
     rs = temp;
 }
 
+/*
 template<typename T>
 T& min(T& ls, T& rs){
     if(ls < rs) return ls;
     else        return rs;
-}
+}*/
+
 
 template<typename T>
 T min(T ls, T rs){
@@ -29,11 +31,13 @@ T min(T ls, T rs){
     else        return rs;
 }
 
+/*
 template<typename T>
-T& max(T& ls, T& rs){
+T& max(const T& ls, const T& rs){
     if(ls < rs) return rs;
     else        return ls;
 }
+*/
 
 template<typename T>
 T max(T ls, T rs){

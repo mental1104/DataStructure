@@ -388,8 +388,9 @@ void Vector<T>::mergeSortB(Rank lo, Rank hi){
     int N = hi - lo;
     T* aux = new T[N];
     for(int sz = 1; sz < N; sz = sz+sz)
-        for(int lo = 0; lo < N-sz; lo += sz+sz)
+        for(int lo = 0; lo < N-sz; lo += sz+sz){
             merge(aux, lo, lo+sz-1, min(lo+sz+sz-1, N-1));
+        }
     delete[] aux;
 }
 

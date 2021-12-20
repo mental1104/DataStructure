@@ -37,6 +37,7 @@ public:
     virtual VStatus& status(int i) {    return _V[i].status; }
     virtual int& dTime(int i) { return _V[i].dTime; }
     virtual int& fTime(int i) { return _V[i].fTime; }
+    virtual int& hca(int i) { return fTime(i); }
     virtual int& parent(int i) {    return _V[i].parent; }
     virtual int& priority(int i) {   return _V[i].priority; }
     //顶点动态操作
@@ -71,15 +72,19 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
         case GType::DIGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det;
-                this->insert(Te(1), src, det);
+                this->insert(Te(i), src, det);
             }
+            this->n = vNum;
+            this->e = eNum; 
             break;
         case GType::UNDIGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det;
-                this->insert(Te(1), src, det);
-                this->insert(Te(1), det, src);
+                this->insert(Te(i), src, det);
+                this->insert(Te(i), det, src);
             }
+            this->n = vNum;
+            this->e = eNum * 2; 
             break;
         case GType::WEIGHTEDGRAPH:
             for(int i = 0; i < eNum; i++){
@@ -87,9 +92,6 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
                 this->insert(Te(weg), src, det, weg);
             }
     }
-    this->n = vNum;
-    this->e = eNum; 
-
 }
 
 template<typename Tv, typename Te>

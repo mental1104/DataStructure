@@ -92,7 +92,8 @@ public:
     virtual int nextNbr(int, int) = 0;//顶点v的下一个邻接顶点
     virtual VStatus& status(int) = 0;
     virtual int& dTime(int) = 0;//时间标签
-    virtual int& fTime(int) = 0;
+    virtual int& fTime(int) = 0;//bcc时间标签
+    virtual int& hca(int) = 0;
     virtual int& parent(int) = 0;
     virtual int& priority(int) = 0;
     //边接口
@@ -109,7 +110,7 @@ public:
     void bfsPath();//输出广度优先搜索路径
     void dfs(int);//深度优先搜索
     void dfsPath();//输出深度优先搜索路径
-    void vcc(int);//双连通分量分解
+    void bcc(int);//双连通分量分解
     Stack<Tv>* tSort(int);//基于DFS的拓扑排序
     void prim(int);//最小生成树
     void dijkstra(int);//最短路径
@@ -457,4 +458,66 @@ void Graph<Tv, Te>::KosarajuSCC(int v, int& count, Vector<bool>& marked, Vector<
         if(!marked[w])
             KosarajuSCC(w, count, marked, id);
     }
+}
+
+template <typename Tv, typename Te> 
+void Graph<Tv, Te>::bcc(int s){
+    reset(); int clock = 0; int v = s; Stack<int> S; //栈S用以记录已访问的顶点
+    do
+        if (VStatus::UNDISCOVERED == status(v)) { //一旦发现未发现的顶点（新连通分量）
+            BCC ( v, clock, S ); //即从该顶点出发启动一次BCC
+            S.pop(); //遍历返回后，弹出栈中最后一个顶点——当前连通域的起点
+        }
+    while(s!=(v =(++v % n)));
+}
+
+
+
+template <typename Tv, typename Te> //顶点类型、边类型
+void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < n
+   hca(v) = dTime(v) = ++clock; 
+   status(v) = VStatus::DISCOVERED; 
+   S.push (v); //v被发现并入栈
+
+   for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)) //枚举v的所有邻居u
+        switch(status(u)){ //并视u的状态分别处理
+
+            case VStatus::UNDISCOVERED:
+                parent(u) = v; 
+                type(v, u)= EType::TREE; 
+                BCC(u, clock, S); //从顶点u处深入
+
+                if (hca(u) < dTime(v)) //遍历返回后，若发现u（通过后向边）可指向v的真祖先
+                    hca(v) = min(hca(v), hca(u)); //则v亦必如此
+                else {//否则，以v为关节点（u以下即是一个BCC，且其中顶点此时正集中于栈S的顶部）
+                    /*输出语句*/
+                    printf ( "BCC rooted at %d:", v);
+                    Stack<int> temp; 
+                    do { 
+                        temp.push(S.pop()); 
+                        print(temp.top()); 
+                    } while ( u != temp.top() ); 
+                    //printf("A\n");
+                    print(parent(u));
+
+                    while (!temp.empty()) 
+                        S.push(temp.pop());//将栈中的内容倒回去
+                    /*输出语句*/
+                    while (u != S.pop())
+                        ; //弹出当前BCC中（除v外）的所有节点，可视需要做进一步处理
+                    /*输出语句*/
+                    printf ( "\n" );
+                }
+
+                break;
+            case VStatus::DISCOVERED:
+                type(v, u) = EType::BACKWARD; //标记(v, u)，并按照“越小越高”的准则
+                if (u != parent(v)) 
+                    hca(v) = ::min(hca(v), dTime(u)); //更新hca[v]
+                break;
+            default: //VISITED (digraphs only)
+                type(v, u) = (dTime(v) < dTime(u))?EType::FORWARD:EType::CROSS;
+                break;
+        }
+    status(v) = VStatus::VISITED; //对v的访问结束
 }
