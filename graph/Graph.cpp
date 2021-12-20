@@ -42,10 +42,10 @@ void testDFS(GraphMatrix<Tv, Te>& matrix){
 }
 
 int main(int argc, char** argv){
-    
-    std::ifstream stream("./files/tinyDG.txt");
-    GraphMatrix<int,int> tinyG(stream, GType::DIGRAPH);
-    tinyG.reachableComponents(0);
+
+    std::ifstream stream("./files/bcc.txt");
+    GraphMatrix<int,int> tinyG(stream, GType::UNDIGRAPH);
+    tinyG.bcc(1);
     
     /*
     std::cout << argv[1] << std::endl;
