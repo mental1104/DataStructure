@@ -41,11 +41,34 @@ void testDFS(GraphMatrix<Tv, Te>& matrix){
     }
 }
 
+template<typename Tv, typename Te, typename PU>
+void testPFS(GraphMatrix<Tv, Te>& matrix, PU priorityUpdater, int s){
+    matrix.pfs(s, priorityUpdater);
+    int n = matrix.n;
+    double sum;
+    for(int i = 0; i < n; i++){
+        sum = 0.0;
+        List<size_t> path;
+        size_t pos = i;
+        while(pos != -1){
+            path.insertAsFirst(pos);
+            int parent = matrix.V()[pos].parent;
+            if(parent != -1)
+                sum += matrix.weight(parent, pos);
+            pos = parent;
+        }
+        printf("%d to %d (%4.2f): ", s, i, sum);
+        print(path);
+    }
+}
+
 int main(int argc, char** argv){
 
-    std::ifstream stream("./files/bcc.txt");
-    GraphMatrix<int,int> tinyG(stream, GType::UNDIGRAPH);
-    tinyG.bcc(1);
+    std::ifstream stream("./files/ds/637.txt");
+    GraphMatrix<int,double> tinyG(stream, GType::WEIGHTEDDIGRAPH);
+    testPFS(tinyG, DijkstraPU<int, double>(), 1);
+    //testDFS(tinyG);
+    //testPFS(tinyG, DijkstraPU<int,double>(), 0);
     
     /*
     std::cout << argv[1] << std::endl;
