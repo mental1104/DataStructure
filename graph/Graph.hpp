@@ -1,7 +1,6 @@
 #pragma once
 #include "../def.hpp"
 
-#include <climits>
 enum class VStatus {
     SOURCE,
     UNDISCOVERED,
@@ -20,7 +19,8 @@ enum class EType {
 enum class GType {
     UNDIGRAPH,
     DIGRAPH,
-    WEIGHTEDGRAPH
+    WEIGHTEDUNDIGRAPH,
+    WEIGHTEDDIGRAPH
 };
 
 template<typename Tv>
@@ -32,7 +32,7 @@ struct Vertex {
     int dTime{-1};
     int fTime{-1};
     int parent{-1};
-    int priority{INT_MAX};
+    double priority;
     Vertex(Tv const& d = Tv(0)):data{d}{}
 };
 
@@ -53,7 +53,11 @@ private:
             dTime(i) = -1;
             fTime(i) = -1;
             parent(i) = -1;
-            priority(i) = INT_MAX;
+
+            unsigned long infinity = 0x7ff0000000000000;
+            double inf = *reinterpret_cast<double*>(&infinity);
+            priority(i) = inf;
+
             for(int j = 0; j < n; j++)
                 if(exists(i,j))
                     type(i, j) = EType::UNDETERMINED;
@@ -95,11 +99,11 @@ public:
     virtual int& fTime(int) = 0;//bcc时间标签
     virtual int& hca(int) = 0;
     virtual int& parent(int) = 0;
-    virtual int& priority(int) = 0;
+    virtual double& priority(int) = 0;
     //边接口
     int e;
     virtual bool exists(int, int) = 0;
-    virtual void insert(Te const& edge, int, int, int) = 0;//在顶点v和u之间插入权重为w的边e
+    virtual void insert(Te const& edge, int, int, double) = 0;//在顶点v和u之间插入权重为w的边e
     virtual Te remove(int, int) = 0;
     virtual EType& type(int, int) = 0;
     virtual Te& edge(int, int) = 0;
@@ -107,9 +111,7 @@ public:
     virtual void reverse() = 0;
     //算法
     void bfs(int);//广度优先搜索
-    void bfsPath();//输出广度优先搜索路径
     void dfs(int);//深度优先搜索
-    void dfsPath();//输出深度优先搜索路径
     void bcc(int);//双连通分量分解
     Stack<Tv>* tSort(int);//基于DFS的拓扑排序
     void prim(int);//最小生成树
@@ -520,4 +522,39 @@ void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < 
                 break;
         }
     status(v) = VStatus::VISITED; //对v的访问结束
+}
+
+template <typename Tv, typename Te>
+template<typename PU> 
+void Graph<Tv, Te>::pfs(int s, PU prioUpdater){
+    reset();
+    int v = s;//初始化
+    do 
+        if(VStatus::UNDISCOVERED == status(v))
+            PFS(v, prioUpdater);
+    while(s != (v = (++v % n)));
+}
+
+template <typename Tv, typename Te>
+template<typename PU> 
+void Graph<Tv, Te>::PFS(int s, PU prioUpdater){
+    priority(s) = 0.0;
+    status(s) = VStatus::VISITED;
+    parent(s) = -1;
+    while(1){
+        for(int w = firstNbr(s); -1 < w; w = nextNbr(s, w))
+            prioUpdater(this, s, w);
+
+        unsigned long infinity = 0x7ff0000000000000;
+        double shortest = *reinterpret_cast<double*>(&infinity);//max double
+        for(int w = 0; w < n; w++)
+            if(VStatus::UNDISCOVERED == status(w))
+                if(shortest > priority(w)){
+                    shortest = priority(w);
+                    s = w;
+                } 
+        if(VStatus::VISITED == status(s)) break;
+        status(s) = VStatus::VISITED;
+        type(parent(s), s) = EType::TREE;
+    }
 }

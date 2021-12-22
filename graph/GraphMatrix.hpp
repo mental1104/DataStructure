@@ -39,7 +39,7 @@ public:
     virtual int& fTime(int i) { return _V[i].fTime; }
     virtual int& hca(int i) { return fTime(i); }
     virtual int& parent(int i) {    return _V[i].parent; }
-    virtual int& priority(int i) {   return _V[i].priority; }
+    virtual double& priority(int i) {   return _V[i].priority; }
     //顶点动态操作
     virtual int insert(Tv const& vertex);
     virtual Tv remove(int i);
@@ -50,7 +50,7 @@ public:
     virtual Te& edge(int i, int j) {  return _E[i][j]->data; }
     virtual double& weight(int i, int j) { return _E[i][j]->weight; }
     //边的动态操作
-    virtual void insert(Te const& edge, int i, int j, int w = 0);
+    virtual void insert(Te const& edge, int i, int j, double w = 0.0);
     virtual Te remove(int i, int j);
 
     virtual void reverse();
@@ -67,7 +67,7 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
     
     int src = 0, det = 0;
     double weg = 0.0;
-    int cnt = 0;
+
     switch(type){
         case GType::DIGRAPH:
             for(int i = 0; i < eNum; i++){
@@ -86,11 +86,23 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
             this->n = vNum;
             this->e = eNum * 2; 
             break;
-        case GType::WEIGHTEDGRAPH:
+        case GType::WEIGHTEDDIGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det >> weg;
                 this->insert(Te(weg), src, det, weg);
             }
+            this->n = vNum;
+            this->e = eNum;
+            break;
+        case GType::WEIGHTEDUNDIGRAPH:
+            for(int i = 0; i < eNum; i++){
+                alg4 >> src >> det >> weg;
+                this->insert(Te(weg), src, det, weg);
+                this->insert(Te(weg), det, src, weg);
+            }
+            this->n = vNum;
+            this->e = eNum * 2;
+            break;
     }
 }
 
@@ -131,7 +143,7 @@ bool GraphMatrix<Tv, Te>::exists(int i, int j){
 }
 
 template<typename Tv, typename Te>
-void GraphMatrix<Tv, Te>::insert(Te const& edge, int i, int j, int w){
+void GraphMatrix<Tv, Te>::insert(Te const& edge, int i, int j, double w){
     if(exists(i, j)) 
         return;
     _E[i][j] = new Edge<Te>(edge, w);
