@@ -64,9 +64,9 @@ void testPFS(GraphMatrix<Tv, Te>& matrix, PU priorityUpdater, int s){
 
 int main(int argc, char** argv){
 
-    std::ifstream stream("./files/ds/637.txt");
-    GraphMatrix<int,double> tinyG(stream, GType::WEIGHTEDDIGRAPH);
-    testPFS(tinyG, DijkstraPU<int, double>(), 1);
+    std::ifstream stream("./files/algo/tinyEWG.txt");
+    GraphMatrix<int,double> tinyG(stream, GType::WEIGHTEDUNDIGRAPH);
+    testPFS(tinyG, PrimPU<int, double>(), 0);
     //testDFS(tinyG);
     //testPFS(tinyG, DijkstraPU<int,double>(), 0);
     
