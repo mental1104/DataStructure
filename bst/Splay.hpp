@@ -127,10 +127,13 @@ bool Splay<T>::remove(const T& e){
         this->_root->lc = nullptr;
         this->_root = this->_root->rc;
         this->_root->parent = nullptr;
-        search(w->data);
+        search(w->data);//以原树根为目标，做一次（必定失败的）查找
+///// assert: 至此，右子树中最小节点必伸展至根，且（因无雷同节点）其左子树必空，于是
         this->_root->lc = lTree;
         lTree->parent = this->_root;
     }
+    release(w->data); 
+    release(w);
     this->_size--;
     if(this->_root) this->updateHeight(this->_root);
     return true;
