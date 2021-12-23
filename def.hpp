@@ -9,6 +9,7 @@ using Rank = int;
 #include <ctime>
 #include <cstring>
 #include <climits>
+#include <cassert>
 #include "./print/declare.hpp"
 #include "./bitmap/Bitmap.hpp"
 #include "./util/common.hpp"
