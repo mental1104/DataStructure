@@ -1,6 +1,79 @@
 import os
 import matplotlib.pyplot as plt
 
+def generator(method, init, step, times):
+    os.system('g++ -o {} {}.cpp -Og -w'.format(method, method))
+
+    a = init
+
+    for j in range(0, times):
+        os.system('./insert {} {}'.format(a, 0))
+        a *= step
+
+
+    with open("./data.txt", 'r') as f:
+        data = f.readlines()  # 将txt中所有字符串读入data
+        resAVL = []
+        for line in data:
+            numbers = line.split()        # 将数据分隔
+            numbers_float = map(float, numbers) #转化为浮点数
+            resAVL.append(list(numbers_float))
+
+    os.system("rm ./data.txt")
+
+    a = init
+
+    for j in range(0, times):
+        os.system('./insert {} {}'.format(a, 1))
+        a *= step
+
+    with open("./data.txt", 'r') as f:
+        data = f.readlines()  # 将txt中所有字符串读入data
+        resRB = []
+        for line in data:
+            numbers = line.split()        # 将数据分隔
+            numbers_float = map(float, numbers) #转化为浮点数
+            resRB.append(list(numbers_float))
+
+    os.system("rm ./data.txt")
+
+    os.system('rm {}'.format(method))
+
+    xstick = []
+    a = init
+    for i in range(0, times):
+        xstick.append("{}".format(a))
+        a = a*step
+    
+    return xstick, resAVL, resRB 
+
+def plot(method, xstick, resAVL, resRB):
+
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.xlabel("Scale", fontdict={'size': 16})
+    plt.ylabel("Times(s)", fontdict={'size': 16})
+
+    title = ''
+    if method == 'insert':
+        title = 'Insertion'
+    elif method == 'search':
+        title = 'Search'
+    elif method == 'remove':
+        title = 'Removal'
+
+    plt.title("The Comparison of {}".format(title), fontdict={'size': 20})
+
+    plt.plot(xstick, resAVL[0], c='blue', label="AVL Tree")
+    plt.plot(xstick, resRB[0], c='red', label="RedBlack Tree")
+
+    plt.scatter(xstick, resAVL[0], c='blue')
+    plt.scatter(xstick, resRB[0], c='red')
+
+    plt.legend()
+    plt.savefig("./{}.png".format(title))
+    plt.close()
+
+'''
 # Weighing the perfomance of insertion
 os.system('g++ -o insert insert.cpp -Og')
 
@@ -46,7 +119,12 @@ a = 1
 for i in range(0, times):
     xstick.append("{}M".format(a))
     a = a*step
+'''
 
+xstick, resAVL, resRB = generator('insert',1000000, 2, 3)
+plot('insert', xstick, resAVL, resRB)
+
+'''
 plt.grid(True, linestyle='--', alpha=0.5)
 plt.xlabel("Scale", fontdict={'size': 16})
 plt.ylabel("Times(s)", fontdict={'size': 16})
@@ -62,8 +140,8 @@ plt.legend()
 plt.savefig("./insertion.png")
 plt.close()
 
-
-
+'''
+'''
 # Weighing the perfomance of searching
 os.system('g++ -o search search.cpp -Og')
 
@@ -120,5 +198,7 @@ plt.legend()
 plt.savefig("./search.png")
 plt.close()
 
+
 os.system("rm ./insert")
 os.system("rm ./search")
+'''
