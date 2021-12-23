@@ -52,6 +52,22 @@ def plot(method, init, step, times):
 
     os.system("rm ./data.txt")
 
+    a = init
+
+    for j in range(0, times):
+        os.system('./{} {} {}'.format(method, a, 2))
+        a *= step
+
+    with open("./data.txt", 'r') as f:
+        data = f.readlines()  # 将txt中所有字符串读入data
+        resSplay = []
+        for line in data:
+            numbers = line.split()        # 将数据分隔
+            numbers_float = map(float, numbers) #转化为浮点数
+            resSplay.append(list(numbers_float))
+
+    os.system("rm ./data.txt")
+
     os.system('rm {}'.format(method))
 
     xstick = []
@@ -76,9 +92,11 @@ def plot(method, init, step, times):
 
     plt.plot(xstick, resAVL[0], c='blue', label="AVL Tree")
     plt.plot(xstick, resRB[0], c='red', label="RedBlack Tree")
+    plt.plot(xstick, resSplay[0], c='green', label="Splay Tree")
 
     plt.scatter(xstick, resAVL[0], c='blue')
     plt.scatter(xstick, resRB[0], c='red')
+    plt.scatter(xstick, resSplay[0], c='green')
 
     plt.legend()
     plt.savefig("./{}.png".format(title))
@@ -86,7 +104,7 @@ def plot(method, init, step, times):
 
 init = 1000000
 step = 2
-times = 6
+times = 3
 
 plot('insert',init, step, times)
 plot('search',init, step, times)

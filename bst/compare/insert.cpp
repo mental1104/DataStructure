@@ -51,6 +51,7 @@ int main(int argc, char** argv){
         printf("Insert: AVL size: %d\n", avl.size());
     else if(method == 1)
         printf("Insert: RBTree size: %d\n", rb.size());
-
+    else if(method == 2)
+        printf("Insert: Splay size: %d\n", splay.size());
     return 0;
 }

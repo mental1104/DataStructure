@@ -9,7 +9,7 @@ int main(){
     for(int i = 0; i < 1000000; i++){
         bst.insert(i);
     }
-    print(bst);
+    //print(bst);
     
     return 0;
 }

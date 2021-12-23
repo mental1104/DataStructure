@@ -18,10 +18,12 @@ int main(int argc, char** argv){
     clock_t start, end;
     AVL<int> avl;
     RedBlack<int> rb;
+    Splay<int> splay;
 
     for(int i = 0; i < scale; i++){
         avl.insert(vec[i]);
         rb.insert(vec[i]);
+        splay.insert(vec[i]);
     }
 
     start = clock();
@@ -33,6 +35,10 @@ int main(int argc, char** argv){
         case 1:
             for(int i = 0; i < scale; i++)
                 rb.search(i);
+            break;
+        case 2:
+            for(int i = 0; i < scale; i++)
+                splay.search(i);
             break;
         default:
             exit(-1);
@@ -47,6 +53,8 @@ int main(int argc, char** argv){
         printf("Search: AVL size: %d\n", avl.size());
     else if(method == 1)
         printf("Search: RBTree size: %d\n", rb.size());
+    else if(method == 2)
+        printf("Search: Splay size: %d\n", splay.size());
         
     return 0;
 }
