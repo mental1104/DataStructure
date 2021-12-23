@@ -4,16 +4,17 @@ import matplotlib.pyplot as plt
 '''
 Usage:
 
-method = 'insert' or 'remove' or 'search', not supporting any other method.
-init marks the number you want to begin with.
-step means how many times you want the init value to be amplified, e.g step = 2 means you want
-it to be doubled, step = 3 means you want it to be tripled.
-times, means the iteration number.
+    method = 'insert' or 'remove' or 'search', not supporting any other method.
+    init marks the number you want to begin with.
+    step means how many times you want the init value to be amplified, e.g step = 2 means you want
+    it to be doubled, step = 3 means you want it to be tripled.
+    times, means the iteration number.
 
-e.g plot('insert', 1000000, 2, 5) means I want to generate the scale of:
-1, 2, 4, 8 and 16 millions by insertion
-plot('search', 2000000, 3, 3) means I want to generate the scale of:
-2, 4 and 8 millions by search.
+    e.g plot('insert', 1000000, 2, 5) means I want to generate the scale of:
+    1, 2, 4, 8 and 16 millions by insertion
+    plot('search', 2000000, 3, 3) means I want to generate the scale of:
+    2, 4 and 8 millions by search.
+    
 '''
 def plot(method, init, step, times):
     os.system('g++ -o {} {}.cpp -Og -w'.format(method, method))
