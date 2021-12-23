@@ -12,15 +12,15 @@ public:
     bool remove(const T& e);
 };
 
-template<typename NodePosi> inline
-void attachAsLChild(NodePosi p, NodePosi lc){
+template<typename T> inline
+void attachAsLChild(BinNode<T>*& p, BinNode<T>*& lc){
     p->lc = lc;
     if(lc)
         lc->parent = p;
 }
 
-template<typename NodePosi> inline
-void attachAsRChild(NodePosi p, NodePosi rc){
+template<typename T> inline
+void attachAsRChild(BinNode<T>*& p, BinNode<T>*& rc){
     p->rc = rc;
     if(rc)
         rc->parent = p;

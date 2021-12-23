@@ -5,49 +5,18 @@
 int main(int argc, char** argv){
 
     Splay<int> S;
-    int temp;
-    system("clear");
-
-    //insert
-    for(int i = 0; i < N; i++){
-        temp = dice(RANDOM);
-        printf("Insert: %d\n\n", temp);
-        S.insert(temp);
-        print(S);
-        sleep(1);
-        system("clear");
+    Vector<int> vec;
+    //插入50个[0,100)的整数
+    for(int i = 0; i < 1000000; i++){
+        vec.insert(i);
     }
-   
-    //search
-    printf("Press to continue..(Search)\n");
-    getchar();
-
-    for(int i = 0; i < N/10;){
-        temp = dice(RANDOM);
-        if(S.search(temp)->data == temp){
-            i++;
-            printf("Search: %d\n\n", temp);
-            print(S);
-            sleep(4);
-            system("clear");
-        }
+    vec.unsort();
+    for(int i = 0; i < 1000000; i++){
+        S.insert(vec[i]);
     }
-
-    //delete
-    printf("Press to continue..(Deletion)\n");
-    getchar();
-    
-    while(!S.empty()){
-        temp = dice(RANDOM);
-        if(S.search(temp)->data == temp){
-            printf("Delete: %d\n\n", temp);
-            S.remove(temp);
-            print(S);
-            sleep(1);
-            system("clear");
-        }
+    for(int i = 0; i < 1000000; i++){
+        S.search(i);
     }
-
-
+    printf("%d\n", S.size());
     return 0;
 }
