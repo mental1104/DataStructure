@@ -6,8 +6,8 @@ int main(){
     system("clear");
 
     //插入50个[0,100)的整数
-    for(int i = 0; i < 50; i++){
-        bst.insert(dice(100));
+    for(int i = 0; i < 1000000; i++){
+        bst.insert(i);
     }
     print(bst);
     
