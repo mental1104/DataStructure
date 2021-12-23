@@ -19,18 +19,18 @@ int main(int argc, char** argv){
     AVL<int> avl;
     RedBlack<int> rb;
 
+    for(int i = 0; i < scale; i++){
+        avl.insert(vec[i]);
+        rb.insert(vec[i]);
+    }
+
+    start = clock();
     switch(method){
         case 0: 
-            for(int i = 0; i < scale; i++)
-                avl.insert(vec[i]);
-            start = clock();
             for(int i = 0; i < scale; i++)
                 avl.search(i);
             break;
         case 1:
-            for(int i = 0; i < scale; i++)
-                rb.insert(vec[i]);
-            start = clock();
             for(int i = 0; i < scale; i++)
                 rb.search(i);
             break;
@@ -42,5 +42,11 @@ int main(int argc, char** argv){
     std::ofstream output;
     output.open("./data.txt", std::ios::app | std::ios::out);
     output << double(end-start)/CLOCKS_PER_SEC << " ";
+
+    if(method == 0)
+        printf("Search: AVL size: %d\n", avl.size());
+    else if(method == 1)
+        printf("Search: RBTree size: %d\n", rb.size());
+        
     return 0;
 }

@@ -24,19 +24,24 @@ int main(int argc, char** argv){
     RedBlack<int> rb;
     Splay<int> splay;
 
+    for(int i = 0; i < scale; i++){
+        avl.insert(i);
+        rb.insert(i);
+    }
+
     start = clock();
     switch(method){
         case 0: 
             for(int i = 0; i < scale; i++)
-                avl.insert(vec[i]);
+                avl.remove(vec[i]);
             break;
         case 1:
             for(int i = 0; i < scale; i++)
-                rb.insert(vec[i]);
+                rb.remove(vec[i]);
             break;
         case 2:
             for(int i = 0; i < scale; i++)
-                splay.insert(vec[i]);
+                splay.remove(vec[i]);
             break;
         default:
             exit(-1);
@@ -46,11 +51,11 @@ int main(int argc, char** argv){
     std::ofstream output;
     output.open("./data.txt", std::ios::app | std::ios::out);
     output << double(end-start)/CLOCKS_PER_SEC << " ";
-    
+
     if(method == 0)
-        printf("Insert: AVL size: %d\n", avl.size());
+        printf("Remove: AVL size: %d\n", avl.size());
     else if(method == 1)
-        printf("Insert: RBTree size: %d\n", rb.size());
+        printf("Remove: RBTree size: %d\n", rb.size());
 
     return 0;
 }
