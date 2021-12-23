@@ -87,6 +87,8 @@ def plot(method, init, step, times):
         title = 'Search'
     elif method == 'remove':
         title = 'Removal'
+    elif method == 'locality':
+        title = 'Locality Search'
 
     plt.title("The Comparison of {}".format(title), fontdict={'size': 20})
 
@@ -104,8 +106,9 @@ def plot(method, init, step, times):
 
 init = 1000000
 step = 2
-times = 3
+times = 6
 
 plot('insert',init, step, times)
 plot('search',init, step, times)
 plot('remove',init, step, times)
+plot('locality', init, step, times)
