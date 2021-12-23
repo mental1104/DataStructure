@@ -74,7 +74,7 @@ BinNode<T>* Splay<T>::splay(BinNode<T>* v){
 
 template<typename T>
 BinNode<T>*& Splay<T>::search(const T& e){
-    BinNode<T>* p = searchIn(this->_root, e, this->_hot = nullptr);
+    BinNode<T>* p = BST<T>::search(e);
     this->_root = splay(p?p:this->_hot);
     return this->_root;
 }

@@ -30,15 +30,15 @@ int main(int argc, char** argv){
     switch(method){
         case 0: 
             for(int i = 0; i < scale; i++)
-                avl.search(i);
+                avl.search(dice(scale));
             break;
         case 1:
             for(int i = 0; i < scale; i++)
-                rb.search(i);
+                rb.search(dice(scale));
             break;
         case 2:
             for(int i = 0; i < scale; i++)
-                splay.search(i);
+                splay.search(dice(scale));
             break;
         default:
             exit(-1);
