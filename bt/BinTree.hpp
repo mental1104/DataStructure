@@ -13,7 +13,7 @@ protected:
     BinNode<T>*& FromParentTo(const BinNode<T>& node);
 public:
     BinTree(){}
-    ~BinTree() {  if(0 < _size) remove(_root);  }
+    ~BinTree() {  if(0 < _size) levelRemove(_root);  }
     int size() const {  return _size; }
     bool empty() const {    return !_root; }
     BinNode<T>* root() const { return _root; }
@@ -33,6 +33,19 @@ public:
     bool operator== (const BinTree<T> &t){   return _root && t._root && (_root == t._root);   }
     bool operator!= (const BinTree<T> &t){   return !(*this==t);    }
 };
+
+template<typename T>
+static void levelRemove(BinNode<T>* x){
+    Queue<BinNode<T>*> Q;
+    Q.enqueue(x);
+    while(!Q.empty()){
+        BinNode<T>* x = Q.dequeue();
+        if(HasLChild(*x)) Q.enqueue(x->lc);
+        if(HasRChild(*x)) Q.enqueue(x->rc);
+        release(x->data);
+        release(x);
+    }
+}
 
 template<typename T>
 int BinTree<T>::updateHeight(BinNode<T>* x){
