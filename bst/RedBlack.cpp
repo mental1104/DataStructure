@@ -1,35 +1,19 @@
 #include "../def.hpp"
 
 int main(){
-    system("clear");
-    RedBlack<int> tree;
-    int temp;
-
-    for(int i = 0; i < 100000; i++){
-        temp = dice(10000);
-        tree.insert(temp);
-        //sleep(1);
-        //system("clear");
-    }
-    print(tree);
-    sleep(100);
-
-    /*
-    printf("Press to see if you want to see the process of deletion\n");
-    getchar();
+    RedBlack<int> bst;
     system("clear");
 
-    
-    while(!tree.empty()){
-        temp = dice(RANDOM);
-        if(tree.search(temp)){
-            printf("Delete: %d\n\n", temp);
-            tree.remove(temp);
-            printRedBlackTree(tree);
-            sleep(1);
-            system("clear");
-        }
+    for(int i = 0; i < 16; i+=2){
+        bst.insert(i);
     }
-    */
+    print(bst);
+    bst.remove(8);
+    printf("========================\n");
+    print(bst);
+    printf("========================\n");
+    bst.insert(8);
+    print(bst);
+    return 0;
     return 0;
 }

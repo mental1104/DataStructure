@@ -14,17 +14,17 @@ public:
 };
 
 template<typename T>
-bool IsBlack(BinNode<T>* p){
+inline bool IsBlack(BinNode<T>* p){
     return !p || p->color == RBColor::BLACK;
 }
 
 template<typename T>
-bool IsRed(BinNode<T>* p){
+inline bool IsRed(BinNode<T>* p){
     return !IsBlack(p);
 }
 
 template<typename T>
-bool BlackHeightUpdated(BinNode<T>& x){
+inline bool BlackHeightUpdated(BinNode<T>& x){
     return (stature(x.lc) == stature(x.rc)) && x.height == (IsRed(&x)?stature(x.lc):stature(x.lc)+1); 
 }
 

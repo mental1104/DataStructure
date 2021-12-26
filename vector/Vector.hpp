@@ -224,7 +224,7 @@ int Vector<T>::uniquify(){
 
 template<typename T>
 Rank Vector<T>::search(T const& e, Rank lo, Rank hi) const{
-    return (dice(2021)%2)? binSearch(_elem, e, lo, hi):fibSearch(_elem, e, lo, hi);
+    return binSearch(_elem, e, lo, hi);
 }
 
 template<typename T> 

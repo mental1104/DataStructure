@@ -19,11 +19,12 @@ int main(int argc, char** argv){
     AVL<int> avl;
     RedBlack<int> rb;
     Splay<int> splay;
-
+    BTree<int> btree;
     for(int i = 0; i < scale; i++){
         avl.insert(vec[i]);
         rb.insert(vec[i]);
         splay.insert(vec[i]);
+        btree.insert(vec[i]);
     }
 
     start = clock();
@@ -40,6 +41,10 @@ int main(int argc, char** argv){
             for(int i = 0; i < scale; i++)
                 splay.search(dice(scale));
             break;
+        case 3:
+            for(int i = 0; i < scale; i++)
+                btree.search(dice(scale));
+            break;
         default:
             exit(-1);
     }
@@ -55,6 +60,8 @@ int main(int argc, char** argv){
         printf("Search: RBTree size: %d\n", rb.size());
     else if(method == 2)
         printf("Search: Splay size: %d\n", splay.size());
+    else if(method == 3)
+        printf("Search: BTree size: %d\n", splay.size());    
         
     return 0;
 }

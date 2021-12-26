@@ -12,7 +12,7 @@ protected:
     void solveOverflow(BTNode<T>*);
     void solveUnderflow(BTNode<T>*);
 public:
-    BTree(int order = 3):_order(order), _size(0){   _root = new BTNode<T>();    }
+    BTree(int order = 512):_order(order), _size(0){   _root = new BTNode<T>();    }
     ~BTree(){   if(_root) release(_root);   }
 
     int const order() { return _order; }
@@ -31,7 +31,7 @@ BTree<T>::search(const T& e){
     BTNode<T>* v = _root;
     _hot = nullptr;
     while(v){
-        Rank r = v->key.search(e);
+        Rank r = v->key.search(e);//查找返回的要求是不大于给定值的最大值。
         if((0 <= r) && (e ==  v->key[r]))  return v;
         _hot = v; 
         v = v->child[r+1];//返回大于e值的前一个位置，故r+1.
@@ -58,22 +58,39 @@ void BTree<T>::solveOverflow(BTNode<T>* v){
     Rank s = _order / 2; //轴点（此时应有_order = key.size() = child.size() - 1）
     BTNode<T>* u = new BTNode<T>(); //注意：新节点已有一个空孩子
 
+    /* 原节点一分为二，并将右侧节点更新至新节点 */
     for ( Rank j = 0; j < _order - s - 1; j++ ) { //v右侧_order-s-1个孩子及关键码分裂为右侧节点u
         u->child.insert ( j, v->child.remove ( s + 1 ) ); //逐个移动效率低
         u->key.insert ( j, v->key.remove ( s + 1 ) ); //此策略可改进
     }
 
-    u->child[_order - s - 1] = v->child.remove ( s + 1 ); //移动v最靠右的孩子
+    u->child[_order - s - 1] = v->child.remove ( s + 1 ); //单独一次移动v最靠右的孩子
+    /* 原节点一分为二，并将右侧节点更新至新节点 */
 
+
+    /*更新父节点 */
     if ( u->child[0] ) //若u的孩子们非空，则
         for ( Rank j = 0; j < _order - s; j++ ) //令它们的父节点统一
             u->child[j]->parent = u; //指向u
-   
+    /*更新父节点 */
+
     BTNode<T>* p = v->parent; //v当前的父节点p
-    if ( !p ) { _root = p = new BTNode<T>(); p->child[0] = v; v->parent = p; } //若p空则创建之
-    Rank r = 1 + p->key.search ( v->key[0] ); //p中指向v的指针的秩
+
+    /* 上溢到根节点时 */
+    if ( !p ) { 
+        _root = p = new BTNode<T>(); 
+        p->child[0] = v; 
+        v->parent = p; 
+    } //若p空则创建之
+    /* 上溢到根节点时 */
+
+
+    Rank r = 1 + p->key.search ( v->key[0] ); //在父节点中找到待插入的位置
     p->key.insert ( r, v->key.remove ( s ) ); //轴点关键码上升
-    p->child.insert ( r + 1, u );  u->parent = p; //新节点u与父节点p互联
+
+    p->child.insert ( r + 1, u );  
+    u->parent = p; //新节点u与父节点p互联
+    
     solveOverflow ( p ); //上升一层，如有必要则继续分裂——至多递归O(logn)层
 }
 
@@ -85,9 +102,9 @@ bool BTree<T>::remove(const T& e){
     if(v->child[0]){
         BTNode<T>* u = v->child[r+1];
         while(u->child[0]) u = u->child[0];//类似于二叉搜索树的直接后继，先右然后一左到底
-        v->key[r] = u->key[0];
-        v = u;
-        r = 0;
+        v->key[r] = u->key[0];//用直接后继覆盖当前被删除节点
+        v = u;//转交节点控制权
+        r = 0;//准备删除原直接后继
     }
     v->key.remove(r);
     v->child.remove(r+1);
@@ -112,22 +129,26 @@ void BTree<T>::solveUnderflow(BTNode<T>* v){
     }
     Rank r = 0; while ( p->child[r] != v ) r++;
     //确定v是p的第r个孩子——此时v可能不含关键码，故不能通过关键码查找
+
     //另外，在实现了孩子指针的判等器之后，也可直接调用Vector::find()定位
     ///*DSA*/printf ( "\nrank = %d", r );
-    // 情况1：向左兄弟借关键码
+    // 情况1：向左兄弟借关键码 - 旋转
+
     if ( 0 < r ) { //若v不是p的第一个孩子，则
         BTNode<T>* ls = p->child[r - 1]; //左兄弟必存在
         if ( ( _order + 1 ) / 2 < ls->child.size() ) { //若该兄弟足够“胖”，则
             ///*DSA*/printf ( " ... case 1\n" );
             v->key.insert ( 0, p->key[r - 1] ); //p借出一个关键码给v（作为最小关键码）
             p->key[r - 1] = ls->key.remove ( ls->key.size() - 1 ); //ls的最大关键码转入p
+            //r - 1的原因是左兄弟
             v->child.insert ( 0, ls->child.remove ( ls->child.size() - 1 ) );
             //同时ls的最右侧孩子过继给v
             if ( v->child[0] ) v->child[0]->parent = v; //作为v的最左侧孩子
             return; //至此，通过右旋已完成当前层（以及所有层）的下溢处理
         }
     } //至此，左兄弟要么为空，要么太“瘦”
-    // 情况2：向右兄弟借关键码
+
+    // 情况2：向右兄弟借关键码 - 旋转
     if ( p->child.size() - 1 > r ) { //若v不是p的最后一个孩子，则
         BTNode<T>* rs = p->child[r + 1]; //右兄弟必存在
         if ( ( _order + 1 ) / 2 < rs->child.size() ) { //若该兄弟足够“胖”，则
@@ -141,6 +162,7 @@ void BTree<T>::solveUnderflow(BTNode<T>* v){
             return; //至此，通过左旋已完成当前层（以及所有层）的下溢处理
         }
     } //至此，右兄弟要么为空，要么太“瘦”
+
     // 情况3：左、右兄弟要么为空（但不可能同时），要么都太“瘦”——合并
     if ( 0 < r ) { //与左兄弟合并
         ///*DSA*/printf ( " ... case 3L\n" );

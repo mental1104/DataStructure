@@ -23,11 +23,13 @@ int main(int argc, char** argv){
     AVL<int> avl;
     RedBlack<int> rb;
     Splay<int> splay;
+    BTree<int> btree;
 
     for(int i = 0; i < scale; i++){
         avl.insert(i);
         rb.insert(i);
         splay.insert(i);
+        btree.insert(i);
     }
 
     start = clock();
@@ -44,6 +46,10 @@ int main(int argc, char** argv){
             for(int i = 0; i < scale; i++)
                 splay.remove(vec[i]);
             break;
+        case 3:
+            for(int i = 0; i < scale; i++)
+                btree.remove(vec[i]);
+            break;
         default:
             exit(-1);
     }
@@ -59,6 +65,7 @@ int main(int argc, char** argv){
         printf("Remove: RBTree size: %d\n", rb.size());
     else if(method == 2)
         printf("Remove: Splay size: %d\n", splay.size());
-
+    else if(method == 3)
+        printf("Remove: BTree size: %d\n", splay.size());
     return 0;
 }

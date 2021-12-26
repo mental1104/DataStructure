@@ -35,10 +35,14 @@ public:
 static size_t hashCode ( char c ) { return ( size_t ) c; } //字符
 static size_t hashCode ( int k ) { return ( size_t ) k; } //整数以及长长整数
 static size_t hashCode ( long long i ) { return ( size_t ) ( ( i >> 32 ) + ( int ) i ); }
-static size_t hashCode ( char s[] ) { //生成字符串的循环移位散列码（cyclic shift hash code）
-   unsigned int h = 0; //散列码
-   for ( size_t n = strlen ( s ), i = 0; i < n; i++ ) //自左向右，逐个处理每一字符
-      { h = ( h << 5 ) | ( h >> 27 ); h += (int) s[i]; } //散列码循环左移5位，再累加当前字符
+static size_t hashCode ( const char s[] ) { //生成字符串的循环移位散列码（cyclic shift hash code）
+    unsigned int h = 0; //散列码
+    for ( size_t n = strlen ( s ), i = 0; i < n; i++ ) //自左向右，逐个处理每一字符
+    { 
+        h = ( h << 5 ) | ( h >> 27 ); 
+        h += (int) s[i]; 
+        printf("%d\n", (int) s[i]);
+    } //散列码循环左移5位，再累加当前字符
    return ( size_t ) h; //如此所得的散列码，实际上可理解为近似的“多项式散列码”
 } //对于英语单词，"循环左移5位"是实验统计得出的最佳值
 
@@ -69,8 +73,9 @@ V* Hashtable<K, V>::get(K k){
 template<typename K, typename V>
 int Hashtable<K, V>::probe4Hit(const K& k){
     int r = hashCode(k) % M;
-    while((ht[r] && (k != ht[r]->key)) || (!ht[r] && lazilyRemoved(r)))
+    while((ht[r] && (k != ht[r]->key)) || (!ht[r] && lazilyRemoved(r))){
         r = (r + 1) % M;
+    }      
     return r;
 }
 
