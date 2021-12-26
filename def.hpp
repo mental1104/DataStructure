@@ -33,6 +33,7 @@ using Rank = int;
 #include "./bst/RedBlack.hpp"
 #include "./ht/Dictionary.hpp"
 #include "./ht/Hashtable.hpp"
+#include "./ht/QuadraticHT.hpp"
 #include "./ht/QuadlistNode.hpp"
 #include "./ht/Quadlist.hpp"
 #include "./ht/Skiplist.hpp"

@@ -19,9 +19,10 @@ protected:
     void rehash();
 
 public:
-    Hashtable(int c = 13);
+    Hashtable(int c = 3);
     ~Hashtable();
     int size() const { return N; }
+    int capacity() const { return M; }
     bool put(K, V);
     V* get(K k);
     bool remove(K k);
@@ -49,7 +50,7 @@ static size_t hashCode ( const char s[] ) { //生成字符串的循环移位散�
 
 template<typename K, typename V>
 Hashtable<K, V>::Hashtable(int c){
-    M = primeNLT(c, 1048576, "../print/prime-1048576-bitmap.txt");
+    M = primeNLT(c, 1048576, "../print/prime-bitmap.txt");
     N = 0;
     ht = new Entry<K, V>*[M];
     memset(ht, 0, sizeof(Entry<K, V>*)*M);
@@ -113,7 +114,7 @@ void Hashtable<K, V>::rehash() {
    int oldM = M; 
    Entry<K, V>** oldHt = ht;
 
-   M = primeNLT( 4 * N, 1048576, "../print/prime-1048576-bitmap.txt"); //容量至少加倍（若懒惰删除很多，可能反而缩容）
+   M = primeNLT( 4 * N, 1048576, "../print/prime-bitmap.txt"); //容量至少加倍（若懒惰删除很多，可能反而缩容）
    ht = new Entry<K, V>*[M]; 
    
    N = 0; 
