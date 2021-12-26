@@ -23,6 +23,7 @@ int main(int argc, char** argv){
     AVL<int> avl;
     RedBlack<int> rb;
     Splay<int> splay;
+    BTree<int> btree;
 
     start = clock();
     switch(method){
@@ -37,6 +38,10 @@ int main(int argc, char** argv){
         case 2:
             for(int i = 0; i < scale; i++)
                 splay.insert(vec[i]);
+            break;
+        case 3:
+            for(int i = 0; i < scale; i++)
+                btree.insert(vec[i]);
             break;
         default:
             exit(-1);
@@ -53,5 +58,7 @@ int main(int argc, char** argv){
         printf("Insert: RBTree size: %d\n", rb.size());
     else if(method == 2)
         printf("Insert: Splay size: %d\n", splay.size());
+    else if(method == 3)
+        printf("Insert: BTree size: %d\n", btree.size());
     return 0;
 }

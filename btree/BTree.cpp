@@ -1,7 +1,7 @@
 #include "../def.hpp"
 
 #define RANDOM 100
-#define N 10
+#define N 100
 
 int main(int argc, char** argv){
 

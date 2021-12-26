@@ -5,11 +5,15 @@ int main(){
     AVL<int> bst;
     system("clear");
 
-    //插入50个[0,100)的整数
-    for(int i = 0; i < 1000000; i++){
+    for(int i = 0; i < 16; i+=2){
         bst.insert(i);
     }
-    //print(bst);
-    
+    print(bst);
+    bst.remove(8);
+    printf("========================\n");
+    print(bst);
+    printf("========================\n");
+    bst.insert(8);
+    print(bst);
     return 0;
 }
