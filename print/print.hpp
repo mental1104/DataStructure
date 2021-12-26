@@ -27,6 +27,7 @@ public:
    template <typename T> static void p ( Quadlist<T>& ); //Quadlist
    template <typename K, typename V> static void p ( Skiplist<K, V>& ); //Skiplist
    template <typename K, typename V> static void p ( Hashtable<K, V>& ); //Hashtable
+   template <typename K, typename V> static void p ( QuadraticHT<K, V>& ); // Quadratic Probing Hashtable
    template <typename Tv, typename Te> static void p ( GraphMatrix<Tv, Te>& ); //Graph
    template <typename T> static void p ( T& ); //向量、列表等支持traverse()遍历操作的线性结构
    template <typename T> static void p ( T* s ) //所有指针
