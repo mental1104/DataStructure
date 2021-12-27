@@ -17,6 +17,7 @@ public:
    static void p ( VStatus ); //图顶点的状态
    static void p ( EType ); //图边的类型
 
+   
    template <typename K, typename V> static void p ( Entry<K, V>& ); //Entry
    template <typename T> static void p ( BinNode<T>&); //BinTree节点
    template <typename T> static void p ( BinTree<T>& ); //二叉树
@@ -29,6 +30,8 @@ public:
    template <typename K, typename V> static void p ( Skiplist<K, V>& ); //Skiplist
    template <typename K, typename V> static void p ( Hashtable<K, V>& ); //Hashtable
    template <typename K, typename V> static void p ( QuadraticHT<K, V>& ); // Quadratic Probing Hashtable
+   template <typename T> static void printComplHeap (PQ_ComplHeap<T>& pq, int n, int k, int depth, int type, int* bType );
+   template <typename T> static void p ( PQ_ComplHeap<T> & pq );
    template <typename Tv, typename Te> static void p ( GraphMatrix<Tv, Te>& ); //Graph
    template <typename T> static void p ( T& ); //向量、列表等支持traverse()遍历操作的线性结构
    template <typename T> static void p ( T* s ) //所有指针
@@ -86,4 +89,5 @@ template<typename T> struct Print{
 #include "./print_HashTable.hpp"
 #include "./print_QuadList.hpp"
 #include "./print_SkipList.hpp"
+#include "./print_PQ_ComplHeap.hpp"
 #include "./print_GraphMatrix.hpp"

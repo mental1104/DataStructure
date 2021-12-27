@@ -38,6 +38,8 @@ using U = unsigned int;
 #include "./ht/QuadlistNode.hpp"
 #include "./ht/Quadlist.hpp"
 #include "./ht/Skiplist.hpp"
+#include "./pq/PQ.hpp"
+#include "./pq/PQ_ComplHeap.hpp"
 #include "./graph/PU.hpp"
 #include "./graph/Graph.hpp"
 #include "./graph/GraphMatrix.hpp"
