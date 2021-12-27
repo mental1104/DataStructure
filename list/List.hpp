@@ -52,6 +52,7 @@ public:
     int deduplicate();
     int uniquify();
     void reverse();
+    void radixSort(ListNode<T>* p, int n);
 
     void traverse(void(*)(T&));
     template<typename VST> void traverse(VST&&);
@@ -303,4 +304,21 @@ void List<T>::reverse(){
         prev = next;
         next = next->succ;
     }
+
+    return;
+}
+
+template<typename T>
+void List<T>::radixSort(ListNode<T>* p, int n){
+    ListNode<T>* head = p->pred;
+    ListNode<T>* tail = p;
+    for(int i = 0; i < n; i++) tail = tail->succ;
+    for(U radixBit = 0x1; radixBit && (p = head); radixBit <<= 1)
+        for(int i = 0; i < n; i++){
+            if(radixBit & U(p->succ->data))
+                tail->insertAsPred(remove(p->succ));
+            else
+                p = p->succ;
+        }
+    return;
 }
