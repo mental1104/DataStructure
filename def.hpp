@@ -2,6 +2,7 @@
 
 #define DEFAULT_CAPACITY 1024
 using Rank = int;
+using U = unsigned int;
 
 #include <iostream>
 #include <fstream>

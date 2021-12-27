@@ -12,6 +12,7 @@ public:
    static void p ( float );
    static void p ( double );
    static void p ( char );
+   static void p ( unsigned int);
    static void p ( size_t );
    static void p ( VStatus ); //图顶点的状态
    static void p ( EType ); //图边的类型
@@ -39,6 +40,7 @@ void UniPrint::p ( int e ) {  printf ( " %04d", e ); }
 void UniPrint::p ( float e ) { printf ( " %4.2f", e ); }
 void UniPrint::p ( double e ) { printf ( " %4.2f", e ); }
 void UniPrint::p ( char e ) { printf ( " %c", ( 31 < e ) && ( e < 128 ) ? e : '$' ); }
+void UniPrint::p ( unsigned int e ) {  printf ( " %04u", e ); }
 void UniPrint::p ( size_t e) {   printf ("-%lu", e); }
 
 void UniPrint::p ( VStatus e ) {
