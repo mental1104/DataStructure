@@ -32,6 +32,7 @@ public:
    template <typename K, typename V> static void p ( QuadraticHT<K, V>& ); // Quadratic Probing Hashtable
    template <typename T> static void printComplHeap (PQ_ComplHeap<T>& pq, int n, int k, int depth, int type, int* bType );
    template <typename T> static void p ( PQ_ComplHeap<T> & pq );
+   template <typename T> static void p ( PQ_LeftHeap<T>& lh);//LeftHeap
    template <typename Tv, typename Te> static void p ( GraphMatrix<Tv, Te>& ); //Graph
    template <typename T> static void p ( T& ); //向量、列表等支持traverse()遍历操作的线性结构
    template <typename T> static void p ( T* s ) //所有指针
@@ -90,4 +91,5 @@ template<typename T> struct Print{
 #include "./print_QuadList.hpp"
 #include "./print_SkipList.hpp"
 #include "./print_PQ_ComplHeap.hpp"
+#include "./print_PQ_LeftHeap.hpp"
 #include "./print_GraphMatrix.hpp"

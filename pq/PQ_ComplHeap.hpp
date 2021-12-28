@@ -20,8 +20,7 @@ private:
     Rank percolateUp (Rank i );//上滤
 public:
     PQ_ComplHeap() {} //默认构造
-    PQ_ComplHeap(Vector<T>& vec){
-        this->copyFrom(vec);
+    PQ_ComplHeap(Vector<T>& vec):Vector<T>::Vector(vec){
         heapify(vec.size());
     }
     PQ_ComplHeap ( T* A, Rank n ) { this->copyFrom ( A, 0, n ); heapify (n); } //批量构造

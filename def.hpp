@@ -40,6 +40,7 @@ using U = unsigned int;
 #include "./ht/Skiplist.hpp"
 #include "./pq/PQ.hpp"
 #include "./pq/PQ_ComplHeap.hpp"
+#include "./pq/PQ_LeftHeap.hpp"
 #include "./graph/PU.hpp"
 #include "./graph/Graph.hpp"
 #include "./graph/GraphMatrix.hpp"
