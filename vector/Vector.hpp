@@ -17,7 +17,7 @@ enum class Sort {
 
 template<typename T>
 class Vector{
-public:
+protected:
     int _size;
     int _capacity;
     T* _elem;
@@ -83,7 +83,8 @@ public:
     int remove(Rank lo, Rank hi);//常规
     Rank insert(Rank r, T const& e);//常规
     Rank insert(T const& e) {   return insert(_size, e);  }//常规
-
+    T majEleCandidate();
+    void range(int k);
     double sort(Sort method = Sort::QuickSort) {   return sort(0, _size, method); }
     double sort(Rank lo, Rank hi, Sort method);
     void unsort(Rank lo, Rank hi);
@@ -473,4 +474,49 @@ void Vector<T>::heapSort(Rank lo, Rank hi){
         swap(_elem[1], _elem[heap--]);
         sink(1);
     }
+}
+
+//众数定义为序列中一半以上的数（刚好一半不行）
+template<typename T>
+T Vector<T>::majEleCandidate(){
+    T maj;
+
+    for(int c = 0, i = 0; i < size(); i++)
+        if(0 == c){
+            maj = _elem[i];
+            c = 1;
+        } else {
+            maj == _elem[i]? c++ : c--;
+        }
+    return maj;
+}
+
+template<typename T>
+void Vector<T>::range(int k){
+    int r = size()/k;
+    Vector<int> vec{k-1, k-1, -1};
+    Vector<int> c{k-1, k-1, 0};
+    for(int i = 0; i < size(); i++){
+        Rank index = c.find(0);
+        if(index >= 0){
+            vec[index] = _elem[i];
+            c[index] = 1;
+        } else {
+            Rank v = vec.find(_elem[i]);
+            if(v!=-1){
+                c[v]++;
+            } else {
+                for(int j = 0; j < c.size(); j++)
+                    c[j]--;
+            }
+        }
+    }
+    vec.deduplicate();
+    for(int j = 0; j < vec.size(); j++){
+        int occurrence = 0; //maj在A[]中出现的次数
+        for ( int i = 0; i < size(); i++ ) //逐一遍历A[]的各个元素
+            if (vec[j] == _elem[i] ) occurrence++; //每遇到一次maj，均更新计数器
+        if(k * occurrence > size()) print(vec[j]);
+    }
+    printf("\n");
 }
