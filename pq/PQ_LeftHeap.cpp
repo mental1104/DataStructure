@@ -26,7 +26,7 @@ int main(){
     print(LeftLeftHeap);
     print(RightLeftHeap);
     printf("Merge two heaps，using Left heap(O(logn)\n");
-    LeftLeftHeap.mergeWith(RightLeftHeap);
+    LeftLeftHeap.merge(RightLeftHeap);
     print(LeftLeftHeap);
     print(RightLeftHeap);
     printf("Done.\n");
