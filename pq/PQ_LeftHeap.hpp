@@ -29,6 +29,7 @@ public:
        for (int i = 0; i < vec.size(); i++)
             insert(vec[i]);
    }
+   void mergeWith(PQ_LeftHeap<T>& right);
    void insert(T); //按照比较器确定的优先级次序插入元素
    T getMax(); //取出优先级最高的元素
    T delMax(); //删除优先级最高的元素
@@ -58,8 +59,10 @@ T PQ_LeftHeap<T>::delMax() {
 }
 
 template<typename T>
-static void merge(PQ_LeftHeap<T>& left, PQ_LeftHeap<T>& right){
-    merge(left.root(), right.root());
-    right.root() = nullptr;
+void PQ_LeftHeap<T>::mergeWith(PQ_LeftHeap<T>& right){
+    merge(this->_root, right._root);
+    right._root = nullptr;
+    this->_size += right._size;
+    right._size = 0;
     return;
 }

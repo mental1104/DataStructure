@@ -20,13 +20,20 @@ int main(){
         LeftComplHeap.insert(RightComplHeap.delMax());
     print(LeftComplHeap);
     print(RightComplHeap);
-
+    printf("------------------------------------------------------\n");
     PQ_LeftHeap<int> LeftLeftHeap(left);
     PQ_LeftHeap<int> RightLeftHeap(right);
-    printf("Merge two heaps，using Left heap(O(nlogm)\n");
-    merge(LeftLeftHeap, RightLeftHeap);
+    print(LeftLeftHeap);
+    print(RightLeftHeap);
+    printf("Merge two heaps，using Left heap(O(logn)\n");
+    LeftLeftHeap.mergeWith(RightLeftHeap);
     print(LeftLeftHeap);
     print(RightLeftHeap);
     printf("Done.\n");
+    printf("-------------Now delete...---------------\n");
+    while(!LeftLeftHeap.empty()){
+        LeftLeftHeap.delMax();
+        print(LeftLeftHeap);
+    }
     return 0;
 }
