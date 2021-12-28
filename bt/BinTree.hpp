@@ -13,10 +13,10 @@ protected:
     BinNode<T>*& FromParentTo(const BinNode<T>& node);
 public:
     BinTree(){}
-    ~BinTree() {  if(0 < _size) levelRemove(_root);  }
+    ~BinTree() {  if(_root && 0 < _size) levelRemove(_root);  }
     int size() const {  return _size; }
     bool empty() const {    return !_root; }
-    BinNode<T>* root() const { return _root; }
+    BinNode<T>*& root() { return _root; }
     BinNode<T>* insertAsRoot(T const& e);
     BinNode<T>* insertAsLC(BinNode<T>* x, T const& e);
     BinNode<T>* insertAsRC(BinNode<T>* x, T const& e);
