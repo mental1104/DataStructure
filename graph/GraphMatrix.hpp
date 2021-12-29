@@ -146,7 +146,7 @@ template<typename Tv, typename Te>
 void GraphMatrix<Tv, Te>::insert(Te const& edge, int i, int j, double w){
     if(exists(i, j)) 
         return;
-    _E[i][j] = new Edge<Te>(edge, w);
+    _E[i][j] = new Edge<Te>(edge, w, i, j);
     this->e++;
     _V[i].outDegree++;
     _V[j].inDegree++;

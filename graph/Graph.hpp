@@ -41,7 +41,11 @@ struct Edge {
     Te data;
     double weight;
     EType type{EType::UNDETERMINED};
-    Edge(Te const& d, double w):data{d}, weight{w} {}
+    int x;
+    int y;
+    Edge() = default;
+    Edge(Te const& d, double w, int i, int j):data{d}, weight{w}, x(i), y(j){}
+    bool operator<(const Edge& rhs) { return weight > rhs.weight;  }//权重越小，优先级越高
 };
 
 template<typename Tv, typename Te>
@@ -117,6 +121,7 @@ public:
     void prim(int);//最小生成树
     void dijkstra(int);//最短路径
     template<typename PU> void pfs(int, PU);
+    void kruskal(bool flag = false);
 
     int connectedComponents(bool flag = false);//无向图-连通分量生成
     bool connectedComponents(int v, int w);//无向图-判断两点是否连通
@@ -556,5 +561,38 @@ void Graph<Tv, Te>::PFS(int s, PU prioUpdater){
         if(VStatus::VISITED == status(s)) break;
         status(s) = VStatus::VISITED;
         type(parent(s), s) = EType::TREE;
+    }
+}
+
+template <typename Tv, typename Te>
+void Graph<Tv, Te>::kruskal(bool flag){
+    Vector<Edge<Te>> mst;
+    PQ_ComplHeap<Edge<Te>> pq;
+    WeightedQuickUnionwithCompression uf(n);
+    for(int i = 0; i < n; i++)
+        for(int j = firstNbr(i); -1 < j; j = nextNbr(i, j)){
+            Edge<Te> edge(Te(), weight(i, j), i, j);
+            pq.insert(edge);
+        }
+
+    double weight = 0.00;
+    while(!pq.empty() && mst.size() < n-1){
+        Edge<Te> e = pq.delMax();
+        int v = e.x;
+        int w = e.y;
+        if(uf.connected(v, w)) continue;
+        uf.unite(v, w);
+        mst.insert(e);
+
+        weight += e.weight;
+        type(v, w) = EType::TREE;
+        status(v) = VStatus::VISITED;
+        status(w) = VStatus::VISITED; 
+    }
+
+    if(flag){
+        for(int i = 0; i < mst.size(); i++)
+            printf("%d-%d %.2f\n", mst[i].x, mst[i].y, mst[i].weight);
+        printf("Total weight: %.2f\n", weight);
     }
 }
