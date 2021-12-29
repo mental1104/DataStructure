@@ -64,7 +64,7 @@ void testPFS(GraphMatrix<Tv, Te>& matrix, PU priorityUpdater, int s){
 
 int main(int argc, char** argv){
 
-    std::ifstream stream("./mediumEWG.txt");
+    std::ifstream stream("./files/algo/mediumEWG.txt");
     GraphMatrix<int,double> tinyG(stream, GType::WEIGHTEDUNDIGRAPH);
     testPFS(tinyG, PrimPU<int, double>(), 0);
     tinyG.kruskal(true);
