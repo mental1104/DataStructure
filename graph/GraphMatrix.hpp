@@ -62,6 +62,8 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
     int vNum = 0;
     int eNum = 0;
     alg4 >> vNum >> eNum;
+    this->n = 0;
+    this->e = 0;
     for(int i = 0; i < vNum; i++)
         this->insert(Tv(i));
     
@@ -74,8 +76,6 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
                 alg4 >> src >> det;
                 this->insert(Te(i), src, det);
             }
-            this->n = vNum;
-            this->e = eNum; 
             break;
         case GType::UNDIGRAPH:
             for(int i = 0; i < eNum; i++){
@@ -83,16 +83,12 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
                 this->insert(Te(i), src, det);
                 this->insert(Te(i), det, src);
             }
-            this->n = vNum;
-            this->e = eNum * 2; 
             break;
         case GType::WEIGHTEDDIGRAPH:
             for(int i = 0; i < eNum; i++){
                 alg4 >> src >> det >> weg;
                 this->insert(Te(weg), src, det, weg);
             }
-            this->n = vNum;
-            this->e = eNum;
             break;
         case GType::WEIGHTEDUNDIGRAPH:
             for(int i = 0; i < eNum; i++){
@@ -100,8 +96,6 @@ GraphMatrix<Tv, Te>::GraphMatrix(ifstream& alg4, GType type){
                 this->insert(Te(weg), src, det, weg);
                 this->insert(Te(weg), det, src, weg);
             }
-            this->n = vNum;
-            this->e = eNum * 2;
             break;
     }
 }
@@ -114,7 +108,7 @@ int GraphMatrix<Tv, Te>::insert(Tv const& vertex){
         
     this->n++;
     _E.insert(Vector<Edge<Te>*>(this->n, this->n, nullptr));
-    return _V.insert(Vertex<Tv>(vertex));
+    return _V.insert(Vertex<Tv>(this->n-1, vertex));
 }
 
 template<typename Tv, typename Te>

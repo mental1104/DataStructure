@@ -33,7 +33,10 @@ struct Vertex {
     int fTime{-1};
     int parent{-1};
     double priority;
-    Vertex(Tv const& d = Tv(0)):data{d}{}
+    int rank;
+    Vertex() = default;
+    Vertex(int r, Tv const& d = Tv(0)):rank(r), data(d) {}
+    bool operator<(const Vertex<Tv>& rhs) { return priority > rhs.priority;  }//权重越小，优先级越高
 };
 
 template<typename Te>
@@ -45,7 +48,7 @@ struct Edge {
     int y;
     Edge() = default;
     Edge(Te const& d, double w, int i, int j):data{d}, weight{w}, x(i), y(j){}
-    bool operator<(const Edge& rhs) { return weight > rhs.weight;  }//权重越小，优先级越高
+    bool operator<(const Edge<Te>& rhs) { return weight > rhs.weight;  }//权重越小，优先级越高
 };
 
 template<typename Tv, typename Te>
@@ -546,6 +549,7 @@ void Graph<Tv, Te>::PFS(int s, PU prioUpdater){
     priority(s) = 0.0;
     status(s) = VStatus::VISITED;
     parent(s) = -1;
+    //PQ_ComplHeap<Vertex<Tv>> pq;
     while(1){
         for(int w = firstNbr(s); -1 < w; w = nextNbr(s, w))
             prioUpdater(this, s, w);
