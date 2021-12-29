@@ -8,8 +8,8 @@ public:
     QuickFind(std::ifstream& is);
     ~QuickFind(){   delete[] _id;    }
 
-    int find(int p)    {   return _id[p];   }//quick find
-    void unite(int p, int q);
+    virtual int find(int p)    {   return _id[p];   }//quick find
+    virtual void unite(int p, int q);
 };
 
 QuickFind::QuickFind(int N){

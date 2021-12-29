@@ -8,8 +8,8 @@ public:
     QuickUnion(std::ifstream& is);
     ~QuickUnion(){   delete[] _id;    }
 
-    int find(int p);
-    void unite(int p, int q);
+    virtual int find(int p);
+    virtual void unite(int p, int q);
 };
 
 QuickUnion::QuickUnion(int N){

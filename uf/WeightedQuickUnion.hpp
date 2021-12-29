@@ -8,10 +8,10 @@ public:
     WeightedQuickUnion() = delete;
     WeightedQuickUnion(int N);
     WeightedQuickUnion(std::ifstream& is);
-    ~WeightedQuickUnion(){   delete[] _id;  delete[] _sz;  }
+    virtual ~WeightedQuickUnion(){   delete[] _id;  delete[] _sz;  }
 
-    int find(int p);
-    void unite(int p, int q);
+    virtual int find(int p);
+    virtual void unite(int p, int q);
 };
 
 WeightedQuickUnion::WeightedQuickUnion(int N){
