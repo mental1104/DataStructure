@@ -2,6 +2,6 @@
 
 int main(){
     std::ifstream large("./largeUF.txt");
-    WeightedQuickUnion uf(large);
+    WeightedQuickUnionwithCompression uf(large);
     return 0;
 }

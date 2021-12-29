@@ -21,6 +21,7 @@ using U = unsigned int;
 #include "./uf/QuickFind.hpp"
 #include "./uf/QuickUnion.hpp"
 #include "./uf/WeightedQuickUnion.hpp"
+#include "./uf/WeightedQuickUnionwithCompression.hpp"
 #include "./dp/Fib.hpp"
 #include "./vector/Vector.hpp"
 #include "./list/ListNode.hpp"
