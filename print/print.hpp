@@ -6,6 +6,14 @@
 static void print ( char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
 static void print ( const char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
 
+static void print ( String e) {
+   const char* c = e.c_str();
+   while(*c){
+      putchar(*c);
+      c++;
+   }
+}
+
 class UniPrint {
 public:
    static void p ( int );
@@ -17,7 +25,6 @@ public:
    static void p ( VStatus ); //图顶点的状态
    static void p ( EType ); //图边的类型
 
-   
    template <typename K, typename V> static void p ( Entry<K, V>& ); //Entry
    template <typename T> static void p ( BinNode<T>&); //BinTree节点
    template <typename T> static void p ( BinTree<T>& ); //二叉树
