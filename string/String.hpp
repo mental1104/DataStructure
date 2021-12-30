@@ -20,7 +20,7 @@ public:
     bool empty() const {    return end_ == data_;   }//判空
 
     char charAt(size_type i)/* 返回对应字符前进行下标检查 */{   if(check(i))  return (*this)[i]; return '\0';}
-    String substr(size_type i, size_type k);//返回从i开始的k个字符的子串
+    String substr(size_type i, size_type k = -1);//返回从i开始的k个字符的子串
     String prefix(size_type k);//返回前缀
     String suffix(size_type k);//返回后缀
     bool equal(const String& rhs)/* 判等 */ {   return *this == rhs;  }
@@ -28,9 +28,11 @@ public:
     //int indexOf(const String& rhs);//子串匹配
 
     char& operator[](size_type r);//重载下标运算符
+    char operator[] (size_type) const;
     bool operator==(const String& rhs);//重载判等运算符
     bool operator!=(const String& rhs) {    return !(*this == rhs);     }
     String& operator+(const String& rhs);
+    bool operator<(const String& rhs); 
     template<typename VST> void traverse(VST&& visit);
     void traverse(void (*visit)(char&));
 
@@ -79,6 +81,10 @@ char& String::operator[](size_type r){
     return data_[r];
 }
 
+char String::operator[](size_type r) const {
+    return data_[r];
+}
+
 const char* String::c_str() const{
     return data_;
 }
@@ -107,7 +113,7 @@ String String::substr(size_type i, size_type k){
         size_type comp = this->size() - i;
 
         size_type size = (k<comp)?k:comp;
-        printf("size:  %u\n", size);
+        //printf("size:  %u\n", size);
         String str(data_+i, size);
         ret = str;
     }
@@ -157,6 +163,14 @@ String& String::concat(const String& rhs){
 String& String::operator+(const String& rhs){
     return concat(rhs);
 }
+
+bool String::operator<(const String& rhs){ 
+    if(strcmp(this->data_, rhs.data_) < 0) 
+        return true;
+    else 
+        return false;
+}
+
 
 template<typename VST>
 void String::traverse(VST&& visit){

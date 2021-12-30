@@ -20,6 +20,7 @@ int main(){
         printf("s and t are not equal.\n");
 
     print(str.substr(7, 5));//子串
+    print(str.substr(7));
     putchar('\n');
     print(str);
     putchar('\n');
