@@ -26,7 +26,7 @@ void MSD::sort(Vector<String>& a){
 }
 
 void MSD::sort(Vector<String>& a, Vector<String>& aux, int lo, int hi, int d){
-    if(hi <= lo + M){
+    if(hi <= lo + 3){
         insertionSort(a, lo, hi, d);
         return;
     }
