@@ -20,7 +20,7 @@ public:
    void clear ( int k ) { expand ( k );        M[k >> 3] &= ~ ( 0x80 >> ( k & 0x07 ) ); }
    bool test  ( int k ) { expand ( k ); return M[k >> 3] &    ( 0x80 >> ( k & 0x07 ) ); }
 
-   void dump ( char* file ) //
+   void dump ( const char* file ) //
    {  FILE* fp = fopen ( file, "w" ); fwrite ( M, sizeof ( char ), N, fp ); fclose ( fp );  }
    
    char* bits2string ( int n ) { 

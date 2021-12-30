@@ -1,6 +1,6 @@
 #include "./Bitmap.hpp"
 
-void Eratosthenes(int n, char* file){
+void Eratosthenes(int n, const char* file){
     Bitmap B(n);
     B.set(0);
     B.set(1);
