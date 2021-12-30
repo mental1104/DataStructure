@@ -6,12 +6,14 @@
 static void print ( char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
 static void print ( const char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
 
+
 static void print ( String e) {
    const char* c = e.c_str();
    while(*c){
       putchar(*c);
       c++;
    }
+   putchar('\n');
 }
 
 class UniPrint {
