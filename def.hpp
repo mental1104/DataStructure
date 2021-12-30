@@ -49,6 +49,7 @@ using U = unsigned int;
 #include "./graph/PU.hpp"
 #include "./graph/Graph.hpp"
 #include "./graph/GraphMatrix.hpp"
+#include "./string/String.hpp"
 #include "./print/print.hpp"
-//#include "./string/String.hpp"
+
 
