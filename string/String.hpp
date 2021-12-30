@@ -31,8 +31,9 @@ public:
     bool operator==(const String& rhs);//重载判等运算符
     bool operator!=(const String& rhs) {    return !(*this == rhs);     }
     String& operator+(const String& rhs);
+    template<typename VST> void traverse(VST&& visit);
+    void traverse(void (*visit)(char&));
 
-    
 private:
     char* data_;
     char* end_;
@@ -155,4 +156,21 @@ String& String::concat(const String& rhs){
 
 String& String::operator+(const String& rhs){
     return concat(rhs);
+}
+
+template<typename VST>
+void String::traverse(VST&& visit){
+    char* ptr = data_;
+    while(ptr != end_){
+        visit(*ptr);
+        ++ptr;
+    }
+}
+
+void String::traverse(void (*visit)(char&)){
+    char* ptr = data_;
+    while(ptr != end_){
+        visit(*ptr);
+        ++ptr;
+    }
 }
