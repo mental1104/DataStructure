@@ -5,6 +5,7 @@ class String {
 public:
     String();//默认构造函数
     String(const char* s);//C风格字符串的构造函数
+    String(char c);
     String(const String& );//拷贝构造函数
     String(const char* s, size_type k);//从位置s开始构造k个字符
 
@@ -31,7 +32,8 @@ public:
     char operator[] (size_type) const;
     bool operator==(const String& rhs);//重载判等运算符
     bool operator!=(const String& rhs) {    return !(*this == rhs);     }
-    String& operator+(const String& rhs);
+    String operator+(const String& rhs);
+    String operator+(char rhs);
     bool operator<(const String& rhs); 
     template<typename VST> void traverse(VST&& visit);
     void traverse(void (*visit)(char&));
@@ -47,6 +49,12 @@ String::String():data_(new char[1])
     end_ = data_;
 }
 
+String::String(char c):data_(new char[2]){
+    *data_ = c;
+    data_++;
+    *data_ = '\0';
+    end_ = data_;
+}
 String::String(const char* s):data_(new char[strlen(s)+1]){
     strcpy(data_, s);
     end_ = data_ + strlen(s);
@@ -148,7 +156,7 @@ String& String::concat(const String& rhs){
         *(n+i) = (*this)[i];
     }
 
-    for(int j = 0; j < r && i < sum; i++, j++){
+    for(int j = 0; i < sum; i++, j++){
         *(n+i) = *(rhs.data_ +j);
     }
 
@@ -160,8 +168,41 @@ String& String::concat(const String& rhs){
     return *this;
 }
 
-String& String::operator+(const String& rhs){
-    return concat(rhs);
+String String::operator+(const String& rhs){
+    size_type l = this->size();
+    size_type r = rhs.size();
+    size_type sum = l+r;
+    char* n = new char[sum+1];
+    int i;
+    for(i = 0; i < l; i++){
+        *(n+i) = (*this)[i];
+    }
+
+    for(int j = 0; i < sum; i++, j++){
+        *(n+i) = *(rhs.data_ +j);
+    }
+
+    *(n+i) = '\0';
+    String ret(n);
+    delete[] n;
+    return ret;
+}
+
+String String::operator+(char rhs){
+    
+    char* n = new char[this->size()+2];
+    int i;
+    for(i = 0; i < this->size(); i++){
+        *(n+i) = (*this)[i];
+    }
+    *(n+i) = rhs;
+    i++;
+    *(n+i) = '\0';
+
+    String ret(n);
+    delete[] n;
+
+    return ret;
 }
 
 bool String::operator<(const String& rhs){ 
