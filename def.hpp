@@ -52,6 +52,7 @@ using U = unsigned int;
 #include "./string/String.hpp"
 #include "./string/StringST.hpp"
 #include "./string/Trie.hpp"
+#include "./string/TST.hpp"
 #include "./print/print.hpp"
 
 

@@ -6,9 +6,9 @@ template<typename T>
 class StringST {
 public:
     int s{0};
-    virtual void put(String key, T val) = 0;
-    virtual T get(String key) = 0;
-    virtual void remove(String key) = 0;
+    virtual void put(const String& key, T val) = 0;
+    virtual T get(String& key) = 0;
+    virtual void remove(const String& key) = 0;
 
     bool contains(String key) { return get(key); }
     bool empty() {  return !size(); };
