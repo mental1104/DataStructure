@@ -13,9 +13,9 @@ class Trie : public StringST<T> {
 private:
     Node<T>* root{nullptr};
 
-    Node<T>* get(Node<T>* x, String key, int d);
-    Node<T>* put(Node<T>* x, String key, T val, int d);
-    Node<T>* remove(Node<T>* x, String key, int d);
+    Node<T>* get(Node<T>* x, String& key, int d);
+    Node<T>* put(Node<T>* x, const String& key, T val, int d);
+    Node<T>* remove(Node<T>* x, const String& key, int d);
 
     void collect(Node<T>* x, String pre, Vector<String>& q);
     void collect(Node<T>* x, String pre, const String &pat, Vector<String>& q);
@@ -25,9 +25,9 @@ public:
     Trie() = default;
     ~Trie() {   if(0 < this->s) destruct(root); }
 
-    T get(String key);
-    void put(String key, T val);
-    void remove(String key);
+    T get(String& key);
+    void put(const String& key, T val);
+    void remove(const String& key);
 
     void keysWithPrefix(String pre);
     void keysThatMatch(String pat);
@@ -50,14 +50,14 @@ static void destruct(Node<T>* x){
 }
 
 template<typename T>
-void Trie<T>::put(String key, T val){
+void Trie<T>::put(const String& key, T val){
     if(val == 0)
         return;
     root = put(root, key, val, 0);
 }
 
 template<typename T>
-Node<T>* Trie<T>::put(Node<T>* x, String key, T val, int d){
+Node<T>* Trie<T>::put(Node<T>* x, const String& key, T val, int d){
     if(x == nullptr) x = new Node<T>();
     if(d == key.size()){
         x->val = val;
@@ -70,14 +70,16 @@ Node<T>* Trie<T>::put(Node<T>* x, String key, T val, int d){
 }
 
 template<typename T>
-T Trie<T>::get(String key){
+T Trie<T>::get(String& key){
     Node<T>* x = get(root, key, 0);
-    if(x == nullptr) return 0;
-    return x->val;
+    if(x)
+        return x->val;
+    else 
+        return 0;
 }
 
 template<typename T>
-Node<T>* Trie<T>::get(Node<T>* x, String key, int d){
+Node<T>* Trie<T>::get(Node<T>* x, String& key, int d){
     if(x == nullptr)
         return nullptr;
     if(d == key.size()) return x;
@@ -145,12 +147,12 @@ int Trie<T>::search(Node<T>* x, String s, int d, int length){
 }
 
 template<typename T>
-void Trie<T>::remove(String key){
+void Trie<T>::remove(const String& key){
     root = remove(root, key, 0);
 }
 
 template<typename T>
-Node<T>* Trie<T>::remove(Node<T>* x, String key, int d){
+Node<T>* Trie<T>::remove(Node<T>* x, const String& key, int d){
     if(x == nullptr)    return nullptr;
     if(d == key.size()){
         x->val = 0;
