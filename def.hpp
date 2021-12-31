@@ -50,6 +50,8 @@ using U = unsigned int;
 #include "./graph/Graph.hpp"
 #include "./graph/GraphMatrix.hpp"
 #include "./string/String.hpp"
+#include "./string/StringST.hpp"
+#include "./string/Trie.hpp"
 #include "./print/print.hpp"
 
 

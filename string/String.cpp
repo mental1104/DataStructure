@@ -3,10 +3,11 @@
 int main(){
     String s("Necrozma");
     String str(s);
-
+    char r = 'r';
+    print(s+r);
     
-    printf("%c %c\n", str.front(), str.back());//测试front与back
-    printf("%c %c %c\n", str[0],str[1],str[2]);//测试下标运算符
+    printf("%c %c\n", s.front(), s.back());//测试front与back
+    printf("%c %c %c\n", s[0],s[1],s[2]);//测试下标运算符
 
     str = str;//测试自赋值
     String t;
@@ -70,5 +71,6 @@ int main(){
 
     printf("equal(\"data structures\")                     %d\n", S.equal("data structures"));
     printf("equal(\"data structures and algorithms\")      %d\n", S.equal("data structures and algorithms"));
+
     return 0;
 }
