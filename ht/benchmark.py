@@ -156,7 +156,7 @@ def conflict(init, step, times):
 
 init = 250000
 step = 2
-times = 5
+times = 4
 
 plot('insert', init, step, times)
 conflict(5000, step, times)

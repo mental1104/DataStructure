@@ -78,6 +78,13 @@ int QuadraticHT<K, V>::probe4Hit(const K& k){
     int cnt = 0;
 
     while((ht[r] && (k != ht[r]->key)) || (!ht[r] && lazilyRemoved(r))){
+        size_t hash = hashCode(k);
+        int pos = (hash + offset*offset) % M;
+        int neg = (hash - offset*offset) % M;
+        r = (cnt%2) ? neg : pos;
+        offset += cnt % 2;
+        ++cnt;
+        /*
         if(cnt%2 == 0){
             r = (hashCode(k) + offset*offset) % M; 
         } else {
@@ -86,7 +93,7 @@ int QuadraticHT<K, V>::probe4Hit(const K& k){
 
         if(cnt%2 == 1)
             offset++;
-        cnt++;
+        cnt++;*/
     }
 
     return r;
