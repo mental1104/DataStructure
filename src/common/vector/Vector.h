@@ -1,6 +1,7 @@
-#pragma once
 
-#include "../def.hpp"
+#include "common.h"
+#include "Fib.h"
+#include "rand.h"
 
 enum class Sort {
     BubbleSort,
@@ -95,6 +96,7 @@ public:
     void traverse(void(*)(T&));//常规
     template<typename VST> void traverse(VST&&);//常规
 };
+
 
 template<typename T>
 void Vector<T>::copyFrom(T const* A, Rank lo, Rank hi){
@@ -516,7 +518,7 @@ void Vector<T>::range(int k){
         int occurrence = 0; //maj在A[]中出现的次数
         for ( int i = 0; i < size(); i++ ) //逐一遍历A[]的各个元素
             if (vec[j] == _elem[i] ) occurrence++; //每遇到一次maj，均更新计数器
-        if(k * occurrence > size()) print(vec[j]);
+        //if(k * occurrence > size()) print(vec[j]);
     }
-    printf("\n");
+    //printf("\n");
 }

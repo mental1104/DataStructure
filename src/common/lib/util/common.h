@@ -1,6 +1,10 @@
-#pragma once 
+#pragma once
+
+#include <ctime>
 
 using size_type = unsigned;
+using Rank = int;
+const int DEFAULT_CAPACITY = 2;
 
 /* Fundamental Operation */
 template<typename T>
@@ -9,7 +13,6 @@ void swap(T& ls, T& rs){
     ls = rs;
     rs = temp;
 }
-
 
 template<typename T>
 T min(T ls, T rs){
