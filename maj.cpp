@@ -1,5 +1,6 @@
-#include "../def.hpp"
-
+#include "rand.h"
+#include "Vector.h"
+#include <iostream>
 int main(){
     /*
     Vector<int> vec;
@@ -20,12 +21,9 @@ int main(){
     for(int i = 0; i < 20; i++){
         dup.insert(dice(5));
     }
-
-    print(dup);
-    for(int i = 2; i < 10; i++){
-        printf("occurrence beyond 1/%d: ", i);
-        dup.range(i);
+    for(int i = 0; i < 20; i++){
+        std::cout << dup[i] << " ";
     }
-
+    std::cout << std::endl;
     return 0;
 }
