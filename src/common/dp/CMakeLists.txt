@@ -1,1 +1,0 @@
-target_include_directories(lib1 PUBLIC .)

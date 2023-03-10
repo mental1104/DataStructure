@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "common.h"
 #include "Fib.h"
 #include "rand.h"
