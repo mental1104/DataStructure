@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../def.hpp"
+#include "Stack.h"
+#include "Queue.h"
 
 enum class RBColor{
     RED,
