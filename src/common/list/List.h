@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../def.hpp" 
+#include "ListNode.hpp" 
+#include "utils.h"
 
 template<typename T>
 class List {
@@ -46,7 +47,7 @@ public:
     ListNode<T>* insertA(ListNode<T>* p, T const& e);
     ListNode<T>* insertB(ListNode<T>* p, T const& e);
     T remove(ListNode<T>* p);
-    void merge(List<T>& L) { merge(first(), size, L, L.first(), L._size); }
+    void merge(List<T>& L) { merge(first(), _size, L, L.first(), L._size); }
     void sort(ListNode<T>* p, int n);
     void sort() { sort(first(), _size); }
     int deduplicate();

@@ -1,5 +1,5 @@
-#include "../def.hpp"  
-#include <unistd.h>
+#include "List.h"
+#include <iostream>
 
 int main(){
     List<int> list;
@@ -9,9 +9,11 @@ int main(){
         temp = dice(1000);
         list.insertAsLast(temp);
     }
-    print(list);
+    std::cout << list.size() << std::endl;
+    
+    //print(list);
     putchar('\n');
     list.sort();
-    print(list);
+    //print(list);
     return 0;
 } 

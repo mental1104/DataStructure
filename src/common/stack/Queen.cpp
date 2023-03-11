@@ -1,4 +1,4 @@
-#include "../../def.hpp"
+#include "Stack.h"
 
 int nCheck = 0;//尝试的总次数
 int nSolu = 0;//解的总数
