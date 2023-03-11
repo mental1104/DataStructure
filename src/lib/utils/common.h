@@ -3,6 +3,8 @@
 #include <ctime>
 #include <unistd.h>
 #include <cstring>
+#include <climits>
+#include <cassert>
 
 using size_type = unsigned;
 using Rank = int;

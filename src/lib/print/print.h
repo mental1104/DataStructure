@@ -1,7 +1,11 @@
 #pragma once
 #include <cstdio>
 
-#include "../def.hpp"
+static void print ( char* x );
+static void print ( const char* x );
+template <typename T> static void print ( T& x );
+template <typename T> static void print ( const T& x );
+template <typename T> static void print ( T* x );
 
 static void print ( char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
 static void print ( const char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
