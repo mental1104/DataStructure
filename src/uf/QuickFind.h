@@ -1,5 +1,7 @@
 #pragma once 
-#include "../def.hpp"
+
+#include "utils.h"
+#include "UnionFind.h"
 
 class QuickFind : public UnionFind{
 public:

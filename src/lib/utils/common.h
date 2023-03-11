@@ -5,6 +5,8 @@
 #include <cstring>
 #include <climits>
 #include <cassert>
+#include <fstream>
+#include <cstdio>
 
 using size_type = unsigned;
 using Rank = int;
