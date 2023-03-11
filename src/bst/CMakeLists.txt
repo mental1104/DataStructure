@@ -1,0 +1,12 @@
+include_directories(${TOP_DIR}/src/lib/utils)
+include_directories(${TOP_DIR}/src/dp)
+include_directories(${TOP_DIR}/src/vector)
+include_directories(${TOP_DIR}/src/list)
+include_directories(${TOP_DIR}/src/stack)
+include_directories(${TOP_DIR}/src/queue)
+include_directories(${TOP_DIR}/src/bt)
+
+add_executable(AVL AVL.cpp)
+add_executable(BST BST.cpp)
+add_executable(RedBlack RedBlack.cpp)
+add_executable(Splay Splay.cpp)

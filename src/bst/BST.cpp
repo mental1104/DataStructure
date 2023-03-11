@@ -1,4 +1,4 @@
-#include "../def.hpp"
+#include "BST.h"
 
 int main(){
     BST<int> bst;
@@ -8,7 +8,7 @@ int main(){
         bst.insert(i);
     }
 
-    print(bst);
+    //print(bst);
     
     /*
     printf("Press to see if you want to see the process of deletion\n");

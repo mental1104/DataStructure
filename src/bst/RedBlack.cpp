@@ -1,19 +1,19 @@
-#include "../def.hpp"
+#include "RedBlack.h"
 
 int main(){
     RedBlack<int> bst;
-    system("clear");
+    //system("clear");
 
     for(int i = 0; i < 16; i+=2){
         bst.insert(i);
     }
-    print(bst);
+    //print(bst);
     bst.remove(8);
     printf("========================\n");
-    print(bst);
+    //print(bst);
     printf("========================\n");
     bst.insert(8);
-    print(bst);
+    //print(bst);
     return 0;
     return 0;
 }
