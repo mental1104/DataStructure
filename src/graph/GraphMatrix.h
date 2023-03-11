@@ -1,8 +1,9 @@
 #pragma once
 
-#include "../vector/Vector.hpp"  
-#include "Graph.hpp" 
-#include <fstream>
+#include "utils.h"
+#include "Vector.h"  
+#include "Graph.h" 
+#include "PU.h"
 
 using std::ifstream;
 

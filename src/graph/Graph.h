@@ -1,5 +1,11 @@
 #pragma once
-#include "../def.hpp"
+
+#include "utils.h"
+#include "Vector.h"
+#include "Stack.h"
+#include "Queue.h"
+#include "Heap.h"
+#include "WeightedQuickUnionwithCompression.h"
 
 enum class VStatus {
     SOURCE,
@@ -366,7 +372,7 @@ bool Graph<Tv, Te>::directedCycle(bool flag){
     }
 
     if(flag){
-        print(cycle);
+        // print(cycle);
     }
 
     bool res = false;
@@ -505,7 +511,7 @@ void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < 
                     Stack<int> temp; 
                     do { 
                         temp.push(S.pop()); 
-                        print(temp.top()); 
+                        //print(temp.top()); 
                     } while ( u != temp.top() ); 
                     //printf("A\n");
                     print(parent(u));
@@ -571,7 +577,7 @@ void Graph<Tv, Te>::PFS(int s, PU prioUpdater){
 template <typename Tv, typename Te>
 void Graph<Tv, Te>::kruskal(bool flag){
     Vector<Edge<Te>> mst;
-    PQ_ComplHeap<Edge<Te>> pq;
+    Heap<Edge<Te>> pq;
     WeightedQuickUnionwithCompression uf(n);
     for(int i = 0; i < n; i++)
         for(int j = firstNbr(i); -1 < j; j = nextNbr(i, j)){
