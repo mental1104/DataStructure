@@ -1,4 +1,5 @@
-#include "../def.hpp"
+#include "Splay.h"
+
 #define RANDOM 100
 #define N 40
 
