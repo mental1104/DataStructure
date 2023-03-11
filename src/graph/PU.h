@@ -1,5 +1,5 @@
 #pragma once
-#include "./Graph.hpp"
+#include "Graph.h"
 
 template <typename Tv, typename Te> struct BfsPU { //针对BFS算法的顶点优先级更新器
    virtual void operator() ( Graph<Tv, Te>* g, int uk, int v ) {

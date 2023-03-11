@@ -1,6 +1,9 @@
-#include "../def.hpp"  
-#include <fstream>
 #include <iostream>
+
+#include "utils.h"
+#include "List.h"
+#include "Stack.h"
+#include "GraphMatrix.h"
 
 using std::cout;
 
@@ -22,7 +25,7 @@ void testBFS(GraphMatrix<Tv, Te>& matrix){
             path.insertAsFirst(pos);
             pos = matrix.V()[pos].parent;
         }
-        print(path);
+        // print(path);
     }
 }
 
@@ -37,7 +40,7 @@ void testDFS(GraphMatrix<Tv, Te>& matrix){
             path.insertAsFirst(pos);
             pos = matrix.V()[pos].parent;
         }
-        print(path);
+        // print(path);
     }
 }
 
@@ -58,16 +61,16 @@ void testPFS(GraphMatrix<Tv, Te>& matrix, PU priorityUpdater, int s){
             pos = parent;
         }
         printf("%d to %d (%4.2f): ", s, i, sum);
-        print(path);
+        // print(path);
     }
 }
 
 int main(int argc, char** argv){
 
-    std::ifstream stream("./files/algo/tinyEWG.txt");
+    std::ifstream stream("dataset/algo/tinyEWG.txt");
     GraphMatrix<int,double> tinyG(stream, GType::WEIGHTEDUNDIGRAPH);
     testPFS(tinyG, PrimPU<int, double>(), 0);
-    print(tinyG);
+    // print(tinyG);
     //tinyG.kruskal(true);
     //testDFS(tinyG);
     //testPFS(tinyG, DijkstraPU<int,double>(), 0);
