@@ -1,5 +1,7 @@
 #pragma once 
-#include "../def.hpp"
+
+#include "utils.h"
+#include "WeightedQuickUnion.h"
 
 class WeightedQuickUnionwithCompression : public WeightedQuickUnion {
 public:
