@@ -12,7 +12,7 @@ using size_type = unsigned;
 using Rank = int;
 using U = unsigned int;
 
-const int DEFAULT_CAPACITY = 2;
+const int DEFAULT_CAPACITY = 1024;
 
 /* Fundamental Operation */
 template<typename T>
