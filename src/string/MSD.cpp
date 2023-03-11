@@ -1,4 +1,7 @@
-#include "./MSD.hpp"
+#include "Vector.h"
+#include "String.h"
+#include "MSD.h"
+#include <iostream>
 
 int main(){
     Vector<String> vec;
@@ -16,8 +19,9 @@ int main(){
     vec.insert("are");
     vec.insert("surely");
     vec.insert("seashells");
-    print(vec);
+    // print(vec);
     MSD::sort(vec);
-    print(vec);
+    // print(vec);
+    std::cout << vec.size() << std::endl;
     return 0;
 }

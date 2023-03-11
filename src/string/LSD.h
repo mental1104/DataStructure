@@ -1,5 +1,6 @@
 #pragma once
-#include "../def.hpp"  
+#include "Vector.h"
+#include "String.h"  
 
 void LSD(Vector<String>& a, int W){
     int N = a.size();

@@ -1,4 +1,5 @@
-#include "../def.hpp"
+#include "Vector.h"
+#include "String.h"
 
 int main(){
     Vector<String> vec;
@@ -6,6 +7,6 @@ int main(){
     vec.insert("are");
     vec.insert("going");
     vec.insert("down");
-    print(vec);
+    // print(vec);
     return 0;
 }

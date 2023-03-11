@@ -1,7 +1,9 @@
 #pragma once
-#include "../def.hpp"
+#include "utils.h"
+#include "Vector.h"
+#include "String.h"
 
-class Quick3string{
+class Quick3String{
 private:
     static int charAt(const String& s, int d);
     static void sort(Vector<String>& a, int lo, int hi, int d);
@@ -9,18 +11,18 @@ public:
     static void sort(Vector<String>& a);
 };
 
-int Quick3string::charAt(const String& s, int d){
+int Quick3String::charAt(const String& s, int d){
     if(d < s.size())
         return s[d];
     else 
         return -1;
 }
 
-void Quick3string::sort(Vector<String>& a){
+void Quick3String::sort(Vector<String>& a){
     sort(a, 0, a.size()-1, 0);
 }
 
-void Quick3string::sort(Vector<String>& a, int lo, int hi, int d){
+void Quick3String::sort(Vector<String>& a, int lo, int hi, int d){
     if(hi <= lo) return;
 
     int lt = lo, gt = hi;

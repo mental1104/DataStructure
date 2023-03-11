@@ -1,5 +1,7 @@
 #pragma once 
-#include "../def.hpp"
+#include "String.h"
+#include "Vector.h"
+
 #define R 128
 #define M 15
 
