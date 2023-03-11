@@ -1,4 +1,6 @@
-#include "../def.hpp"
+#include "Vector.h"
+#include "Heap.h"
+#include "LeftHeap.h"
 
 int main(){
     Vector<int> left;
@@ -11,29 +13,30 @@ int main(){
     right.insert(8);
     right.insert(15);
 
-    PQ_ComplHeap<int> LeftComplHeap(left);
-    PQ_ComplHeap<int> RightComplHeap(right);
-    print(LeftComplHeap);
-    print(RightComplHeap);
+    Heap<int> LeftComplHeap(left);
+    Heap<int> RightComplHeap(right);
+    // print(LeftComplHeap);
+    // print(RightComplHeap);
     printf("Merge two heaps，using complete binary heap(O(nlogm)\n");
     while(!RightComplHeap.empty())
         LeftComplHeap.insert(RightComplHeap.delMax());
-    print(LeftComplHeap);
-    print(RightComplHeap);
+    // print(LeftComplHeap);
+    // print(RightComplHeap);
     printf("------------------------------------------------------\n");
-    PQ_LeftHeap<int> LeftLeftHeap(left);
-    PQ_LeftHeap<int> RightLeftHeap(right);
-    print(LeftLeftHeap);
-    print(RightLeftHeap);
+    
+    LeftHeap<int> LeftLeftHeap(left);
+    LeftHeap<int> RightLeftHeap(right);
+    // print(LeftLeftHeap);
+    // print(RightLeftHeap);
     printf("Merge two heaps，using Left heap(O(logn)\n");
     LeftLeftHeap.merge(RightLeftHeap);
-    print(LeftLeftHeap);
-    print(RightLeftHeap);
+    // print(LeftLeftHeap);
+    // print(RightLeftHeap);
     printf("Done.\n");
     printf("-------------Now delete...---------------\n");
     while(!LeftLeftHeap.empty()){
         LeftLeftHeap.delMax();
-        print(LeftLeftHeap);
+        // print(LeftLeftHeap);
     }
     return 0;
 }
