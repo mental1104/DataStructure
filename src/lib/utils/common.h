@@ -2,6 +2,7 @@
 
 #include <ctime>
 #include <unistd.h>
+#include <cstring>
 
 using size_type = unsigned;
 using Rank = int;
