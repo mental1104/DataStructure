@@ -1,5 +1,7 @@
-#include "List.h"
 #include <iostream>
+
+#include "List.h"
+#include "print.h"
 
 int main(){
     List<int> list;
@@ -11,9 +13,9 @@ int main(){
     }
     std::cout << list.size() << std::endl;
     
-    //print(list);
+    print(list);
     putchar('\n');
     list.sort();
-    //print(list);
+    print(list);
     return 0;
 } 

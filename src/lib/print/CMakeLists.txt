@@ -17,6 +17,7 @@ include_directories(${TOP_DIR}/src/pq)
 include_directories(${TOP_DIR}/src/string)
 include_directories(${TOP_DIR}/src/graph)
 
-add_executable(Skiplist Skiplist.cpp)
-add_executable(Hashtable Hashtable.cpp)
-add_executable(HashtableB HashtableB.cpp)
+
+
+
+

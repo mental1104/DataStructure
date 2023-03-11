@@ -4,6 +4,7 @@
 #include "List.h"
 #include "Stack.h"
 #include "GraphMatrix.h"
+#include "print.h"
 
 using std::cout;
 
@@ -25,7 +26,7 @@ void testBFS(GraphMatrix<Tv, Te>& matrix){
             path.insertAsFirst(pos);
             pos = matrix.V()[pos].parent;
         }
-        // print(path);
+        print(path);
     }
 }
 
@@ -40,7 +41,7 @@ void testDFS(GraphMatrix<Tv, Te>& matrix){
             path.insertAsFirst(pos);
             pos = matrix.V()[pos].parent;
         }
-        // print(path);
+        print(path);
     }
 }
 
@@ -61,7 +62,7 @@ void testPFS(GraphMatrix<Tv, Te>& matrix, PU priorityUpdater, int s){
             pos = parent;
         }
         printf("%d to %d (%4.2f): ", s, i, sum);
-        // print(path);
+        print(path);
     }
 }
 
@@ -70,32 +71,32 @@ int main(int argc, char** argv){
     std::ifstream stream("dataset/algo/tinyEWG.txt");
     GraphMatrix<int,double> tinyG(stream, GType::WEIGHTEDUNDIGRAPH);
     testPFS(tinyG, PrimPU<int, double>(), 0);
-    // print(tinyG);
-    //tinyG.kruskal(true);
-    //testDFS(tinyG);
-    //testPFS(tinyG, DijkstraPU<int,double>(), 0);
+    print(tinyG);
+    tinyG.kruskal(true);
+    testDFS(tinyG);
+    testPFS(tinyG, DijkstraPU<int,double>(), 0);
     
-    /*
+ 
     std::cout << argv[1] << std::endl;
-    //print(tinyG);
+    print(tinyG);
     //bfs
     std::cout << "BFS:  " << std::endl;
-    test_BFS(tinyG);
-    //print(tinyG);
+    testBFS(tinyG);
+    print(tinyG);
     std::cout << "==========================" << std::endl;
 
     print(tinyG);
     //dfs
     std::cout << "DFS:  " << std::endl;
-    test_DFS(tinyG);
-    //print(tinyG);
+    testDFS(tinyG);
+    print(tinyG);
     std::cout << "==========================" << std::endl;
 
     print(tinyG);
     //tSort
     std::cout << "TSort:    " << std::endl;
-    test_tsort(tinyG);
-    //print(tinyG);
-    */   
+    testTsort(tinyG);
+    print(tinyG);
+  
     return 0;
 }

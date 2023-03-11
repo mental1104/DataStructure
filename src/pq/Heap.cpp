@@ -1,5 +1,7 @@
-#include "Heap.h"
 #include <iostream>
+
+#include "Heap.h"
+#include "print.h"
 
 int main(){
     Heap<int> in;
@@ -8,9 +10,9 @@ int main(){
     in.insert(0);
     in.insert(1);
     in.insert(2);
-    //print(pq);
+    print(in);
     in.insert(5);
-    //print(in);
+    print(in);
     Heap<int> re;
     re.insert(5);
     re.insert(4);

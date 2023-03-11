@@ -1,4 +1,7 @@
+#include <iostream>
+
 #include "Splay.h"
+#include "print.h"
 
 #define RANDOM 100
 #define N 40
