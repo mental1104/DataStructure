@@ -1,5 +1,6 @@
 #pragma once
-#include "../def.hpp"
+#include "utils.h"
+#include "List.h"
 
 template<typename T> 
 class Queue : public List<T> {
