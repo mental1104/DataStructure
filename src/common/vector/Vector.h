@@ -1,9 +1,8 @@
 
 #pragma once
 
-#include "common.h"
+#include "utils.h"
 #include "Fib.h"
-#include "rand.h"
 
 enum class Sort {
     BubbleSort,

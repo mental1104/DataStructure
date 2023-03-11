@@ -1,9 +1,12 @@
 #pragma once
 
 #include <ctime>
+#include <unistd.h>
 
 using size_type = unsigned;
 using Rank = int;
+using U = unsigned int;
+
 const int DEFAULT_CAPACITY = 2;
 
 /* Fundamental Operation */

@@ -1,4 +1,6 @@
-#include "../../def.hpp"
+#include "Stack.h"
+#include <iostream>
+#include <string>
 
 typedef enum {AVAILABLE, ROUTE, BACKTRACKED, WALL} Status;
 
@@ -141,7 +143,7 @@ bool labyrinth ( Cell Laby[LABY_MAX][LABY_MAX], Cell* s, Cell* t ) {
 
 int main(){
    srand ( ( unsigned int ) time ( NULL ) ); //设置随机种子
-   readLaby (const_cast<char*>("./laby/laby_00.txt")) ; //使用指定迷宫文件，或随机生成
+   readLaby (const_cast<char*>("laby/laby_00.txt")) ; //使用指定迷宫文件，或随机生成
    labyrinth ( laby, startCell, goalCell ) ? //启动算法
    printf ( "\nRoute found\a\n" ) :
    printf ( "\nNo route found\a\n" );

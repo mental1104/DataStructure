@@ -1,7 +1,5 @@
 #pragma once  
 
-using Rank = int;
-
 template<typename T>
 struct ListNode {
     T data;

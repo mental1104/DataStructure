@@ -1,5 +1,5 @@
 //reference: https://blog.csdn.net/ZXG20000/article/details/113666844
-#include "../../def.hpp"
+#include "Stack.h"
 
 #define N_OPTR 9 //运算符总数
 typedef enum

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../def.hpp"
+#include "utils.h"
+#include "Vector.h"
 
 template<typename T> 
 class Stack: public Vector<T> {
