@@ -1,5 +1,8 @@
 #pragma once
-#include "../def.hpp"
+#include "String.h"
+#include "StringST.h"
+#include "Vector.h"
+#include "Queue.h"
 
 template<typename T>
 struct Node {
@@ -29,8 +32,8 @@ public:
     void put(const String& key, T val);
     void remove(const String& key);
 
-    void keysWithPrefix(String pre);
-    void keysThatMatch(String pat);
+    Vector<String> keysWithPrefix(String pre);
+    Vector<String> keysThatMatch(String pat);
     String longestPrefixOf(String s);
 };
 
@@ -88,10 +91,10 @@ Node<T>* Trie<T>::get(Node<T>* x, String& key, int d){
 }
 
 template<typename T>
-void Trie<T>::keysWithPrefix(String pre){
+Vector<String> Trie<T>::keysWithPrefix(String pre){
     Vector<String> q;
     collect(get(root, pre, 0), pre, q);
-    print(q);
+    return q;
 }
 
 template<typename T>
@@ -110,10 +113,10 @@ void Trie<T>::collect(Node<T>* x, String pre, Vector<String>& q){
 }
 
 template<typename T>
-void Trie<T>::keysThatMatch(String pat){
+Vector<String> Trie<T>::keysThatMatch(String pat){
     Vector<String> q;
     collect(root, "", pat, q);
-    print(q);
+    return q;
 }
 
 template<typename T>

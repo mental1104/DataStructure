@@ -1,5 +1,8 @@
 #pragma once 
-#include "../def.hpp"
+#include "String.h"
+#include "StringST.h"
+#include "Vector.h"
+#include "Queue.h"
 
 template<typename T>
 struct TSTNode {
@@ -30,8 +33,8 @@ public:
     void remove(const String& key);
 
     String longestPrefixOf(String s);
-    void keysWithPrefix(String pre);
-    void keysThatMatch(String s);
+    Vector<String> keysWithPrefix(String pre);
+    Vector<String> keysThatMatch(String s);
 };
 
 template<typename T>
@@ -138,18 +141,17 @@ String TST<T>::longestPrefixOf(String s){
 }
 
 template<typename T>
-void TST<T>::keysWithPrefix(String pre){
+Vector<String> TST<T>::keysWithPrefix(String pre){
     Vector<String> q;
     if(pre == String("")){
         collect(root, pre, q);
-        print(q);
-        return;
+        return q;
     }
     TSTNode<T>* x = get(root, pre, 0);
-    if(x == nullptr) return;
+    if(x == nullptr) return q;
     if(x->val != 0) q.insert(pre);
     collect(x->mid, pre, q);
-    print(q);
+    return q;
 }
 
 template<typename T>
@@ -163,10 +165,10 @@ void TST<T>::collect(TSTNode<T>* x, String prefix, Vector<String>& q){
 }
 
 template<typename T>
-void TST<T>::keysThatMatch(String s){
+Vector<String> TST<T>::keysThatMatch(String s){
     Vector<String> q;
     collect(root, "", 0, s, q);
-    print(q);
+    return q;
 }
 
 template<typename T>

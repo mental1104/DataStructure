@@ -1,4 +1,4 @@
-#include "../def.hpp"
+#include "Trie.h"
 
 int main(){
     Trie<int> trie;
@@ -10,10 +10,10 @@ int main(){
         trie.put("shells", 3);
         trie.put("shore", 7);
         trie.put("the", 5);
-        trie.keysWithPrefix("sh");
-        trie.keysThatMatch("s...s");
+        //trie.keysWithPrefix("sh");
+        //trie.keysThatMatch("s...s");
         String s = trie.longestPrefixOf("shellsort");
-        print(s);
+        //print(s);
         putchar('\n');
         trie.keys();
 

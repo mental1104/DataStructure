@@ -1,5 +1,6 @@
 #pragma once
-#include "../def.hpp"
+#include "String.h"
+#include "Vector.h"
 #define R 128
 
 template<typename T>
@@ -17,7 +18,7 @@ public:
     void keys() { keysWithPrefix(""); };
 
     virtual String longestPrefixOf(String s) = 0;
-    virtual void keysWithPrefix(String s) = 0;
-    virtual void keysThatMatch(String s) = 0;
+    virtual Vector<String> keysWithPrefix(String s) = 0;
+    virtual Vector<String> keysThatMatch(String s) = 0;
     
 };
