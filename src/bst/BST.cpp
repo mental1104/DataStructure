@@ -1,4 +1,9 @@
+#include <iostream>
+
 #include "BST.h"
+#include "print.h"
+
+#define RANDOM 100
 
 int main(){
     BST<int> bst;
@@ -8,9 +13,9 @@ int main(){
         bst.insert(i);
     }
 
-    //print(bst);
+    print(bst);
     
-    /*
+    
     printf("Press to see if you want to see the process of deletion\n");
     getchar();
     system("clear");
@@ -25,6 +30,6 @@ int main(){
             system("clear");
         }
     }
-    */
+
     return 0;
 }

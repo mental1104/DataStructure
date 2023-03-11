@@ -1,4 +1,5 @@
 #include "BTree.h"
+#include "print.h"
 
 #define RANDOM 100
 #define N 100
@@ -14,23 +15,23 @@ int main(int argc, char** argv){
         printf("Insert: %d\n\n", temp);
 
         btree.insert(temp);
-        //print(btree);
-        //sleep(1);
-        //system("clear");
+        print(btree);
+        sleep(1);
+        system("clear");
     }
 
     printf("Press to continue..(Deletion)\n");
     getchar();
-    //system("clear");
+    system("clear");
 
     while(!btree.empty()){
         temp = dice(RANDOM);
         if(btree.search(temp)){
             printf("Delete: %d\n\n", temp);
             btree.remove(temp);
-            //print(btree);
-            //sleep(1);
-            //system("clear");
+            print(btree);
+            sleep(1);
+            system("clear");
         }
     }
     

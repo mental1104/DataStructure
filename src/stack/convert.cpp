@@ -1,4 +1,5 @@
 #include "Stack.h"
+#include "print.h"
 
 void convertA(Stack<char>& S, int n, int base){
     static char digit[]
@@ -25,11 +26,11 @@ int main(){
     //十进制转十六进制：
     Stack<char> hex;
     convertA(hex, 65535, 16);
-    //print(hex);
+    print(hex);
     //十进制转八进制：
     Stack<char> oct;
     convertB(oct, 32, 8);
-    //print(oct);
+    print(oct);
 
     return 0;
 }

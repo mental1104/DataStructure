@@ -1,7 +1,9 @@
+#include <iostream>
+
 #include "Vector.h"
 #include "String.h"
 #include "Quick3String.h"
-#include <iostream>
+#include "print.h"
 
 int main(){
     Vector<String> vec;
@@ -19,9 +21,9 @@ int main(){
     vec.insert("are");
     vec.insert("surely");
     vec.insert("seashells");
-    // print(vec);
+    print(vec);
     Quick3String::sort(vec);
-    // print(vec);
+    print(vec);
     std::cout << vec.size() << std::endl;
     return 0;
 }

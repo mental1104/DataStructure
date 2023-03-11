@@ -3,7 +3,7 @@
 #include "Vector.h"
 
 #define R 128
-#define M 15
+
 
 class MSD {
 private:

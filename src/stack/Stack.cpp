@@ -1,13 +1,15 @@
-#include "Stack.h"
 #include <iostream>
+
+#include "Stack.h"
+#include "print.h"
 
 int main(){
     Stack<int> S;
     S.push(1);
     S.push(2);
-    //print(S);
+    print(S);
     S.pop();
-    //print(S);
+    print(S);
     std::cout << S.size() << std::endl;
     return 0;
 }

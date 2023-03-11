@@ -1,4 +1,5 @@
 #include "TST.h"
+#include "print.h"
 
 int main(){
     TST<int> trie;
@@ -10,12 +11,14 @@ int main(){
         trie.put("shells", 3);
         trie.put("shore", 7);
         trie.put("the", 5);
-        // trie.keysWithPrefix("sh");
-        // trie.keysThatMatch("s...s");//
+        Vector<String> keysWithPrefix = trie.keysWithPrefix("sh");
+        print(keysWithPrefix);
+        Vector<String> keysThatMatch = trie.keysThatMatch("s...s");
+        print(keysThatMatch);
         String s = trie.longestPrefixOf("shellsort");
-        // print(s);
-        // putchar('\n');
-        trie.keys();//
+        print(s);
+        putchar('\n');
+        trie.keys();
 
         printf("%d\n", trie.size());
         printf("Contains 'shells'? %d\n", trie.contains("shells"));

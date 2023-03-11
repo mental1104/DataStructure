@@ -1,7 +1,9 @@
+#include <iostream>
 #include "Vector.h"
 #include "String.h"
 #include "LSD.h"
-#include <iostream>
+
+#include "print.h"
 
 int main(){
     Vector<String> vec;
@@ -18,8 +20,8 @@ int main(){
     vec.insert("2RLA629");
     vec.insert("2RLA629");
     vec.insert("3ATW723");
-    // print(vec);
+    print(vec);
     LSD(vec, vec.size());
-    // print(vec);
+    print(vec);
     std::cout << vec.size() << std::endl;
 }

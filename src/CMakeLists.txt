@@ -1,5 +1,4 @@
 add_subdirectory(lib)
-add_subdirectory(dp)
 add_subdirectory(bitmap)
 add_subdirectory(vector)
 add_subdirectory(list)
