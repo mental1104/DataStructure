@@ -23,6 +23,10 @@ public:
     BinNode<T>* attachAsRC(BinNode<T>* x, BinTree<T>*& S);
     int remove(BinNode<T>* x);
     BinTree<T>* secede(BinNode<T>* x);
+
+    struct iterator;
+    iterator begin();
+    iterator end();
     template<typename VST> void travLevel(VST&& visit){  if(_root) _root->travLevel(visit); }
     template<typename VST> void travPre(VST&& visit){  if(_root) _root->travPre(visit); }
     template<typename VST> void travIn(VST&& visit){  if(_root) _root->travIn(visit); }
@@ -170,3 +174,41 @@ BinTree<T>::secede(BinNode<T>* x){
     return S;
 }
 
+template<typename T>
+struct BinTree<T>::iterator {
+    BinNode<T>* cur;
+
+    explicit iterator(BinNode<T>* rhs)
+        : cur{rhs} {}
+    
+    bool operator!=(const iterator& other){
+        return cur != other.cur;
+    }
+
+    BinNode<T>& operator*() { 
+        return *cur; 
+    }
+
+    iterator& operator++()
+    {
+        cur = cur->succ();
+        return *this;
+    }
+};
+
+template<typename T>
+typename BinTree<T>::iterator
+BinTree<T>::begin() {
+    BinNode<T>* n = _root;
+
+    if (n) 
+        while(n->lc)
+            n = n->lc;
+    return iterator{n};
+}
+
+template<typename T>
+typename BinTree<T>::iterator
+BinTree<T>::end() {
+    return iterator{nullptr};
+}
