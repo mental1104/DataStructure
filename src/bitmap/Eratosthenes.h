@@ -12,7 +12,7 @@ Bitmap* eratosthenes(int n){
     return B;
 }
 
-void eratosthenes_to_file(int n, char* file){
+void eratosthenes_to_file(int n, const char* file){
     Bitmap B(n);
     B.set(0);
     B.set(1);
