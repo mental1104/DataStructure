@@ -3,7 +3,7 @@ project(DSA CXX)
 
 set(CMAKE_C_COMPILER "which gcc")
 set(CMAKE_CXX_COMPILE_FEATURES "which g++")
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(TOP_DIR ${CMAKE_CURRENT_LIST_DIR}/)
 
 enable_testing()
