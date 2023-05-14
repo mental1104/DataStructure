@@ -2,21 +2,16 @@
 
 #include "List.h"
 #include "print.h"
+#include "rand.h"
+
+static int times = 30;
 
 int main(){
+    int random =  100;
     List<int> list;
-    int temp;
+    display(list);
 
-    for(int i = 0; i < 10; i++){
-        temp = dice(1000);
-        list.insertAsLast(temp);
-    }
-    std::cout << list.size() << std::endl;
-    
-    print(list);
-    putchar('\n');
-    list.sort();
-    print(list);
+    std::cout << "Final traverse: " << std::endl;
 
     for(auto i : list)
         std::cout << i << " ";

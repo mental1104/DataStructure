@@ -1,3 +1,11 @@
+/*
+ * @Author: mental1104 mental1104@gmail.com
+ * @Date: 2023-05-06 21:31:18
+ * @LastEditors: mental1104 mental1104@gmail.com
+ * @LastEditTime: 2023-05-14 23:38:37
+ * @FilePath: /espeon/code/DataStructure/src/bt/BinTree.cpp
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #include <unistd.h>
 #include <iostream>
 
@@ -7,73 +15,27 @@
 
 #define RANDOM 100
 
+template <typename T>
+BinTree<T> generateBinTree() {
+    BinTree<int> bintree;
+    bintree.insertAsRoot(dice(NUM));
+    BinNode<int>* node = bintree.root();
+    for(int i = 0; i < 6; i++){
+        bintree.insertAsLC(node, dice(NUM));
+        bintree.insertAsRC(node, dice(NUM));
+        if(dice(NUM) % 2)
+            node = node->lc;
+        else
+            node = node->rc;
+    }
+    return bintree;
+}
+
 int main(){
     system("clear");
-    BinTree<int> tree;
-    BinNode<int>* node = tree.insertAsRoot(dice(RANDOM));
+    BinTree<int> tree = generateBinTree<int>();
     print(tree);
-    sleep(1);
-    system("clear");
-    BinNode<int>* left = tree.insertAsLC(node, dice(RANDOM));
-    print(tree);
-    sleep(1);
-    system("clear");
-    BinNode<int>* right = tree.insertAsRC(node, dice(RANDOM));
-    print(tree);
-    sleep(1);
-    system("clear");
-    for(int i = 0; i < 2; i++){
-        for(int j = 0; j < 4; j++){
-            if(dice(RANDOM)%4 == 0){
-                tree.insertAsLC(left, dice(RANDOM));
-                left = tree.insertAsRC(left, dice(RANDOM));
-            } else if(dice(RANDOM)% 4 == 1){
-                left = tree.insertAsLC(left, dice(RANDOM));
-            } else if(dice(RANDOM)% 4 == 2){
-                left = tree.insertAsRC(left, dice(RANDOM));
-            } else {
-                tree.insertAsRC(left, dice(RANDOM));
-                left = tree.insertAsLC(left, dice(RANDOM));
-            }
-            print(tree);
-            sleep(1);
-            system("clear");
-
-        }
-
-        for(int j = 0; j < 4; j++){
-            if(dice(RANDOM)%4 == 0){
-                tree.insertAsLC(left, dice(RANDOM));
-                right = tree.insertAsRC(right, dice(RANDOM));
-            } else if(dice(RANDOM)% 4 == 1){
-                right = tree.insertAsLC(right, dice(RANDOM));
-            } else if(dice(RANDOM)% 4 == 2){
-                right = tree.insertAsRC(right, dice(RANDOM));
-            } else {
-                tree.insertAsRC(left, dice(RANDOM));
-                right = tree.insertAsLC(right, dice(RANDOM));
-            }
-            print(tree);
-            sleep(1);
-            system("clear");
-        }
-    }
-    print(tree);
-    sleep(5);
     printf("\n\n");
-
-    BinTree<int>* subtree = tree.secede(tree.root()->rc);
-    tree.attachAsRC(tree.root()->lc, subtree);
-    print(tree);
-    sleep(5);
-    printf("\n\n");
-
-    subtree = tree.secede(tree.root()->lc->rc);
-    tree.attachAsRC(tree.root(), subtree);
-    print(tree);
-    sleep(5);
-    printf("\n\n");
-    std::cout << tree.size() << std::endl;
     
     print("Pre-traverse:    ");
     tree.travPre(Print<int>());

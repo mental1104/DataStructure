@@ -1,22 +1,26 @@
+/*
+ * @Author: mental1104 mental1104@gmail.com
+ * @Date: 2023-05-06 19:43:26
+ * @LastEditors: mental1104 mental1104@gmail.com
+ * @LastEditTime: 2023-05-15 00:30:43
+ * @FilePath: /espeon/code/DataStructure/src/bst/AVL.cpp
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
 #include <iostream>
 
 #include "AVL.h"
 #include "print.h"
 
+int times = 30;
+
 int main(){
+    AVL<int> avl;
+    display(avl);
 
-    AVL<int> bst;
-    system("clear");
+    std::cout << "Final traverse: " << std::endl;
 
-    for(int i = 0; i < 16; i+=2){
-        bst.insert(i);
-    }
-    print(bst);
-    bst.remove(8);
-    printf("========================\n");
-    print(bst);
-    printf("========================\n");
-    bst.insert(8);
-    print(bst);
+    for(auto i : avl)
+        std::cout << i << " ";
+    std::cout << std::endl;
     return 0;
 }

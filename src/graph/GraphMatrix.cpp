@@ -77,7 +77,7 @@ int main(int argc, char** argv){
     testPFS(tinyG, DijkstraPU<int,double>(), 0);
     
  
-    std::cout << argv[1] << std::endl;
+    //std::cout << argv[1] << std::endl;
     print(tinyG);
     //bfs
     std::cout << "BFS:  " << std::endl;

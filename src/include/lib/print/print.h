@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include "utils.h"
 #include "Entry.h"
 #include "Vector.h"
@@ -541,4 +542,20 @@ void UniPrint::p ( GraphMatrix<Tv, Te>& s ) { //引用
       printf ( "\n" );
    }
    printf ( "\n" );
+}
+
+//template<template <typename...> class Outer, typename OuterT,
+//         template <typename...> class Inner, typename InnerT>
+template<template <typename> class Outer, typename T>
+void display(Outer<T>& structure){
+   int times = 30;
+   T random =  100;
+   for(int i = 0; i < times; i++){
+      system("clear");
+      T val = dice(random); 
+      std::cout << "Insert: \t" << val << std::endl;
+      structure.insert(val);
+      print(structure);
+      sleep(1);
+   }
 }
