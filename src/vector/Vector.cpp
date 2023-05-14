@@ -1,13 +1,19 @@
 #include <iostream>
 
 #include "Vector.h"
+#include "rand.h"
 #include "print.h" 
 
+static int times = 30;
+
+
 int main(){
+    int random =  100;
     Vector<int> vec;
-    for(int i = 0; i < 100; i++)
-        vec.insert(i);
-    print(vec);
+    display(vec);
+
+    std::cout << "Final traverse: " << std::endl;
+
     for(auto i : vec)
         std::cout << i << " ";
     std::cout << std::endl;

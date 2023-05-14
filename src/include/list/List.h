@@ -48,6 +48,7 @@ public:
     ListNode<T>* selectMax() {    return selectMax(header->succ,_size);  }
     ListNode<T>* insertAsFirst(T const& e);
     ListNode<T>* insertAsLast(T const& e);
+    ListNode<T>* insert(T const& e) {  return insertAsLast(e); }
     ListNode<T>* insertA(ListNode<T>* p, T const& e);
     ListNode<T>* insertB(ListNode<T>* p, T const& e);
     T remove(ListNode<T>* p);
