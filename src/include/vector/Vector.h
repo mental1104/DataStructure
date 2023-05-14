@@ -73,6 +73,11 @@ public:
     Rank size() const { return _size; }
     bool empty() const { return !_size; }
     Rank capacity() const { return _capacity; }
+
+    struct iterator;
+    iterator begin();
+    iterator end();
+
     int disordered()  const;
     Rank find(T const& e) const { return find(e, 0, _size); }
     Rank find(T const& e, Rank lo, Rank hi) const;
@@ -522,4 +527,37 @@ void Vector<T>::range(int k){
         //if(k * occurrence > size()) print(vec[j]);
     }
     //printf("\n");
+}
+
+template<typename T>
+struct Vector<T>::iterator {
+    T* cur;
+    
+    explicit iterator(T* rhs)
+        : cur{rhs} {}
+    
+    bool operator!=(const iterator& other) {
+        return cur != other.cur;
+    }
+
+    T& operator*() {
+        return *cur;
+    }
+
+    iterator& operator++(){
+        cur++;
+        return *this;
+    }
+};
+
+template<typename T>
+typename Vector<T>::iterator
+Vector<T>::begin() {
+    return iterator{_elem};
+}
+
+template<typename T>
+typename Vector<T>::iterator
+Vector<T>::end() {
+    return iterator{_elem + _size};
 }
