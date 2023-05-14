@@ -34,6 +34,10 @@ public:
     ListNode<T>* first() const {  return header->succ;  }
     ListNode<T>* last()  const {  return trailer->pred; }
 
+    struct iterator;
+    iterator begin();
+    iterator end();
+
     bool valid(ListNode<T>* p) {  return p && (trailer != p) && (header!=p); }
     int disordered() const;
     ListNode<T>* find(T const& e) const {  return find(e, _size, trailer); }
@@ -322,4 +326,38 @@ void List<T>::radixSort(ListNode<T>* p, int n){
                 p = p->succ;
         }
     return;
+}
+
+template<typename T>
+struct List<T>::iterator {
+    ListNode<T>* cur;
+
+    explicit iterator(ListNode<T>* rhs)
+        : cur{rhs} {}
+    
+    bool operator!=(const iterator& other){
+        return cur != other.cur;
+    }
+
+    T& operator*() {
+        return cur->data;
+    }
+
+    iterator& operator++()
+    {
+        cur = cur->succ;
+        return *this;
+    }
+};
+
+template<typename T>
+typename List<T>::iterator
+List<T>::begin() {
+    return iterator{header->succ};
+}
+
+template<typename T>
+typename List<T>::iterator
+List<T>::end() {
+    return iterator{trailer};
 }
