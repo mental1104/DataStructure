@@ -8,7 +8,7 @@ void testBinTreeRangefor () {
     std::ostringstream ss2;
 
     for(auto& i : bintree)
-        ss1 << i.data << " ";
+        ss1 << i << " ";
     traverse(bintree.root(), ss2);
 
     std::string res1 = ss1.str();
