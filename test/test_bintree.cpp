@@ -1,5 +1,9 @@
 #include "test_helper.h"
+#include "Vector.h"
+#include "String.h"
+#include "Hashtable.h"
 
+// 测试二叉树范围for循环功能 + 中序遍历
 template <typename T> 
 void testBinTreeRangefor () {
     BinTree<T> bintree = generateBinTree<T>();
@@ -25,9 +29,10 @@ void testBinTreeRangefor () {
 
 template <typename T>
 void testBinTreeCoroutineGenerator(){
-
+    return;
 }
 
 int main(){
     testBinTreeRangefor<int>();
+    testBinTreeCoroutineGenerator<int>();
 }
