@@ -185,8 +185,8 @@ struct BinTree<T>::iterator {
         return cur != other.cur;
     }
 
-    BinNode<T>& operator*() { 
-        return *cur; 
+    T& operator*() { 
+        return cur->data; 
     }
 
     iterator& operator++()

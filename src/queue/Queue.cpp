@@ -11,5 +11,10 @@ int main(){
     Q.dequeue();
     print(Q);
     std::cout << Q.size() << std::endl;
+    for(int i = 0; i < 10; i++)
+        Q.enqueue(i);
+    for(auto i : Q)
+        std::cout << i << " ";
+    std::cout << std::endl;
     return 0;
 }
