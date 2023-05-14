@@ -17,5 +17,9 @@ int main(){
     putchar('\n');
     list.sort();
     print(list);
+
+    for(auto i : list)
+        std::cout << i << " ";
+    std::cout << std::endl;
     return 0;
 } 
