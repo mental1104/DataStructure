@@ -2,7 +2,7 @@
  * @Date: 2023-05-15 22:16:54
  * @Author: mental1104 mental1104@gmail.com
  * @LastEditors: mental1104 mental1104@gmail.com
- * @LastEditTime: 2023-05-15 22:50:57
+ * @LastEditTime: 2023-05-15 23:34:30
  */
 #include "Vector.h"
 #include "List.h"
@@ -15,6 +15,6 @@ void Sort(Vector<T>& container, SortStrategy strategy = SortStrategy::QuickSort)
 }
 
 template<typename T>
-void Sort(List<T>& container){
-    
+void Sort(List<T>& container, SortStrategy strategy = SortStrategy::MergeSort){
+    ListSortImpl::Sort(container, strategy);
 }

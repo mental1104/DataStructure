@@ -556,6 +556,6 @@ void display(Outer<T>& structure){
       std::cout << "Insert: \t" << val << std::endl;
       structure.insert(val);
       print(structure);
-      sleep(1);
+      //sleep(1);
    }
 }
