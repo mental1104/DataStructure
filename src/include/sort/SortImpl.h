@@ -2,7 +2,7 @@
  * @Date: 2023-05-15 22:20:37
  * @Author: mental1104 mental1104@gmail.com
  * @LastEditors: mental1104 mental1104@gmail.com
- * @LastEditTime: 2023-05-15 23:44:01
+ * @LastEditTime: 2023-05-15 23:50:16
  */
 #pragma once
 
@@ -91,6 +91,7 @@ inline void VectorSortImpl::Sort(Vector<T> &container, Rank lo, Rank hi, SortStr
         quickSortB(container, lo, hi);
         break;
     case SortStrategy::HeapSort:
+        // it's broken
         heapSort(container, lo, hi);
         break;
     default:
@@ -317,6 +318,7 @@ void ListSortImpl::Sort(List<T> &container, SortStrategy strategy)
         insertionSort(container);
         break;
     case SortStrategy::MergeSort:
+        // it's broken
         mergeSort(container, container.first(), container.size());
         break;
     case SortStrategy::RadixSort:
@@ -349,7 +351,7 @@ void ListSortImpl::selectionSort(List<T>& container)
     for(int i = 0; i < n; i++)
         tail = tail->succ;
     while(1 < n){
-        ListNode<T>* max = container.selectMax(head->succ, n);
+        ListNode<T>* max = selectMax(head->succ, n);
         container.insertB(tail, container.remove(max));
         tail = tail->pred;
         n--;
