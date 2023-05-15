@@ -2,7 +2,7 @@
  * @Date: 2023-05-15 22:20:37
  * @Author: mental1104 mental1104@gmail.com
  * @LastEditors: mental1104 mental1104@gmail.com
- * @LastEditTime: 2023-05-15 23:50:16
+ * @LastEditTime: 2023-05-15 23:53:21
  */
 #pragma once
 
@@ -323,6 +323,7 @@ void ListSortImpl::Sort(List<T> &container, SortStrategy strategy)
         break;
     case SortStrategy::RadixSort:
         radixSort(container);
+        break;
     default:
         std::cout << "Not supported yet! " << std::endl;
         break;
