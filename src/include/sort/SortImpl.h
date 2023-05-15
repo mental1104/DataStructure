@@ -2,7 +2,7 @@
  * @Date: 2023-05-15 22:20:37
  * @Author: mental1104 mental1104@gmail.com
  * @LastEditors: mental1104 mental1104@gmail.com
- * @LastEditTime: 2023-05-15 23:01:38
+ * @LastEditTime: 2023-05-15 23:44:01
  */
 #pragma once
 
@@ -16,12 +16,13 @@ enum class SortStrategy {
     SelectionSort,
     InsertionSort,
     ShellSort,
-    MergeSortA,
+    MergeSort,
     MergeSortB,
     QuickSort,
     Quick3way,
     QuickSortB,
     HeapSort,
+    RadixSort
 };
 
 
@@ -74,7 +75,7 @@ inline void VectorSortImpl::Sort(Vector<T> &container, Rank lo, Rank hi, SortStr
     case SortStrategy::ShellSort:
         shellSort(container, lo, hi);
         break;
-    case SortStrategy::MergeSortA:
+    case SortStrategy::MergeSort:
         mergeSortA(container, lo, hi);
         break;
     case SortStrategy::MergeSortB:
@@ -94,6 +95,7 @@ inline void VectorSortImpl::Sort(Vector<T> &container, Rank lo, Rank hi, SortStr
         break;
     default:
         std::cout << "Not supported yet! " << std::endl;
+        break;
     }
 }
 
@@ -288,8 +290,128 @@ void VectorSortImpl::heapSort(Vector<T> &container, Rank lo, Rank hi)
 
 
 class ListSortImpl {
+public:
     template<typename T>
-    static void Sort(List<T>& container, Rank lo, Rank hi, SortStrategy strategy);
+    static void Sort(List<T>& container, SortStrategy strategy);
+private:
+    // selectionSort
+    template<typename T> static ListNode<T>* selectMax(ListNode<T>* p, int n);
+    template<typename T> static void selectionSort(List<T>& container);
+    // insertionSort
+    template<typename T> static void insertionSort(List<T>& container);
+    // mergeSort
+    template<typename T> static void merge(ListNode<T>*& p, int n, List<T>& L, ListNode<T>* q, int m);
+    template<typename T> static void mergeSort(List<T> &container, ListNode<T>* p, int n);
+    // radixSort
+    template<typename T> static void radixSort(List<T> &container);
 };
 
+template <typename T>
+void ListSortImpl::Sort(List<T> &container, SortStrategy strategy)
+{
+    switch(strategy){
+    case SortStrategy::SelectionSort:
+        selectionSort(container);
+        break;
+    case SortStrategy::InsertionSort:
+        insertionSort(container);
+        break;
+    case SortStrategy::MergeSort:
+        mergeSort(container, container.first(), container.size());
+        break;
+    case SortStrategy::RadixSort:
+        radixSort(container);
+    default:
+        std::cout << "Not supported yet! " << std::endl;
+        break;
+    }
+}
 
+template <typename T>
+ListNode<T> *ListSortImpl::selectMax(ListNode<T> *p, int n)
+{
+    ListNode<T>* max = p;
+    for(ListNode<T>* cur = p; 1 < n; n--){
+        cur = cur->succ;
+        if(!(cur->data < max->data))
+            max = cur;
+    }
+    return max;
+}
+
+template <typename T>
+void ListSortImpl::selectionSort(List<T>& container)
+{
+    ListNode<T> *p = container.first();
+    int n = container.size();
+    ListNode<T>* head = p->pred;
+    ListNode<T>* tail = p;
+    for(int i = 0; i < n; i++)
+        tail = tail->succ;
+    while(1 < n){
+        ListNode<T>* max = container.selectMax(head->succ, n);
+        container.insertB(tail, container.remove(max));
+        tail = tail->pred;
+        n--;
+    }
+}
+
+template <typename T>
+void ListSortImpl::insertionSort(List<T>& container)
+{
+    ListNode<T> * p = container.first();
+    int n = container.size();
+    for(int r = 0; r < n; r++){
+        container.insertA(container.search(p->data, r, p), p->data);
+        p = p->succ;
+        container.remove(p->pred);
+    }
+}
+
+template <typename T>
+void ListSortImpl::merge(ListNode<T> *&p, int n, List<T> &L, ListNode<T> *q, int m)
+{
+    ListNode<T>* pp = p->pred;//借助前驱充当头哨兵节点
+    while(0 < m)
+        if((0 < n) && (p->data <= q->data)){
+            if(q == (p = p->succ))
+                break;
+            n--;
+        } else {
+            L.insertB(p, L.remove((q = q->succ)->pred)); 
+            m--;
+        }
+    p = pp->succ;
+}
+
+template <typename T>
+void ListSortImpl::mergeSort(List<T> &container, ListNode<T> * p, int n)
+{
+    if(n < 2)
+        return;
+    int m = n/2;//1->2->3->4->5->6->7
+    ListNode<T>* q = p;
+    for(int i = 0; i < m; i++)
+        q = q->succ;//将链表一分为二
+    mergeSort(container, p, m);//1->2->3
+    mergeSort(container, q, n-m);//4->5->6->7
+    merge(p, m, container, q, n-m);
+}
+
+template <typename T>
+inline void ListSortImpl::radixSort(List<T> &container)
+{
+    ListNode<T>* p = container.first();
+    int n = container.size();
+    ListNode<T>* head = p->pred;
+    ListNode<T>* tail = p;
+    for(int i = 0; i < n; i++) tail = tail->succ;
+    for(U radixBit = 0x1; radixBit && (p = head); radixBit <<= 1)
+        for(int i = 0; i < n; i++){
+            if(radixBit & U(p->succ->data))
+                tail->insertAsPred(container.remove(p->succ));
+            else
+                p = p->succ;
+        }
+    return;
+}
