@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ListNode.hpp" 
+#include "ListNode.h" 
 #include "utils.h"
 
 template<typename T>
@@ -15,10 +15,6 @@ protected:
     void init();
     int clear();
     void copyNodes(ListNode<T>*, int);
-    void merge(ListNode<T>*&, int, List<T>&, ListNode<T>*, int);
-    void mergeSort(ListNode<T>*&, int);
-    void selectionSort(ListNode<T>*, int);
-    void insertionSort(ListNode<T>*, int);
 
 public:
     List() {  init(); }
@@ -44,21 +40,17 @@ public:
     ListNode<T>* find(T const& e, int n, ListNode<T>* p) const;
     ListNode<T>* search(T const& e) const {  return search(e, _size, trailer); }
     ListNode<T>* search(T const& e, int n, ListNode<T>* p) const;
-    ListNode<T>* selectMax(ListNode<T>* p, int n);
-    ListNode<T>* selectMax() {    return selectMax(header->succ,_size);  }
+
     ListNode<T>* insertAsFirst(T const& e);
     ListNode<T>* insertAsLast(T const& e);
     ListNode<T>* insert(T const& e) {  return insertAsLast(e); }
     ListNode<T>* insertA(ListNode<T>* p, T const& e);
     ListNode<T>* insertB(ListNode<T>* p, T const& e);
     T remove(ListNode<T>* p);
-    void merge(List<T>& L) { merge(first(), _size, L, L.first(), L._size); }
-    void sort(ListNode<T>* p, int n);
-    void sort() { sort(first(), _size); }
+
     int deduplicate();
     int uniquify();
     void reverse();
-    void radixSort(ListNode<T>* p, int n);
 
     void traverse(void(*)(T&));
     template<typename VST> void traverse(VST&&);
@@ -200,89 +192,6 @@ ListNode<T>* List<T>::search(T const& e, int n, ListNode<T>* p) const {
 }
 
 template<typename T>
-void List<T>::sort(ListNode<T>* p, int n){
-    mergeSort(p, n);
-    /*
-    switch(dice(2021)%3){
-        case 1: 
-            printf("InsertionSort.\n");
-            insertionSort(p, n); 
-            break;
-        case 2: 
-            printf("SelectionSort.\n");
-            selectionSort(p, n); 
-            break;
-        default: 
-            printf("MergeSort.\n");
-            mergeSort(p, n); 
-            break;
-    }
-    */
-}
-
-template<typename T>
-void List<T>::insertionSort(ListNode<T>* p, int n){
-    for(int r = 0; r < n; r++){
-        insertA(search(p->data, r, p), p->data);
-        p = p->succ;
-        remove(p->pred);
-    }
-}
-
-template<typename T>
-void List<T>::selectionSort(ListNode<T>* p, int n){
-    ListNode<T>* head = p->pred;
-    ListNode<T>* tail = p;
-    for(int i = 0; i < n; i++)
-        tail = tail->succ;
-    while(1 < n){
-        ListNode<T>* max = selectMax(head->succ, n);
-        insertB(tail, remove(max));
-        tail = tail->pred;
-        n--;
-    }
-}
-
-template<typename T>
-ListNode<T>* List<T>::selectMax(ListNode<T>* p, int n){
-    ListNode<T>* max = p;
-    for(ListNode<T>* cur = p; 1 < n; n--){
-        cur = cur->succ;
-        if(!(cur->data < max->data))
-            max = cur;
-    }
-    return max;
-}
-
-template<typename T>
-void List<T>::merge(ListNode<T>*& p, int n, List<T>& L, ListNode<T>* q, int m){
-    ListNode<T>* pp = p->pred;//借助前驱充当头哨兵节点
-    while(0 < m)
-        if((0 < n) && (p->data <= q->data)){
-            if(q == (p = p->succ))
-                break;
-            n--;
-        } else {
-            insertB(p, L.remove((q = q->succ)->pred)); 
-            m--;
-        }
-    p = pp->succ;
-}
-
-template<typename T>
-void List<T>::mergeSort(ListNode<T>*& p, int n){
-    if(n < 2)
-        return;
-    int m = n/2;//1->2->3->4->5->6->7
-    ListNode<T>* q = p;
-    for(int i = 0; i < m; i++)
-        q = q->succ;//将链表一分为二
-    mergeSort(p, m);//1->2->3
-    mergeSort(q, n-m);//4->5->6->7
-    merge(p, m, *this, q, n-m);
-}
-
-template<typename T>
 void List<T>::reverse(){
     ListNode<T>* node = header->succ;
     if(node == trailer)
@@ -311,21 +220,6 @@ void List<T>::reverse(){
         next = next->succ;
     }
 
-    return;
-}
-
-template<typename T>
-void List<T>::radixSort(ListNode<T>* p, int n){
-    ListNode<T>* head = p->pred;
-    ListNode<T>* tail = p;
-    for(int i = 0; i < n; i++) tail = tail->succ;
-    for(U radixBit = 0x1; radixBit && (p = head); radixBit <<= 1)
-        for(int i = 0; i < n; i++){
-            if(radixBit & U(p->succ->data))
-                tail->insertAsPred(remove(p->succ));
-            else
-                p = p->succ;
-        }
     return;
 }
 
