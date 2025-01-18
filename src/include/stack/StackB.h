@@ -8,8 +8,21 @@ template<typename T>
 class Stack : public List<T> {
 public:
     void push(T const& e) {     this->insertAsLast(e);    }
-    T pop()               {     return this->remove(this->last());    }
-    T& top()              {     return this->last()->data;    }
+    T pop() {     
+        if (this->size() > 0) {
+            return this->remove(this->last()); 
+        } else {
+            throw std::out_of_range("Stack is empty");
+        }
+    }
+    T& top() {     
+        if (this->size() > 0) {
+            return this->last()->data;
+        } else {
+            throw std::out_of_range("Stack is empty");
+        }
+            
+    }
 };
 
 #endif
