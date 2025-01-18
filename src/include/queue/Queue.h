@@ -1,4 +1,7 @@
-#pragma once
+#ifndef __DSA_QUEUE
+#define __DSA_QUEUE
+
+
 #include "utils.h"
 #include "List.h"
 
@@ -9,3 +12,5 @@ public:
     T dequeue()                 { return this->remove(this->first()); }
     T& front()                  { return this->first()->data; }
 };
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_LIST
+#define __DSA_LIST
 
 #include "ListNode.h" 
 #include "utils.h"
@@ -256,3 +257,6 @@ typename List<T>::iterator
 List<T>::end() {
     return iterator{trailer};
 }
+
+
+#endif

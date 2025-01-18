@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_SPLAY
+#define __DSA_SPLAY
+
 #include "BST.h"
 
 template<typename T>
@@ -138,3 +140,6 @@ bool Splay<T>::remove(const T& e){
     if(this->_root) this->updateHeight(this->_root);
     return true;
 }
+
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_PQ
+#define __DSA_PQ
 
 template<typename T>
 struct PQ {
@@ -6,3 +7,5 @@ struct PQ {
     virtual T getMax() = 0;
     virtual T delMax() = 0;
 };
+
+#endif

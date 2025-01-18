@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_QUICK3STRING
+#define __DSA_QUICK3STRING
+
 #include "utils.h"
 #include "Vector.h"
 #include "String.h"
@@ -39,3 +41,5 @@ void Quick3String::sort(Vector<String>& a, int lo, int hi, int d){
     if (v >= 0) sort(a, lt, gt, d+1);
     sort(a, gt+1, hi, d);
 }
+
+#endif

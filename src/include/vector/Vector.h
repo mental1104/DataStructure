@@ -1,21 +1,9 @@
 
-#pragma once
+#ifndef __DSA_VECTOR
+#define __DSA_VECTOR
 
-#include "lib/utils/utils.h"
-#include "dp/Fib.h"
-
-enum class Sort {
-    BubbleSort,
-    SelectionSort,
-    InsertionSort,
-    ShellSort,
-    MergeSortA,
-    MergeSortB,
-    QuickSort,
-    Quick3way,
-    QuickSortB,
-    HeapSort,
-};
+#include "utils.h"
+#include "Fib.h"
 
 template<typename T>
 class Vector{
@@ -309,3 +297,5 @@ typename Vector<T>::iterator
 Vector<T>::end() {
     return iterator{_elem + _size};
 }
+
+#endif

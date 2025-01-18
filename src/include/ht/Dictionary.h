@@ -1,4 +1,5 @@
-#pragma once  
+#ifndef __DSA_DICTIONARY
+#define __DSA_DICTIONARY
 
 static size_t hashCode ( char c ) { return ( size_t ) c; } //字符
 static size_t hashCode ( int k ) { return ( size_t ) k; } //整数以及长长整数
@@ -21,3 +22,4 @@ template<typename K, typename V> struct Dictionary {
     virtual bool remove(K k) = 0;
 };
 
+#endif

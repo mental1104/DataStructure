@@ -1,3 +1,7 @@
+#ifndef __DSA_BPTNODE
+#define __DSA_BPTNODE
+
+
 #include <iostream>
 #include <queue>
 using namespace std;
@@ -14,3 +18,5 @@ public:
     BPlusTreeNode():key(new int[MAX+1]),ptr(new BPlusTreeNode*[MAX+1]), parent(nullptr){}
     ~BPlusTreeNode();
 };
+
+#endif

@@ -22,3 +22,20 @@
 
 + 更新格式化输出器
 + 更新单测
+
+
+运行测试需要安装gtest
+
+ubuntu:
+
+```sh
+sudo apt install -y libgtest-dev && cd /usr/src/googletest && cmake . && make -j$(nproc) && make install
+cd cpp && mkdir build && cd build && cmake .. && make -j8
+```
+
+运行测试
+
+```sh
+ctest -r
+```
+

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_TRIE
+#define __DSA_TRIE
+
 #include "String.h"
 #include "StringST.h"
 #include "Vector.h"
@@ -176,3 +178,6 @@ Node<T>* Trie<T>::remove(Node<T>* x, const String& key, int d){
     release(x);
     return nullptr;
 }
+
+
+#endif

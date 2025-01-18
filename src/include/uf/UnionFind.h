@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_UNION_FIND
+#define __DSA_UNION_FIND
 
 class UnionFind{
 protected:
@@ -20,3 +21,5 @@ void UnionFind::traverse(){
     //     printf("%d ", _id[i]);
     // printf("\n");
 }
+
+#endif

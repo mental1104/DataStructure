@@ -1,3 +1,6 @@
+#ifndef __DSA_SORT
+#define __DSA_SORT
+
 /*
  * @Date: 2023-05-15 22:16:54
  * @Author: mental1104 mental1104@gmail.com
@@ -18,3 +21,5 @@ template<typename T>
 void Sort(List<T>& container, SortStrategy strategy = SortStrategy::MergeSort){
     ListSortImpl::Sort(container, strategy);
 }
+
+#endif

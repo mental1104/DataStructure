@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_SKIPLIST
+#define __DSA_SKIPLIST
 
 #include "Entry.h"
 #include "List.h"
@@ -90,3 +91,5 @@ bool Skiplist<K, V>::remove(K k){
         List<Quadlist<Entry<K, V>>*>::remove(this->first());
     return true;
 }
+
+#endif

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_BTNODE
+#define __DSA_BTNODE
+
 #include "Vector.h"  
 
 template<typename T>
@@ -16,3 +18,5 @@ struct BTNode {
         if(rc) rc->parent = this;
     }
 };
+
+#endif
