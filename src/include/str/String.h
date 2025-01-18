@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_STRING
+#define __DSA_STRING
+
 #include "utils.h"
 
 class String {
@@ -229,3 +231,5 @@ void String::traverse(void (*visit)(char&)){
         ++ptr;
     }
 }
+
+#endif

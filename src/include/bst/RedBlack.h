@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_REDBLACK
+#define __DSA_REDBLACK
 
 #include "BST.h"  
 
@@ -156,8 +157,6 @@ void RedBlack<T>::solveDoubleBlack(BinNode<T>* r){
     }
 }
 
-
-
-
+#endif
 
     

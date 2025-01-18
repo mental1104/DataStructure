@@ -1,4 +1,5 @@
-#pragma once 
+#ifndef __DSA_QUICK_FIND
+#define __DSA_QUICK_FIND
 
 #include "utils.h"
 #include "UnionFind.h"
@@ -53,4 +54,5 @@ void QuickFind::unite(int p, int q){
             _id[i] = qID;
     --_count;
 }
-    
+
+#endif

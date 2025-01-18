@@ -1,4 +1,5 @@
-#pragma once  
+#ifndef __DSA_LISTNODE
+#define __DSA_LISTNODE
 
 template<typename T>
 struct ListNode {
@@ -29,3 +30,5 @@ ListNode<T>* ListNode<T>::insertAsSucc(T const& e){
     succ = x;
     return x;
 }
+
+#endif

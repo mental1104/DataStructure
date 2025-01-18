@@ -1,4 +1,6 @@
-#pragma once 
+#ifndef __DSA_TST
+#define __DSA_TST
+
 #include "String.h"
 #include "StringST.h"
 #include "Vector.h"
@@ -185,3 +187,5 @@ void TST<T>::collect(TSTNode<T>* x, String prefix, int i, String pattern, Vector
     }
     if(c == '.' || c > x->c) collect(x->right, prefix, i, pattern, q);
 }
+
+#endif

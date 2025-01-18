@@ -4,7 +4,8 @@
  * @LastEditors: mental1104 mental1104@gmail.com
  * @LastEditTime: 2023-05-15 23:53:21
  */
-#pragma once
+#ifndef __DSA_SORTIMPL
+#define __DSA_SORTIMPL
 
 #include <iostream>
 #include "Vector.h"
@@ -418,3 +419,6 @@ inline void ListSortImpl::radixSort(List<T> &container)
         }
     return;
 }
+
+
+#endif

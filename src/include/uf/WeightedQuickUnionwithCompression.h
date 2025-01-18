@@ -1,4 +1,5 @@
-#pragma once 
+#ifndef __DSA_WEIGHTED_QUICK_UNION_WITH_COMPRESSION
+#define __DSA_WEIGHTED_QUICK_UNION_WITH_COMPRESSION
 
 #include "utils.h"
 #include "WeightedQuickUnion.h"
@@ -28,3 +29,5 @@ int WeightedQuickUnionwithCompression::find(int p){
 
     return root;
 }
+
+#endif

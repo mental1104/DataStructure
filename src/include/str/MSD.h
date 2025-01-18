@@ -1,4 +1,6 @@
-#pragma once 
+#ifndef __DSA_MSD
+#define __DSA_MSD
+
 #include "String.h"
 #include "Vector.h"
 
@@ -55,3 +57,5 @@ void MSD::insertionSort(Vector<String>& a, int lo, int hi, int d){
         for(int j = i; j > lo && (a[j].substr(d) < a[j-1].substr(d)); --j)
             swap(a[j], a[j-1]);
 }
+
+#endif

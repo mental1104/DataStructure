@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_ERATOSTHENES
+#define __DSA_ERATOSTHENES
+
 #include "Bitmap.h"
 
 Bitmap* eratosthenes(int n){
@@ -19,3 +21,5 @@ void eratosthenes_to_file(int n, const char* file){
     B = nullptr;
     return;
 }
+
+#endif

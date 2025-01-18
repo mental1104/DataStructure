@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_BST
+#define __DSA_BST
 
 #include "BinTree.h"
 
@@ -113,3 +114,5 @@ BST<T>::rotateAt(BinNode<T>* v){
          return connect34 ( g, v, p, g->lc, v->lc, v->rc, p->rc );
       }
 }
+
+#endif

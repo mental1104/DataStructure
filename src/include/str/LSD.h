@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_LSD
+#define __DSA_LSD
+
 #include "Vector.h"
 #include "String.h"  
 
@@ -21,3 +23,5 @@ void LSD(Vector<String>& a, int W){
     }
     return;
 }
+
+#endif

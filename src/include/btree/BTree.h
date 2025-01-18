@@ -1,4 +1,5 @@
-#pragma once 
+#ifndef __DSA_BTREE
+#define __DSA_BTREE
 
 #include "BTNode.h"  
 
@@ -195,3 +196,6 @@ void BTree<T>::solveUnderflow(BTNode<T>* v){
     solveUnderflow ( p ); //上升一层，如有必要则继续分裂——至多递归O(logn)层
     return;
 }
+
+
+#endif
