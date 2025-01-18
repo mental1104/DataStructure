@@ -1,6 +1,0 @@
-add_executable(String String.cpp)
-add_executable(Trie Trie.cpp)
-add_executable(TST TST.cpp)
-add_executable(Quick3String Quick3String.cpp)
-add_executable(LSD LSD.cpp)
-add_executable(MSD MSD.cpp)

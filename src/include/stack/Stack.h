@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_STACK
+#define __DSA_STACK
 
 #include "utils.h"
 #include "Vector.h"
@@ -11,3 +12,4 @@ public:
     T& top()                {   return  (*this)[this->size()-1];    }
 };
 
+#endif

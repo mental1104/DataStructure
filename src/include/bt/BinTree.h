@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_BINTREE
+#define __DSA_BINTREE
 
 #include "BinNode.h"
 
@@ -212,3 +213,6 @@ typename BinTree<T>::iterator
 BinTree<T>::end() {
     return iterator{nullptr};
 }
+
+
+#endif

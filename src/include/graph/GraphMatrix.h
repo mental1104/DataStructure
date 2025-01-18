@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_GRAPH_MATRIX
+#define __DSA_GRAPH_MATRIX
 
 #include "utils.h"
 #include "Vector.h"  
@@ -182,5 +183,4 @@ void GraphMatrix<Tv, Te>::reverse(){
 
 }
 
-
-
+#endif

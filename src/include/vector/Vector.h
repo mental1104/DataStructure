@@ -1,8 +1,9 @@
 
-#pragma once
+#ifndef __DSA_VECTOR
+#define __DSA_VECTOR
 
-#include "lib/utils/utils.h"
-#include "dp/Fib.h"
+#include "utils.h"
+#include "Fib.h"
 
 enum class Sort {
     BubbleSort,
@@ -309,3 +310,5 @@ typename Vector<T>::iterator
 Vector<T>::end() {
     return iterator{_elem + _size};
 }
+
+#endif

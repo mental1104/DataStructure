@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_QUADLIST
+#define __DSA_QUADLIST
 
 #include "QuadlistNode.h"
 
@@ -72,3 +73,4 @@ void Quadlist<T>::traverse( VST&& visit ) { //利用函数对象机制，可全�
    while ( ( p = p->succ ) != trailer ) visit ( p->data );
 }
 
+#endif

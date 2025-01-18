@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_STACKB
+#define __DSA_STACKB
 
 #include "utils.h"
 #include "List.h"
@@ -10,3 +11,5 @@ public:
     T pop()               {     return this->remove(this->last());    }
     T& top()              {     return this->last()->data;    }
 };
+
+#endif

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_LEFT_HEAP
+#define __DSA_LEFT_HEAP
+
 #include "BinTree.h"
 
 /*
@@ -84,3 +86,5 @@ void LeftHeap<T>::merge(LeftHeap<T>& right){
     right._size = 0;
     return;
 }
+
+#endif

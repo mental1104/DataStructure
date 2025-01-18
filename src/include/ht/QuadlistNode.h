@@ -1,4 +1,5 @@
-#pragma once   
+#ifndef __DSA_QUADLISTNODE
+#define __DSA_QUADLISTNODE  
 
 #include "utils.h"
 template<typename T>
@@ -23,3 +24,5 @@ QuadlistNode<T>* QuadlistNode<T>::insertAsSuccAbove(T const& e, QuadlistNode<T>*
     if(b) b->above = x;
     return x;
 }
+
+#endif
