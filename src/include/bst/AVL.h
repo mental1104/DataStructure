@@ -1,4 +1,5 @@
-#pragma once 
+#ifndef __DSA_AVL
+#define __DSA_AVL
 
 #include "BST.h" 
 
@@ -40,3 +41,6 @@ bool AVL<T>::remove(const T& e){
     }
     return true;
 }
+
+
+#endif

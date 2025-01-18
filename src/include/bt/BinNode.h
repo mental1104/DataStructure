@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_BINNODE
+#define __DSA_BINNODE
 
 #include "Stack.h"
 #include "Queue.h"
@@ -253,3 +254,6 @@ void BinNode<T>::travLevel(BinNode<T>* x, VST& visit){
         if(HasRChild(*x)) Q.enqueue(x->rc);
     }
 }
+
+
+#endif

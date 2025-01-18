@@ -1,4 +1,7 @@
-#include "./BPTNode.hpp"
+#ifndef __DSA_BPTREE
+#define __DSA_BPTREE
+
+#include "BPTNode.h"
 // BP tree
 class BPlusTree {
     BPlusTreeNode* root;
@@ -141,3 +144,5 @@ void BPlusTree::insertInternal(int x, BPlusTreeNode* cursor,
         }
     }
 }
+
+#endif

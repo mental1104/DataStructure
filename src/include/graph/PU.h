@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_PU
+#define __DSA_PU
+
 #include "Graph.h"
 
 template <typename Tv, typename Te> struct BfsPU { //针对BFS算法的顶点优先级更新器
@@ -41,3 +43,5 @@ template <typename Tv, typename Te> struct PrimPU {
          }
    }
 };
+
+#endif

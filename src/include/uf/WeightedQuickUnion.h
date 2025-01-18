@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_WEIGHTEDQUICKUNION
+#define __DSA_WEIGHTEDQUICKUNION
 
 #include "utils.h"
 #include "UnionFind.h"
@@ -70,3 +71,5 @@ void WeightedQuickUnion::unite(int p, int q){
     else                {   _id[j] = i; _sz[i] += _sz[j]; }
     --_count;
 }
+
+#endif

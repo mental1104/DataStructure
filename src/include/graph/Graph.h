@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_GRAPH
+#define __DSA_GRAPH
 
 #include "utils.h"
 #include "Vector.h"
@@ -606,3 +607,5 @@ void Graph<Tv, Te>::kruskal(bool flag){
         printf("Total weight: %.2f\n", weight);
     }
 }
+
+#endif

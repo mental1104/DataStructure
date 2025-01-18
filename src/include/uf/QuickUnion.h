@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_QUICKUNION
+#define __DSA_QUICKUNION
 
 #include "utils.h"
 #include "UnionFind.h"
@@ -59,4 +60,5 @@ void QuickUnion::unite(int p, int q){
 
     --_count;
 }
-    
+
+#endif

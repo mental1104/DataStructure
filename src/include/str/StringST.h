@@ -1,4 +1,6 @@
-#pragma once
+#ifndef __DSA_STRINGST
+#define __DSA_STRINGST
+
 #include "String.h"
 #include "Vector.h"
 #define R 128
@@ -22,3 +24,5 @@ public:
     virtual Vector<String> keysThatMatch(String s) = 0;
     
 };
+
+#endif

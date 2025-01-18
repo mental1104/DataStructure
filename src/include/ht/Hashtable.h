@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_HASHTABLE
+#define __DSA_HASHTABLE
 
 #include "primeNLT.h"
 #include "utils.h"
@@ -120,3 +121,5 @@ void Hashtable<K, V>::rehash() {
          put( oldHt[i]->key, oldHt[i]->value ); //转入新表
    release( oldHt ); //释放——因所有词条均已转移，故只需释放桶数组本身
 }
+
+#endif

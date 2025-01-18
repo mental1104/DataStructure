@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __DSA_BITMAP
+#define __DSA_BITMAP
 
 #pragma warning(disable : 4996 4800)
 #include <cstdlib>
@@ -39,3 +40,5 @@ public:
    /*DSA*/   void print ( int n ) 
    /*DSA*/   {  expand ( n ); for ( int i = 0; i < n; i++ ) printf ( test ( i ) ? "1" : "0" );  }
 };
+
+#endif
