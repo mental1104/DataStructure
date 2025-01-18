@@ -5,19 +5,6 @@
 #include "utils.h"
 #include "Fib.h"
 
-enum class Sort {
-    BubbleSort,
-    SelectionSort,
-    InsertionSort,
-    ShellSort,
-    MergeSortA,
-    MergeSortB,
-    QuickSort,
-    Quick3way,
-    QuickSortB,
-    HeapSort,
-};
-
 template<typename T>
 class Vector{
 protected:
