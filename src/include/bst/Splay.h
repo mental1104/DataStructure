@@ -61,7 +61,7 @@ BinNode<T>* Splay<T>::splay(BinNode<T>* v){
         this->updateHeight(v); 
     }
     /* 树高为奇数时，单层伸展 */
-    if(p = v->parent){
+    if((p = v->parent)){
         if(IsLChild(*v)) {  
             attachAsLChild(p, v->rc); 
             attachAsRChild(v, p);

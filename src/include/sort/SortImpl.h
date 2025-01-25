@@ -2,7 +2,7 @@
  * @Date: 2023-05-15 22:20:37
  * @Author: mental1104 mental1104@gmail.com
  * @LastEditors: mental1104 mental1104@gmail.com
- * @LastEditTime: 2023-05-15 23:53:21
+ * @LastEditTime: 2025-01-25 21:31:21
  */
 #ifndef __DSA_SORTIMPL
 #define __DSA_SORTIMPL
@@ -272,7 +272,7 @@ void VectorSortImpl::sink(Vector<T> &container, Rank k, int heap)
     while(2*k <= heap){
         int j = 2*k;
         if(j < heap && container[j] < container[j+1]) j++;
-        if(!container[k] < container[j]) break;
+        if(!(container[k] < container[j])) break;
         swap(container[k], container[j]);
         k = j;
     }
