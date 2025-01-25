@@ -94,7 +94,7 @@ BinNode<T>*
 BinTree<T>::attachAsRC(BinNode<T>* x, BinTree<T>*& S){
     BinTree<T>* temp = secede(x->rc);
 
-    if(x->rc = S->_root) {
+    if((x->rc = S->_root)) {
         x->rc->parent = x;
     }
 
@@ -115,7 +115,7 @@ BinNode<T>*
 BinTree<T>::attachAsLC(BinNode<T>* x, BinTree<T>*& S){
     BinTree<T>* temp = secede(x->rc);
 
-    if(x->lc = S->_root) {
+    if((x->lc = S->_root)) {
         x->lc->parent = x;
     }
 

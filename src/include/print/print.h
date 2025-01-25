@@ -81,7 +81,7 @@ public:
 void UniPrint::p ( int e ) {  printf ( " %04d", e ); }
 void UniPrint::p ( float e ) { printf ( " %4.2f", e ); }
 void UniPrint::p ( double e ) { printf ( " %4.2f", e ); }
-void UniPrint::p ( char e ) { printf ( "%c", ( 31 < e ) && ( e < 128 ) ? e : '$' ); }
+void UniPrint::p ( char e ) { printf ( "%c", ( char(31) < e ) && ( e < char(128) ) ? e : '$' ); }
 void UniPrint::p ( unsigned int e ) {  printf ( " %04u", e ); }
 void UniPrint::p ( size_t e) {   printf ("-%lu", e); }
 
@@ -313,9 +313,9 @@ void printRB ( double e , bool red) {
 
 void printRB ( char e , bool red) { 
    if(red)
-      printf ( " \033[0m\033[1;31m%c\033[0m", ( 31 < e ) && ( e < 128 ) ? e : '$' ); 
+      printf ( " \033[0m\033[1;31m%c\033[0m", ( char(31) < e ) && ( e < char(128) ) ? e : '$' ); 
    else 
-      printf ( " %c", ( 31 < e ) && ( e < 128 ) ? e : '$' ); 
+      printf ( " %c", ( char(31) < e ) && ( e < char(128) ) ? e : '$' ); 
 }
 
 template <typename T> void printRBNode( BinNode<T>& node) {
