@@ -1,7 +1,7 @@
 #ifndef __DSA_STRINGST
 #define __DSA_STRINGST
 
-#include "String.h"
+#include "dsa_string.h"
 #include "Vector.h"
 #define R 128
 

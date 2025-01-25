@@ -1,6 +1,6 @@
 #include "test_helper.h"
 #include "Vector.h"
-#include "String.h"
+#include "dsa_string.h"
 #include "Hashtable.h"
 
 // 测试二叉树范围for循环功能 + 中序遍历

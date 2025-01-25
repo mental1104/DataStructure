@@ -1,7 +1,7 @@
 #ifndef __DSA_TST
 #define __DSA_TST
 
-#include "String.h"
+#include "dsa_string.h"
 #include "StringST.h"
 #include "Vector.h"
 #include "Queue.h"

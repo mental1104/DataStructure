@@ -21,7 +21,7 @@
 #include "HashtableB.h"
 #include "Heap.h"
 #include "LeftHeap.h"
-#include "String.h"
+#include "dsa_string.h"
 #include "Graph.h"
 #include "GraphMatrix.h"
 #include "primeNLT.h"
