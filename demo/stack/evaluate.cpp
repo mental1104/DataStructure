@@ -42,27 +42,48 @@ void readNumber(char*& p, Stack<double>& stk)
     }
 }
 
-void append(char*& rpn, double opnd)
-{ //将操作数接至RPN末尾
+void append(char*& rpn, double opnd) {
+    // 将操作数接至RPN末尾
     char buf[64];
-    if (0.0 < opnd - (int)opnd)
-    {
-        sprintf(buf, "%f \0", opnd); //浮点格式，或
+    if (opnd - static_cast<int>(opnd) > 0.0) {
+        // 浮点格式
+        snprintf(buf, sizeof(buf), "%f ", opnd);
+    } else {
+        // 整数格式
+        snprintf(buf, sizeof(buf), "%d ", static_cast<int>(opnd));
     }
-    else
-    {
-        sprintf(buf, "%d \0", (int)opnd); //整数格式
+
+    // 确保 RPN 字符串初始为非空
+    if (!rpn) {
+        rpn = static_cast<char*>(malloc(sizeof(char)));
+        rpn[0] = '\0';
     }
-    rpn = (char*)realloc(rpn, sizeof(char) * (strlen(rpn) + strlen(buf) + 1)); //扩展空间
-    strcat(rpn, buf); //RPN加长
+
+    // 扩展空间
+    size_t newSize = strlen(rpn) + strlen(buf) + 1;
+    rpn = static_cast<char*>(realloc(rpn, newSize));
+    if (!rpn) {
+        perror("Memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // 拼接字符串
+    strcat(rpn, buf);
 }
 
-void append(char*& rpn, char optr)
-{ //将运算符接至RPN末尾
-    int n = strlen(rpn); //RPN当前长度（以'\0'结尾，长度n + 1）
-    rpn = (char*)realloc(rpn, sizeof(char) * (n + 3)); //扩展空间
-    sprintf(rpn + n, "%c ", optr);
-    rpn[n + 2] = '\0'; //接入指定的运算符
+void append(char*& rpn, char optr) {
+    // 将运算符接至 RPN 末尾
+    int n = strlen(rpn); // RPN 当前长度（以 '\0' 结尾，长度为 n + 1）
+    
+    // 扩展空间以容纳运算符和空格
+    rpn = static_cast<char*>(realloc(rpn, sizeof(char) * (n + 3))); // 额外增加2个字符和终止符
+    if (!rpn) {
+        perror("Memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // 拼接字符
+    snprintf(rpn + n, 3, "%c ", optr); // 使用 snprintf 替代 sprintf，确保缓冲区安全
 }
 
 
