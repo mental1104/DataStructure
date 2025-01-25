@@ -2,6 +2,7 @@
 #define __DSA_STRING
 
 #include "utils.h"
+#include <cstring>
 
 class String {
 public:

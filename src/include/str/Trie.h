@@ -1,7 +1,7 @@
 #ifndef __DSA_TRIE
 #define __DSA_TRIE
 
-#include "String.h"
+#include "dsa_string.h"
 #include "StringST.h"
 #include "Vector.h"
 #include "Queue.h"

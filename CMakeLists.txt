@@ -79,6 +79,9 @@ enable_testing()
 # 设置测试目录
 set(TEST_DIR "${CMAKE_SOURCE_DIR}/test")
 
+# 包含 googletest 和 googlemock 的头文件目录
+add_subdirectory(thirdparty/googletest)
+
 # 检查目录是否存在且包含 .cpp 文件
 if (EXISTS "${TEST_DIR}")
     # 查找 .cpp 文件
