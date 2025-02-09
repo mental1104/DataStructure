@@ -508,14 +508,10 @@ void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < 
                     hca(v) = min(hca(v), hca(u)); //则v亦必如此
                 else {//否则，以v为关节点（u以下即是一个BCC，且其中顶点此时正集中于栈S的顶部）
                     /*输出语句*/
-                    printf ( "BCC rooted at %d:", v);
                     Stack<int> temp; 
                     do { 
                         temp.push(S.pop()); 
-                        //print(temp.top()); 
-                    } while ( u != temp.top() ); 
-                    //printf("A\n");
-                    print(parent(u));
+                    } while ( u != temp.top() );
 
                     while (!temp.empty()) 
                         S.push(temp.pop());//将栈中的内容倒回去
@@ -523,7 +519,6 @@ void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < 
                     while (u != S.pop())
                         ; //弹出当前BCC中（除v外）的所有节点，可视需要做进一步处理
                     /*输出语句*/
-                    printf ( "\n" );
                 }
 
                 break;
