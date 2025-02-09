@@ -35,7 +35,7 @@ WeightedQuickUnion::WeightedQuickUnion(std::ifstream& is){
     is >> _N;
     _count = _N;
     _id = new int[_N];
-    //int temp;
+
     for(int i = 0; i < _N; i++){
         _id[i] = i;
     }
