@@ -3,45 +3,45 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # 加载共享库
-libbst = ctypes.CDLL("../../lib/libbst.so")
+lib = ctypes.CDLL("../../lib/libbst.so")
 
-# 设置benchmark函数的参数和返回值类型
-libbst.benchmark.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
-libbst.benchmark.restype = ctypes.c_double
+# 设置 benchmark 函数的返回值类型
+lib.benchmark.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
+lib.benchmark.restype = ctypes.c_double
 
-# 定义操作类型
-class Operation:
-    INSERT = 0
-    SEARCH = 1
-    REMOVE = 2
-    LOCALITY = 3
+# 枚举操作类型
+operations = {"INSERT": 0, "SEARCH": 1, "REMOVE": 2, "LOCALITY": 3}
 
-def run_benchmark(operation, scales, method):
+def run_benchmark(op_name, scales, method):
+    op_code = operations[op_name]
     times = []
     for scale in scales:
-        exec_time = libbst.benchmark(operation, scale, method)
-        times.append(exec_time)
-        print(f"Scale: {scale}, Time: {exec_time:.6f} sec")
+        time_taken = lib.benchmark(op_code, scale, method)
+        times.append(time_taken)
     return times
 
-# 设定测试参数
-scales = np.logspace(3, 6, num=10, dtype=int)  # 1000 到 1000000
-methods = [0, 1, 2, 3]
-names = ["AVL", "RedBlack", "Splay", "BTree"]
-colors = ['r', 'g', 'b', 'm']
+def plot_results(scales, results, op_name):
+    plt.figure()
+    for method, times in results.items():
+        plt.plot(scales, times, marker='o', label=method)
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.xlabel("Scale")
+    plt.ylabel("Time (s)")
+    plt.title(f"{op_name} Performance Comparison")
+    plt.legend()
+    plt.grid(True, which="both", linestyle="--")
+    plt.savefig(f"{op_name.lower()}_benchmark.png")
+    plt.close()
 
-plt.figure(figsize=(10, 6))
+# 设定测试规模
+scales = [1000000, 2000000, 3000000, 4000000]
+methods = {0: "AVL", 1: "RedBlack", 2: "Splay", 3: "BTree"}
 
-# 对不同方法进行基准测试
-for method, name, color in zip(methods, names, colors):
-    times = run_benchmark(Operation.INSERT, scales, method)
-    plt.plot(scales, times, label=f"{name} Insert", color=color, marker='o')
-
-plt.xscale("log")
-plt.yscale("log")
-plt.xlabel("Scale")
-plt.ylabel("Time (s)")
-plt.title("BST Insert Benchmark")
-plt.legend()
-plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-plt.show()
+for op_name in operations.keys():
+    results = {}
+    for method_code, method_name in methods.items():
+        print(op_name, method_name)
+        results[method_name] = run_benchmark(op_name, scales, method_code)
+        
+    plot_results(scales, results, op_name)

@@ -33,20 +33,23 @@ extern "C" {
             case Operation::INSERT:
                 start = clock();
                 for (int i = 0; i < scale; i++) {
-                    avl.insert(vec[i]);
-                    rb.insert(vec[i]);
-                    splay.insert(vec[i]);
-                    btree.insert(vec[i]);
+                    switch (method) {
+                        case 0: avl.insert(vec[i]); break;
+                        case 1: rb.insert(vec[i]); break;
+                        case 2: splay.insert(vec[i]); break;
+                        case 3: btree.insert(vec[i]); break;
+                    }
                 }
                 end = clock();
                 break;
-            
             case Operation::SEARCH:
                 for (int i = 0; i < scale; i++) {
-                    avl.insert(vec[i]);
-                    rb.insert(vec[i]);
-                    splay.insert(vec[i]);
-                    btree.insert(vec[i]);
+                    switch (method) {
+                        case 0: avl.insert(vec[i]); break;
+                        case 1: rb.insert(vec[i]); break;
+                        case 2: splay.insert(vec[i]); break;
+                        case 3: btree.insert(vec[i]); break;
+                    }
                 }
                 start = clock();
                 for (int i = 0; i < scale; i++) {
@@ -62,10 +65,12 @@ extern "C" {
             
             case Operation::REMOVE:
                 for (int i = 0; i < scale; i++) {
-                    avl.insert(vec[i]);
-                    rb.insert(vec[i]);
-                    splay.insert(vec[i]);
-                    btree.insert(vec[i]);
+                    switch (method) {
+                        case 0: avl.insert(vec[i]); break;
+                        case 1: rb.insert(vec[i]); break;
+                        case 2: splay.insert(vec[i]); break;
+                        case 3: btree.insert(vec[i]); break;
+                    }
                 }
                 start = clock();
                 for (int i = 0; i < scale; i++) {
@@ -81,12 +86,14 @@ extern "C" {
             
             case Operation::LOCALITY:
                 for (int i = 0; i < scale; i++) {
-                    avl.insert(vec[i]);
-                    rb.insert(vec[i]);
-                    splay.insert(vec[i]);
-                    btree.insert(vec[i]);
+                    switch (method) {
+                        case 0: avl.insert(vec[i]); break;
+                        case 1: rb.insert(vec[i]); break;
+                        case 2: splay.insert(vec[i]); break;
+                        case 3: btree.insert(vec[i]); break;
+                    }
                 }
-                int locality = scale / 10000;
+                int locality = std::max(1, scale / 1000);
                 start = clock();
                 for (int i = 0; i < scale; i++) {
                     switch (method) {
