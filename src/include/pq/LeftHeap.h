@@ -2,23 +2,7 @@
 #define __DSA_LEFT_HEAP
 
 #include "BinTree.h"
-
-/*
-template <typename T> //根据相对优先级确定适宜的方式，合并以a和b为根节点的两个左式堆
-static BinNode<T>* merge(BinNode<T>* a, BinNode<T>* b) {
-    if ( ! a ) return b; //退化情况
-    if ( ! b ) return a; //退化情况
-    if ( a->data < b->data ) 
-        swap ( a, b ); //一般情况：首先确保b不大
-
-    a->rc = merge(a->rc, b); //将a的右子堆，与b合并
-    a->rc->parent = a;
-
-    if ( !a->lc || a->lc->npl < a->rc->npl ) //若有必要
-        swap (a->lc, a->rc); //交换a的左、右子堆，以确保右子堆的npl不大
-    a->npl = a->rc ? a->rc->npl + 1 : 1; //更新a的npl
-    return a; //返回合并后的堆顶
-} //本算法只实现结构上的合并，堆的规模须由上层调用者负责更新*/
+#include "PQ.h"
 
 template <typename T>
 class LeftHeap : public PQ<T>, public BinTree<T> { //基于二叉树，以左式堆形式实现的PQ
@@ -63,12 +47,16 @@ void LeftHeap<T>::insert (T e){
 }
 
 template <typename T> 
-T LeftHeap<T>::getMax(){ 
+T LeftHeap<T>::getMax(){
+    if (!this->_root) 
+        throw std::runtime_error("Heap is empty");
     return this->_root->data; 
 } //按照此处约定，堆顶即优先级最高的词条
 
 template <typename T> 
 T LeftHeap<T>::delMax() {
+   if (!this->_root) 
+      throw std::runtime_error("Heap is empty");
    BinNode<T>* lHeap = this->_root->lc; if (lHeap) lHeap->parent = NULL; //左子堆
    BinNode<T>* rHeap = this->_root->rc; if (rHeap) rHeap->parent = NULL; //右子堆
    T e = this->_root->data; 
@@ -80,7 +68,7 @@ T LeftHeap<T>::delMax() {
 
 template<typename T>
 void LeftHeap<T>::merge(LeftHeap<T>& right){
-    merge(this->_root, right._root);
+    this->_root = merge(this->_root, right._root);
     right._root = nullptr;
     this->_size += right._size;
     right._size = 0;
