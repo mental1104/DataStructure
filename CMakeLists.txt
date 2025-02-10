@@ -17,7 +17,6 @@ foreach(DIR ${HEADER_DIRS})
     endif()
 endforeach()
 
-
 # 查找 src 目录下的所有源文件并创建一个库（如果有文件）
 file(GLOB SRC_FILES "${CMAKE_SOURCE_DIR}/src/*.cpp")
 if(SRC_FILES) # 如果 src 目录中有源文件
@@ -26,6 +25,52 @@ else()
     message(STATUS "No source files found in src directory. Skipping MyProjectLib.")
 endif()
 
+# 查找 demo 目录下的所有 .py 文件
+file(GLOB_RECURSE DEMO_PY_FILES "${CMAKE_SOURCE_DIR}/demo/**/*.py")
+
+if(DEMO_PY_FILES)
+    foreach(PY_FILE ${DEMO_PY_FILES})
+        # 计算相对路径
+        file(RELATIVE_PATH RELATIVE_PATH_TO_DEMO "${CMAKE_SOURCE_DIR}/demo" ${PY_FILE})
+
+        # 计算目标路径
+        set(TARGET_PY_FILE "${CMAKE_BINARY_DIR}/demo/${RELATIVE_PATH_TO_DEMO}")
+
+        # 确保目标目录存在
+        get_filename_component(TARGET_PY_DIR "${TARGET_PY_FILE}" DIRECTORY)
+        file(MAKE_DIRECTORY ${TARGET_PY_DIR})
+
+        # 复制 Python 文件
+        file(COPY ${PY_FILE} DESTINATION ${TARGET_PY_DIR})
+
+        message(STATUS "Copied ${PY_FILE} to ${TARGET_PY_DIR}")
+    endforeach()
+else()
+    message(STATUS "No Python files found in demo directory.")
+endif()
+
+
+# ========== 新增：编译 bst.so 共享库 ==========
+# 查找 bst 相关的源文件
+file(GLOB BST_SRC_FILES "${CMAKE_SOURCE_DIR}/src/lib/bst_api.cpp")
+
+if(BST_SRC_FILES)
+    add_library(bst SHARED ${BST_SRC_FILES})
+
+    # 设置 include 目录
+    target_include_directories(bst PUBLIC ${INCLUDE_ROOT})
+    set_target_properties(bst PROPERTIES INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+    # 指定 bst.so 的输出路径
+    set_target_properties(bst PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    )
+
+    message(STATUS "Built shared library: bst.so in ${CMAKE_BINARY_DIR}/lib")
+else()
+    message(WARNING "No BST source files found. Skipping bst.so compilation.")
+endif()
 
 # 检查 demo 目录是否存在且包含 .cpp 文件
 if(EXISTS "${CMAKE_SOURCE_DIR}/demo")
