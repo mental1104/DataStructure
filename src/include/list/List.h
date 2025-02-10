@@ -35,6 +35,10 @@ public:
     iterator begin();
     iterator end();
 
+    // 声明 const 版本的 begin/end
+    const iterator begin() const;
+    const iterator end() const;
+
     bool valid(ListNode<T>* p) {  return p && (trailer != p) && (header!=p); }
     int disordered() const;
     ListNode<T>* find(T const& e) const {  return find(e, _size, trailer); }
@@ -228,34 +232,69 @@ template<typename T>
 struct List<T>::iterator {
     ListNode<T>* cur;
 
-    explicit iterator(ListNode<T>* rhs)
-        : cur{rhs} {}
-    
-    bool operator!=(const iterator& other){
-        return cur != other.cur;
-    }
+    // 构造函数
+    explicit iterator(ListNode<T>* rhs);
 
-    T& operator*() {
-        return cur->data;
-    }
+    // 比较运算符：加上 const 限定，保证能用于 const 对象的比较
+    bool operator!=(const iterator& other) const;
+    bool operator==(const iterator& other) const;
 
-    iterator& operator++()
-    {
-        cur = cur->succ;
-        return *this;
-    }
+    // 解引用与前置 ++ 操作
+    T& operator*();
+    iterator& operator++();
 };
 
+// 构造函数实现
 template<typename T>
-typename List<T>::iterator
-List<T>::begin() {
-    return iterator{header->succ};
+inline List<T>::iterator::iterator(ListNode<T>* rhs) : cur(rhs) { }
+
+// operator!= 实现
+template<typename T>
+inline bool List<T>::iterator::operator!=(const iterator& other) const {
+    return cur != other.cur;
+}
+
+// operator== 实现
+template<typename T>
+inline bool List<T>::iterator::operator==(const iterator& other) const {
+    return cur == other.cur;
+}
+
+// operator* 实现
+template<typename T>
+inline T& List<T>::iterator::operator*() {
+    return cur->data;
+}
+
+// operator++ 实现（前置++）
+template<typename T>
+inline typename List<T>::iterator& List<T>::iterator::operator++() {
+    cur = cur->succ;
+    return *this;
+}
+
+// ---------- List::begin 和 end 的实现 ----------
+
+// 非 const 版本
+template<typename T>
+inline typename List<T>::iterator List<T>::begin() {
+    return iterator(header->succ);
 }
 
 template<typename T>
-typename List<T>::iterator
-List<T>::end() {
-    return iterator{trailer};
+inline typename List<T>::iterator List<T>::end() {
+    return iterator(trailer);
+}
+
+// const 版本
+template<typename T>
+inline const typename List<T>::iterator List<T>::begin() const {
+    return iterator(header->succ);
+}
+
+template<typename T>
+inline const typename List<T>::iterator List<T>::end() const {
+    return iterator(trailer);
 }
 
 

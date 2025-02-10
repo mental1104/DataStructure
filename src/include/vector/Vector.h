@@ -40,6 +40,9 @@ public:
     struct iterator;
     iterator begin();
     iterator end();
+    // const 版本
+    const iterator begin() const;
+    const iterator end() const;
 
     int disordered()  const;
     Rank find(T const& e) const { return find(e, 0, _size); }
@@ -295,6 +298,17 @@ template<typename T>
 typename Vector<T>::iterator
 Vector<T>::end() {
     return iterator{_elem + _size};
+}
+
+// const 版本的 begin/end 实现
+template<typename T>
+inline const typename Vector<T>::iterator Vector<T>::begin() const {
+    return iterator(_elem);
+}
+
+template<typename T>
+inline const typename Vector<T>::iterator Vector<T>::end() const {
+    return iterator(_elem + _size);
 }
 
 #endif

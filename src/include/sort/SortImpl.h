@@ -48,6 +48,7 @@ private:
     template<typename T> static void mergeSortB(Vector<T>& container, Rank lo, Rank hi);
     // quickSort
     template<typename T> static Rank partition(Vector<T>& container, Rank lo, Rank hi);
+    template<typename T> static int partitionB(Vector<T>& container, int lo, int hi);
     template<typename T> static void quick(Vector<T>& container, Rank lo, Rank hi);
     template<typename T> static void quickSort(Vector<T>& container, Rank lo, Rank hi);
 
@@ -233,38 +234,72 @@ void VectorSortImpl::quickSort(Vector<T> &container, Rank lo, Rank hi)
 }
 
 template <typename T>
-void VectorSortImpl::quickB(Vector<T> &container, Rank lo, Rank hi)
-{
-    if (lo + 15 >= hi) {
-        // 对于小序列，插入排序更有优势
+int VectorSortImpl::partitionB(Vector<T>& container, int lo, int hi) {
+    T pivot = container[lo];         // 选择第一个元素作为 pivot
+    int i = lo + 1;                  // i 从 lo+1 开始
+    int j = hi - 1;                  // j 指向最后一个有效元素
+
+    while (true) {
+        // 向右扫描，直到遇到不小于 pivot 的元素
+        while (i < hi && container[i] < pivot) {
+            ++i;
+        }
+        // 向左扫描，直到遇到不大于 pivot 的元素
+        while (j >= lo && container[j] > pivot) {
+            --j;
+        }
+        if (i >= j) break;
+        // 交换 i 和 j 处的元素
+        swap(container[i], container[j]);
+        ++i; --j;
+    }
+    // 将 pivot 放到最终位置 j
+    swap(container[lo], container[j]);
+    return j;
+}
+
+template <typename T>
+void VectorSortImpl::quickB(Vector<T>& container, int lo, int hi) {
+    // 当区间内元素数目较小时，使用插入排序
+    if (hi - lo < 16) {
         insertionSort(container, lo, hi);
         return;
     }
-    Rank j = partition(container, lo, hi);
-    quickB(container, lo, j-1);
-    quickB(container, j+1, hi);
+    // 使用 partitionB 分区
+    int j = partitionB(container, lo, hi);
+    // 递归排序左侧区间 [lo, j)
+    quickB(container, lo, j);
+    // 递归排序右侧区间 [j+1, hi)
+    quickB(container, j + 1, hi);
 }
 
 template <typename T>
 void VectorSortImpl::quickSortB(Vector<T> &container, Rank lo, Rank hi)
 {
-    quickB(container, lo, hi-1);
+    quickB(container, lo, hi);
 }
 
 template <typename T>
 void VectorSortImpl::quick3way(Vector<T> &container, Rank lo, Rank hi)
 {
-    if(lo >= hi) return;
-    Rank lt = lo, i = lo+1, gt = hi-1;
+    if(hi - lo < 2) return;  // 区间内少于 2 个元素直接返回
+    Rank lt = lo, i = lo+1, gt = hi - 1;
     T v = container[lo];
     while(i <= gt){
-        if      (container[i] < v) swap(container[lt++], container[i++]);
-        else if (container[i] > v) swap(container[i], container[gt--]);
-        else                   i++;
+        if (container[i] < v) {
+            swap(container[lt++], container[i++]);
+        }
+        else if (container[i] > v) {
+            swap(container[i], container[gt--]);
+        }
+        else {
+            i++;
+        }
     }
-    quick3way(container, lo, lt-1);
-    quick3way(container, gt+1, hi);
+    quick3way(container, lo, lt);       // 左区间：[lo, lt)
+    quick3way(container, gt+1, hi);       // 右区间：[gt+1, hi)
 }
+
 
 template <typename T>
 void VectorSortImpl::sink(Vector<T> &container, Rank k, int heap)
@@ -373,34 +408,58 @@ void ListSortImpl::insertionSort(List<T>& container)
 }
 
 template <typename T>
-void ListSortImpl::merge(ListNode<T> *&p, int n, List<T> &L, ListNode<T> *q, int m)
-{
-    ListNode<T>* pp = p->pred;//借助前驱充当头哨兵节点
-    while(0 < m)
-        if((0 < n) && (p->data <= q->data)){
-            if(q == (p = p->succ))
-                break;
+void ListSortImpl::merge(ListNode<T> *&p, int n, List<T> &L, ListNode<T> *q, int m) {
+    ListNode<T>* pp = p->pred;  // 前驱作为哨兵节点
+    while (m > 0) {
+        // 避免 q 访问无效节点
+        if (q == nullptr) break;
+
+        if (n > 0 && p != nullptr && p->data <= q->data) {
+            p = p->succ;
             n--;
+
+            // 额外检查 p 是否变成尾哨兵
+            if (p == q) break;
         } else {
-            L.insertB(p, L.remove((q = q->succ)->pred)); 
+            // 先保存 q->succ，确保 q 不会变成无效指针
+            ListNode<T>* next_q = q->succ;
+
+            // 确保 q 的 pred 是有效的
+            if (q->pred != nullptr) {
+                L.insertB(p, L.remove(q->pred));
+            }
+
+            q = next_q;
             m--;
+
+            // 避免 q 变成无效指针后被访问
+            if (q == nullptr) break;
         }
-    p = pp->succ;
+    }
+    p = (pp != nullptr) ? pp->succ : nullptr;
 }
 
+
 template <typename T>
-void ListSortImpl::mergeSort(List<T> &container, ListNode<T> * p, int n)
-{
-    if(n < 2)
-        return;
-    int m = n/2;//1->2->3->4->5->6->7
+void ListSortImpl::mergeSort(List<T> &container, ListNode<T> *p, int n) {
+    if (n < 2) return;
+
+    int m = n / 2;
     ListNode<T>* q = p;
-    for(int i = 0; i < m; i++)
-        q = q->succ;//将链表一分为二
-    mergeSort(container, p, m);//1->2->3
-    mergeSort(container, q, n-m);//4->5->6->7
-    merge(p, m, container, q, n-m);
+
+    // 避免 q 变成 nullptr
+    for (int i = 0; i < m && q != nullptr; i++) {
+        q = q->succ;
+    }
+
+    // 递归排序前要确保 q 仍然是有效指针
+    if (q != nullptr) {
+        mergeSort(container, p, m);
+        mergeSort(container, q, n - m);
+        merge(p, m, container, q, n - m);
+    }
 }
+
 
 template <typename T>
 inline void ListSortImpl::radixSort(List<T> &container)
