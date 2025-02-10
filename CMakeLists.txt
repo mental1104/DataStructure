@@ -73,44 +73,47 @@ else()
 endif()
 
 
-# 添加测试所需的 CTest
-enable_testing()
+# 检查 thirdparty 目录是否存在且包含 googletest
+set(GTEST_DIR "${CMAKE_SOURCE_DIR}/thirdparty/googletest")
 
-# 设置测试目录
-set(TEST_DIR "${CMAKE_SOURCE_DIR}/test")
+# 检查 thirdparty 目录是否为空
+if(EXISTS "${GTEST_DIR}" AND IS_DIRECTORY "${GTEST_DIR}")
+    file(GLOB GTEST_FILES "${GTEST_DIR}/*")
+    list(LENGTH GTEST_FILES GTEST_COUNT)
 
-# 包含 googletest 和 googlemock 的头文件目录
-add_subdirectory(thirdparty/googletest)
+    if(GTEST_COUNT GREATER 0)
+        # 只有当 googletest 目录非空时才启用测试
+        enable_testing()
+        add_subdirectory(thirdparty/googletest)
 
-# 检查目录是否存在且包含 .cpp 文件
-if (EXISTS "${TEST_DIR}")
-    # 查找 .cpp 文件
-    file(GLOB_RECURSE TEST_SOURCES "${TEST_DIR}/*.cpp")
-    
-    # 如果找到文件则处理
-    if (TEST_SOURCES)
-        message(STATUS "Found test files in ${TEST_DIR}: ${TEST_SOURCES}")
+        # 设置测试目录
+        set(TEST_DIR "${CMAKE_SOURCE_DIR}/test")
 
-        # 遍历每个 .cpp 文件，将其添加为单独的测试
-        foreach(TEST_FILE ${TEST_SOURCES})
-            # 获取文件名（不带路径和扩展名）
-            get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
+        if(EXISTS "${TEST_DIR}")
+            file(GLOB_RECURSE TEST_SOURCES "${TEST_DIR}/*.cpp")
 
-            # 创建测试的目标
-            add_executable(${TEST_NAME} ${TEST_FILE})
+            if(TEST_SOURCES)
+                message(STATUS "Found test files in ${TEST_DIR}")
 
-            # 链接测试所需的库（如 GTest）
-            target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main pthread)
-
-            # 添加到测试集中
-            add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
-        endforeach()
+                foreach(TEST_FILE ${TEST_SOURCES})
+                    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
+                    add_executable(${TEST_NAME} ${TEST_FILE})
+                    target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main pthread)
+                    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+                endforeach()
+            else()
+                message(WARNING "Test directory exists but no .cpp files found.")
+            endif()
+        else()
+            message(WARNING "Test directory ${TEST_DIR} does not exist.")
+        endif()
     else()
-        message(WARNING "Test directory exists but no .cpp files were found in ${TEST_DIR}.")
+        message(STATUS "googletest directory exists but is empty. Tests will not be enabled.")
     endif()
 else()
-    message(WARNING "Test directory ${TEST_DIR} does not exist.")
+    message(STATUS "googletest directory does not exist. Tests will not be enabled.")
 endif()
+
 
 # 开启覆盖率
 OPTION (ENABLE_COVERAGE "Use gcov" ON)
