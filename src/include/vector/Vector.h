@@ -30,7 +30,6 @@ public:
     Vector(Vector<T> const& V, Rank lo, Rank hi) {  copyFrom(V._elem, lo, hi); }
     //析构函数
     ~Vector()   {   delete []_elem;   }
-    
     Vector<T> & operator=(Vector<T> const&);
     T& operator[] (Rank r) const;
 

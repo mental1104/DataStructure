@@ -37,7 +37,7 @@ public:
     bool operator!=(const String& rhs) {    return !(*this == rhs);     }
     String operator+(const String& rhs);
     String operator+(char rhs);
-    bool operator<(const String& rhs); 
+    bool operator<(const String& rhs) const; 
     template<typename VST> void traverse(VST&& visit);
     void traverse(void (*visit)(char&));
 
@@ -52,12 +52,12 @@ String::String():data_(new char[1])
     end_ = data_;
 }
 
-String::String(char c):data_(new char[2]){
-    *data_ = c;
-    data_++;
-    *data_ = '\0';
-    end_ = data_;
+String::String(char c): data_(new char[2]) {
+    data_[0] = c;
+    data_[1] = '\0';
+    end_ = data_ + 1;  // ✅ 正确设置 end_ 指向字符串末尾
 }
+
 String::String(const char* s):data_(new char[strlen(s)+1]){
     strcpy(data_, s);
     end_ = data_ + strlen(s);
@@ -208,7 +208,7 @@ String String::operator+(char rhs){
     return ret;
 }
 
-bool String::operator<(const String& rhs){ 
+bool String::operator<(const String& rhs) const { 
     if(strcmp(this->data_, rhs.data_) < 0) 
         return true;
     else 

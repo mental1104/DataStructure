@@ -31,6 +31,7 @@ public:
     ~Trie() {   if(0 < this->s) destruct(root); }
 
     T get(String& key);
+    T get(const char* key);
     void put(const String& key, T val);
     void remove(const String& key);
 
@@ -81,6 +82,12 @@ T Trie<T>::get(String& key){
         return x->val;
     else 
         return 0;
+}
+
+template<typename T>
+T Trie<T>::get(const char* key){
+    String strkey(key);
+    return get(strkey);
 }
 
 template<typename T>
