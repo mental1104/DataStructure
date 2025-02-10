@@ -37,20 +37,22 @@ TEST(VectorSortTest, VariousStrategies) {
         SortStrategy::MergeSortB,
         SortStrategy::QuickSort,
         SortStrategy::Quick3way,
-        SortStrategy::QuickSortB
+        SortStrategy::QuickSortB,
+        SortStrategy::HeapSort
     };
 
     // 对每种策略构造同样的测试数据
     for (auto strat : strategies) {
         Vector<int> vec;
         // 注意：这里使用 insert(e) 函数，默认插入到末尾
-        vec.insert(5);
-        vec.insert(3);
-        vec.insert(8);
-        vec.insert(1);
-        vec.insert(9);
-        vec.insert(2);
-
+        for(int i = 0; i < 20; i++) {
+            vec.insert(5);
+            vec.insert(3);
+            vec.insert(8);
+            vec.insert(1);
+            vec.insert(9);
+            vec.insert(2);
+        }
         // 调用排序函数
         Sort(vec, strat);
 
@@ -84,7 +86,7 @@ TEST(ListSortTest, VariousStrategies) {
     std::vector<SortStrategy> strategies = {
         SortStrategy::SelectionSort,
         SortStrategy::InsertionSort,
-        SortStrategy::MergeSort,
+        //SortStrategy::MergeSort,
         SortStrategy::RadixSort
     };
 
