@@ -31,6 +31,7 @@ public:
     TST() = default;
     ~TST();
     T get(String& key);
+    T get(const char*);
     void put(const String& key, T val) {  root = put(root, key, val, 0);  }
     void remove(const String& key);
 
@@ -80,6 +81,12 @@ T TST<T>::get(String& key){
 }
 
 template<typename T>
+T TST<T>::get(const char* key) {
+    String strKey(key);  // 将 C 字符串转换为 std::string
+    return get(strKey);       // 复用已有的 `get` 方法
+}
+
+template<typename T>
 TSTNode<T>* TST<T>::get(TSTNode<T>* x, String& key, int d){
     if(x == nullptr)
         return nullptr;
@@ -101,7 +108,7 @@ template<typename T>
 TSTNode<T>* TST<T>::remove(TSTNode<T>* x, const String& key, int d){
     if(x == nullptr)
         return nullptr;
-   
+
     char c = key[d];
     if      (c < x->c) x->left = remove(x->left, key, d);
     else if (c > x->c) x->right = remove(x->right, key, d);
@@ -161,8 +168,9 @@ void TST<T>::collect(TSTNode<T>* x, String prefix, Vector<String>& q){
     if(x == nullptr)
         return;
     collect(x->left, prefix, q);
-    if(x->val != 0) q.insert(prefix + x->c);
-    collect(x->mid, prefix + x->c, q);
+    String connected_str = prefix + String(x->c);
+    if(x->val != 0) q.insert(connected_str);
+    collect(x->mid, connected_str, q);
     collect(x->right, prefix, q);
 }
 
