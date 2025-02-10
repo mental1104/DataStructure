@@ -86,7 +86,7 @@ TEST(ListSortTest, VariousStrategies) {
     std::vector<SortStrategy> strategies = {
         SortStrategy::SelectionSort,
         SortStrategy::InsertionSort,
-        //SortStrategy::MergeSort,
+        SortStrategy::MergeSort,
         SortStrategy::RadixSort
     };
 
