@@ -7,44 +7,99 @@
 #include <iostream>
 
 extern "C" {
-    double test_insert(int scale, int method) {
+    // 枚举操作类型
+    enum class Operation {
+        INSERT,
+        SEARCH,
+        REMOVE,
+        LOCALITY
+    };
+
+    double benchmark(Operation op, int scale, int method) {
         Vector<int> vec;
-        for(int i = 0; i < scale; i++)
+        for (int i = 0; i < scale; i++)
             vec.insert(i);
         vec.unsort();
+        sleep(1);
+
+        AVL<int> avl;
+        RedBlack<int> rb;
+        Splay<int> splay;
+        BTree<int> btree;
+
         clock_t start, end;
 
-        start = clock();
-        switch(method){
-            case 0: {
-                AVL<int> avl;
-                for(int i = 0; i < scale; i++)
+        switch (op) {
+            case Operation::INSERT:
+                start = clock();
+                for (int i = 0; i < scale; i++) {
                     avl.insert(vec[i]);
-                break;
-            }
-            case 1: {
-                RedBlack<int> rb;
-                for(int i = 0; i < scale; i++)
                     rb.insert(vec[i]);
-                break;
-            }
-            case 2: {
-                Splay<int> splay;
-                for(int i = 0; i < scale; i++)
                     splay.insert(vec[i]);
-                break;
-            }
-            case 3: {
-                BTree<int> btree;
-                for(int i = 0; i < scale; i++)
                     btree.insert(vec[i]);
+                }
+                end = clock();
                 break;
-            }
-            default:
-                return -1;
+            
+            case Operation::SEARCH:
+                for (int i = 0; i < scale; i++) {
+                    avl.insert(vec[i]);
+                    rb.insert(vec[i]);
+                    splay.insert(vec[i]);
+                    btree.insert(vec[i]);
+                }
+                start = clock();
+                for (int i = 0; i < scale; i++) {
+                    switch (method) {
+                        case 0: avl.search(dice(scale)); break;
+                        case 1: rb.search(dice(scale)); break;
+                        case 2: splay.search(dice(scale)); break;
+                        case 3: btree.search(dice(scale)); break;
+                    }
+                }
+                end = clock();
+                break;
+            
+            case Operation::REMOVE:
+                for (int i = 0; i < scale; i++) {
+                    avl.insert(vec[i]);
+                    rb.insert(vec[i]);
+                    splay.insert(vec[i]);
+                    btree.insert(vec[i]);
+                }
+                start = clock();
+                for (int i = 0; i < scale; i++) {
+                    switch (method) {
+                        case 0: avl.remove(vec[i]); break;
+                        case 1: rb.remove(vec[i]); break;
+                        case 2: splay.remove(vec[i]); break;
+                        case 3: btree.remove(vec[i]); break;
+                    }
+                }
+                end = clock();
+                break;
+            
+            case Operation::LOCALITY:
+                for (int i = 0; i < scale; i++) {
+                    avl.insert(vec[i]);
+                    rb.insert(vec[i]);
+                    splay.insert(vec[i]);
+                    btree.insert(vec[i]);
+                }
+                int locality = scale / 10000;
+                start = clock();
+                for (int i = 0; i < scale; i++) {
+                    switch (method) {
+                        case 0: avl.search(i % locality); break;
+                        case 1: rb.search(i % locality); break;
+                        case 2: splay.search(i % locality); break;
+                        case 3: btree.search(i % locality); break;
+                    }
+                }
+                end = clock();
+                break;
         }
-        end = clock();
-
+        
         return double(end - start) / CLOCKS_PER_SEC;
     }
 }

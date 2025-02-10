@@ -52,6 +52,10 @@ endif()
 
 # ========== 新增：编译 bst.so 共享库 ==========
 # 查找 bst 相关的源文件
+set(LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
+set(ENV{LD_LIBRARY_PATH} "${LIBRARY_OUTPUT_DIR}:$ENV{LD_LIBRARY_PATH}")
+message(STATUS "LD_LIBRARY_PATH is set to: $ENV{LD_LIBRARY_PATH}")
+
 file(GLOB BST_SRC_FILES "${CMAKE_SOURCE_DIR}/src/lib/bst_api.cpp")
 
 if(BST_SRC_FILES)
@@ -59,7 +63,6 @@ if(BST_SRC_FILES)
 
     # 设置 include 目录
     target_include_directories(bst PUBLIC ${INCLUDE_ROOT})
-    set_target_properties(bst PROPERTIES INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib")
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
     # 指定 bst.so 的输出路径
