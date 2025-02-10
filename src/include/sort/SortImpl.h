@@ -338,8 +338,9 @@ private:
     // insertionSort
     template<typename T> static void insertionSort(List<T>& container);
     // mergeSort
-    template<typename T> static void merge(ListNode<T>*& p, int n, List<T>& L, ListNode<T>* q, int m);
-    template<typename T> static void mergeSort(List<T> &container, ListNode<T>* p, int n);
+    template<typename T> static void mergeSort(List<T>& container);
+    template<typename T> static void mergeSortHelper(ListNode<T>*& p, Rank n, List<T>& container);
+    template<typename T> static ListNode<T>* merge(ListNode<T>* p, Rank n, List<T>& container, ListNode<T>* q, Rank m);
     // radixSort
     template<typename T> static void radixSort(List<T> &container);
 };
@@ -356,7 +357,7 @@ void ListSortImpl::Sort(List<T> &container, SortStrategy strategy)
         break;
     case SortStrategy::MergeSort:
         // it's broken
-        mergeSort(container, container.first(), container.size());
+        mergeSort(container);
         break;
     case SortStrategy::RadixSort:
         radixSort(container);
@@ -409,56 +410,36 @@ void ListSortImpl::insertionSort(List<T>& container)
 }
 
 template <typename T>
-void ListSortImpl::merge(ListNode<T> *&p, int n, List<T> &L, ListNode<T> *q, int m) {
-    ListNode<T>* pp = p->pred;  // 前驱作为哨兵节点
-    while (m > 0) {
-        // 避免 q 访问无效节点
-        if (q == nullptr) break;
-
-        if (n > 0 && p != nullptr && p->data <= q->data) {
-            p = p->succ;
-            n--;
-
-            // 额外检查 p 是否变成尾哨兵
-            if (p == q) break;
-        } else {
-            // 先保存 q->succ，确保 q 不会变成无效指针
-            ListNode<T>* next_q = q->succ;
-
-            // 确保 q 的 pred 是有效的
-            if (q->pred != nullptr) {
-                L.insertB(p, L.remove(q->pred));
-            }
-
-            q = next_q;
-            m--;
-
-            // 避免 q 变成无效指针后被访问
-            if (q == nullptr) break;
-        }
-    }
-    p = (pp != nullptr) ? pp->succ : nullptr;
+void ListSortImpl::mergeSort(List<T>& container) {
+    if (container.size() < 2) return;
+    ListNode<T>* firstNode = container.first();
+    mergeSortHelper(firstNode, container.size(), container);
 }
 
+template <typename T>
+void ListSortImpl::mergeSortHelper(ListNode<T>*& p, Rank n, List<T>& container) {
+    if (n < 2) return;
+    Rank m = n >> 1;
+    ListNode<T>* q = p;
+    for (Rank i = 0; i < m; i++) q = q->succ;
+    mergeSortHelper(p, m, container);
+    mergeSortHelper(q, n - m, container);
+    p = merge(p, m, container, q, n - m);
+}
 
 template <typename T>
-void ListSortImpl::mergeSort(List<T> &container, ListNode<T> *p, int n) {
-    if (n < 2) return;
-
-    int m = n / 2;
-    ListNode<T>* q = p;
-
-    // 避免 q 变成 nullptr
-    for (int i = 0; i < m && q != nullptr; i++) {
-        q = q->succ;
+ListNode<T>* ListSortImpl::merge(ListNode<T>* p, Rank n, List<T>& container, ListNode<T>* q, Rank m) {
+    ListNode<T>* pp = p->pred;
+    while ((0 < m) && (q != p)) {
+        if ((0 < n) && (p->data <= q->data)) {
+            p = p->succ;
+            n--;
+        } else {
+            container.insertB(p, container.remove((q = q->succ)->pred));
+            m--;
+        }
     }
-
-    // 递归排序前要确保 q 仍然是有效指针
-    if (q != nullptr) {
-        mergeSort(container, p, m);
-        mergeSort(container, q, n - m);
-        merge(p, m, container, q, n - m);
-    }
+    return pp->succ;
 }
 
 
