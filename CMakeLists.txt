@@ -75,6 +75,26 @@ else()
     message(WARNING "No BST source files found. Skipping bst.so compilation.")
 endif()
 
+
+file(GLOB SORT_SRC_FILES "${CMAKE_SOURCE_DIR}/src/lib/sort_api.cpp")
+
+if(SORT_SRC_FILES)
+    add_library(sort SHARED ${SORT_SRC_FILES})
+
+    # 设置 include 目录
+    target_include_directories(sort PUBLIC ${INCLUDE_ROOT})
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
+    # 指定 sort.so 的输出路径
+    set_target_properties(sort PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
+    )
+
+    message(STATUS "Built shared library: sort.so in ${CMAKE_BINARY_DIR}/lib")
+else()
+    message(WARNING "No SORT source files found. Skipping sort.so compilation.")
+endif()
+
 # 检查 demo 目录是否存在且包含 .cpp 文件
 if(EXISTS "${CMAKE_SOURCE_DIR}/demo")
     # 递归查找 demo 目录下的所有 .cpp 文件
