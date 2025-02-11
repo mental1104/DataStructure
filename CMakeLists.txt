@@ -27,6 +27,7 @@ endif()
 
 # 查找 demo 目录下的所有 .py 文件
 file(GLOB_RECURSE DEMO_PY_FILES "${CMAKE_SOURCE_DIR}/demo/**/*.py")
+file(GLOB_RECURSE DEMO_PY_FILES "${CMAKE_SOURCE_DIR}/demo/**/*.txt")
 
 if(DEMO_PY_FILES)
     foreach(PY_FILE ${DEMO_PY_FILES})
