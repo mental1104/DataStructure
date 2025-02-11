@@ -21,7 +21,7 @@ void testBFS(GraphMatrix<Tv, Te>& matrix){
     int n = matrix.n;
     for(int i = 0; i < n; i++){
         List<size_t> path;
-        size_t pos = i;
+        int pos = i;
         while(pos != -1){
             path.insertAsFirst(pos);
             pos = matrix.V()[pos].parent;
@@ -36,7 +36,7 @@ void testDFS(GraphMatrix<Tv, Te>& matrix){
     int n = matrix.n;
     for(int i = 0; i < n; i++){
         List<size_t> path;
-        size_t pos = i;
+        int pos = i;
         while(pos != -1){
             path.insertAsFirst(pos);
             pos = matrix.V()[pos].parent;
@@ -68,7 +68,7 @@ void testPFS(GraphMatrix<Tv, Te>& matrix, PU priorityUpdater, int s){
 
 int main(int argc, char** argv){
 
-    std::ifstream stream("dataset/algo/tinyEWG.txt");
+    std::ifstream stream("dataset/algo/tinyEWD.txt");
     GraphMatrix<int,double> tinyG(stream, GType::WEIGHTEDUNDIGRAPH);
     testPFS(tinyG, PrimPU<int, double>(), 0);
     print(tinyG);
