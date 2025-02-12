@@ -8,6 +8,29 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 设置根目录
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src/include)
 
+if(EXISTS "${CMAKE_SOURCE_DIR}/demo")
+    # 确保构建目录中的 demo 基础目录存在
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/demo")
+    # 获取 demo 下所有文件（包括子目录中的文件）
+    file(GLOB_RECURSE DEMO_FILES RELATIVE "${CMAKE_SOURCE_DIR}/demo" "${CMAKE_SOURCE_DIR}/demo/*")
+    set(DEMO_DIRS "")
+    foreach(ITEM ${DEMO_FILES})
+        # 提取 ITEM 的父目录
+        get_filename_component(DIR ${ITEM} DIRECTORY)
+        # 如果结果不是当前目录，则加入列表
+        if(NOT DIR STREQUAL ".")
+            list(APPEND DEMO_DIRS ${DIR})
+        endif()
+    endforeach()
+    # 去重，防止重复创建同一个目录
+    list(REMOVE_DUPLICATES DEMO_DIRS)
+    foreach(D ${DEMO_DIRS})
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/demo/${D}")
+        message(STATUS "Created directory: ${CMAKE_BINARY_DIR}/demo/${D}")
+    endforeach()
+endif()
+
+
 # 遍历 include 目录下的所有子目录并加入头文件路径
 file(GLOB HEADER_DIRS ${INCLUDE_ROOT}/*)
 foreach(DIR ${HEADER_DIRS})
@@ -26,8 +49,10 @@ else()
 endif()
 
 # 查找 demo 目录下的所有 .py 文件
-file(GLOB_RECURSE DEMO_PY_FILES "${CMAKE_SOURCE_DIR}/demo/**/*.py")
-file(GLOB_RECURSE DEMO_PY_FILES "${CMAKE_SOURCE_DIR}/demo/**/*.txt")
+file(GLOB_RECURSE DEMO_PY_FILES_PY "${CMAKE_SOURCE_DIR}/demo/**/*.py")
+# 查找 demo 目录下的所有 .txt 文件
+file(GLOB_RECURSE DEMO_PY_FILES_TXT  "${CMAKE_SOURCE_DIR}/demo/**/*.txt")
+set(DEMO_PY_FILES ${DEMO_PY_FILES_PY} ${DEMO_PY_FILES_TXT})
 
 if(DEMO_PY_FILES)
     foreach(PY_FILE ${DEMO_PY_FILES})
@@ -98,12 +123,13 @@ endif()
 
 # 检查 demo 目录是否存在且包含 .cpp 文件
 if(EXISTS "${CMAKE_SOURCE_DIR}/demo")
+
     # 递归查找 demo 目录下的所有 .cpp 文件
     file(GLOB_RECURSE DEMO_FILES "${CMAKE_SOURCE_DIR}/demo/**/*.cpp")
     
     if(DEMO_FILES)
         foreach(CPP_FILE ${DEMO_FILES})
-            # 获取文件相对于 demo 的路径（不含根目录）
+            # 获取文件相对于 demo 的路径
             file(RELATIVE_PATH RELATIVE_PATH_TO_DEMO "${CMAKE_SOURCE_DIR}/demo" ${CPP_FILE})
             
             # 提取相对路径的目录部分
@@ -112,18 +138,23 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/demo")
             # 提取文件名（不含扩展名）
             get_filename_component(EXECUTABLE_NAME ${CPP_FILE} NAME_WE)
             
-            # 设置输出目录为 build/demo/<相对路径的目录>
-            set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/demo/${RELATIVE_DIR}")
+            # 判断是否以 test_ 开头，如果是，则输出目录改为 ${CMAKE_BINARY_DIR}/bin，
+            # 否则放到 build/demo/<子目录> 下
+            if("${EXECUTABLE_NAME}" MATCHES "^test_")
+                set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
+            else()
+                set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/demo/${RELATIVE_DIR}")
+            endif()
             
-            # 创建目录（确保路径存在）
-            file(MAKE_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
+            # 确保输出目录存在
+            file(MAKE_DIRECTORY "${OUTPUT_DIR}")
             
             # 添加可执行文件
             add_executable(${EXECUTABLE_NAME} ${CPP_FILE})
             
-            # 设置目标的输出目录（仅目录部分，去掉多余的子目录）
+            # 仅为此目标设置运行时输出目录，不使用全局变量
             set_target_properties(${EXECUTABLE_NAME} PROPERTIES
-                RUNTIME_OUTPUT_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+                RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}"
             )
             
             # 如果需要链接库，添加链接
@@ -131,8 +162,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/demo")
                 target_link_libraries(${EXECUTABLE_NAME} PRIVATE MyProjectLib)
             endif()
             
-            # 输出生成的可执行文件信息
-            message(STATUS "Created executable: ${EXECUTABLE_NAME} from ${CPP_FILE}, output to ${EXECUTABLE_OUTPUT_PATH}")
+            message(STATUS "Created executable: ${EXECUTABLE_NAME} from ${CPP_FILE}, output to ${OUTPUT_DIR}")
         endforeach()
     else()
         message(STATUS "demo directory exists but contains no .cpp files. No executables will be built.")
