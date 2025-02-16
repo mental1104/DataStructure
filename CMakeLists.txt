@@ -5,6 +5,10 @@ project(DSA CXX)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (APPLE)
+    cmake_policy(SET CMP0068 NEW)
+endif()
+
 # 设置根目录
 set(INCLUDE_ROOT ${CMAKE_SOURCE_DIR}/src/include)
 
@@ -85,14 +89,14 @@ message(STATUS "LD_LIBRARY_PATH is set to: $ENV{LD_LIBRARY_PATH}")
 file(GLOB BST_SRC_FILES "${CMAKE_SOURCE_DIR}/src/lib/bst_api.cpp")
 
 if(BST_SRC_FILES)
-    add_library(bst SHARED ${BST_SRC_FILES})
+    add_library(bstapi SHARED ${BST_SRC_FILES})
 
     # 设置 include 目录
-    target_include_directories(bst PUBLIC ${INCLUDE_ROOT})
+    target_include_directories(bstapi PUBLIC ${INCLUDE_ROOT})
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
     # 指定 bst.so 的输出路径
-    set_target_properties(bst PROPERTIES
+    set_target_properties(bstapi PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     )
 

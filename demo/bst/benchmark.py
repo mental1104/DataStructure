@@ -1,9 +1,15 @@
+'''
+Date: 2025-02-16 11:30:00
+Author: mental1104 mental1104@gmail.com
+LastEditors: mental1104 mental1104@gmail.com
+LastEditTime: 2025-02-16 11:44:45
+'''
 import ctypes
 import numpy as np
 import matplotlib.pyplot as plt
 
 # 加载共享库
-lib = ctypes.CDLL("../../lib/libbst.so")
+lib = ctypes.CDLL("../../lib/libbstapi.so")
 
 # 设置 benchmark 函数的返回值类型
 lib.benchmark.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int]
