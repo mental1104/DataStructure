@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.2.0)
 project(DSA CXX)
 
 # ------------------ 基本配置 ------------------
+include(CTest)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -111,6 +112,14 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/demo")
     endif()
 else()
     message(STATUS "demo directory does not exist. No executables will be built.")
+endif()
+
+# ------------------ benchmarks ------------------
+option(ENABLE_BENCHMARKS "Build benchmark executables" ON)
+if(ENABLE_BENCHMARKS AND EXISTS "${CMAKE_SOURCE_DIR}/bench")
+    add_subdirectory(bench)
+else()
+    message(STATUS "Benchmarks are disabled or bench directory missing; skipping benchmark targets.")
 endif()
 
 # ------------------ googletest & 单元测试 ------------------
