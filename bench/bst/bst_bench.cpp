@@ -5,13 +5,13 @@
 #include <iostream>
 #include <numeric>
 #include <random>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "AVL.h"
 #include "RedBlack.h"
 #include "Splay.h"
+#include "BTree.h"
 
 struct BenchConfig {
     std::size_t initial_size = 30000;  // number of elements to prefill
@@ -26,6 +26,7 @@ struct Workload {
     std::vector<int> base_keys;           // prefill keys for access/insert phases
     std::vector<int> access_queries;      // keys to search (hit/miss mixed)
     std::vector<int> locality_queries;    // locality-prone searches
+    std::vector<int> read_heavy_queries;  // read-heavy lookups to highlight AVL height advantage
     std::vector<int> insert_keys;         // new keys to insert (no overlap)
     std::vector<int> erase_initial_keys;  // prefill keys for erase phase
     std::vector<int> erase_keys;          // keys that will be removed
@@ -48,53 +49,25 @@ double per_op(std::size_t ops, double seconds) {
     return ops ? seconds * 1e9 / static_cast<double>(ops) : 0.0;
 }
 
-void print_usage(const char* exe) {
-    std::cout << "Usage: " << exe
-              << " [--size <initial_elements>] [--access-ops <count>] [--insert-ops <count>]"
-              << " [--erase-ops <count>] [--locality-ops <count>] [--seed <value>]\n";
+template <typename NodePtr>
+bool is_hit(NodePtr node, int key) {
+    return node && node->data == key;
 }
 
-BenchConfig parse_args(int argc, char** argv) {
+inline bool is_hit(BTNode<int>* node, int key) {
+    if (!node) return false;
+    Rank r = node->key.search(key);
+    return r >= 0 && r < node->key.size() && node->key[r] == key;
+}
+
+BenchConfig default_config() {
     BenchConfig config;
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        auto require_value = [&](std::size_t& target) {
-            if (i + 1 >= argc) {
-                print_usage(argv[0]);
-                throw std::invalid_argument("Missing value for " + arg);
-            }
-            target = static_cast<std::size_t>(std::stoull(argv[++i]));
-        };
-
-        if (arg == "--size") {
-            require_value(config.initial_size);
-        } else if (arg == "--access-ops") {
-            require_value(config.access_ops);
-        } else if (arg == "--locality-ops") {
-            require_value(config.locality_ops);
-        } else if (arg == "--insert-ops") {
-            require_value(config.insert_ops);
-        } else if (arg == "--erase-ops") {
-            require_value(config.erase_ops);
-        } else if (arg == "--seed") {
-            if (i + 1 >= argc) {
-                print_usage(argv[0]);
-                throw std::invalid_argument("Missing value for --seed");
-            }
-            config.seed = static_cast<std::uint32_t>(std::stoul(argv[++i]));
-        } else if (arg == "--help" || arg == "-h") {
-            print_usage(argv[0]);
-            std::exit(0);
-        } else {
-            print_usage(argv[0]);
-            throw std::invalid_argument("Unknown argument: " + arg);
-        }
-    }
-
-    if (config.initial_size == 0) {
-        throw std::invalid_argument("Initial size must be greater than 0");
-    }
-
+    config.initial_size = 400000;
+    config.access_ops = 800000;
+    config.locality_ops = 1200000;
+    config.insert_ops = 400000;
+    config.erase_ops = 400000;
+    config.seed = 42;
     return config;
 }
 
@@ -149,6 +122,15 @@ Workload make_workload(const BenchConfig& config) {
         }
     }
 
+    // 读密集访问序列：高命中率 + 更长的查询流，凸显 AVL 的较低树高优势
+    const std::size_t read_heavy_ops = config.access_ops * 4; // 放大查询次数
+    std::bernoulli_distribution read_hit(0.9);
+    w.read_heavy_queries.reserve(read_heavy_ops);
+    for (std::size_t i = 0; i < read_heavy_ops; ++i) {
+        int key = read_hit(rng) ? w.base_keys[hit_idx(rng)] : miss_val(rng);
+        w.read_heavy_queries.push_back(key);
+    }
+
     // 插入键：与 base_keys 不重叠，保持唯一
     w.insert_keys.reserve(config.insert_ops);
     int next_key = static_cast<int>(config.initial_size * 4 + 7);
@@ -187,13 +169,9 @@ BenchResult bench_random_access(const std::string& tree_name, const BenchConfig&
 
     auto start = std::chrono::steady_clock::now();
     for (int key : data.access_queries) {
-        BinNode<int>* node = tree.search(key);
-        if (node && node->data == key) {
-            ++hits;
-            checksum += static_cast<std::size_t>(node->data);
-        } else {
-            checksum ^= static_cast<std::size_t>(key);
-        }
+        auto node = tree.search(key);
+        if (is_hit(node, key)) { ++hits; checksum += static_cast<std::size_t>(key); }
+        else { checksum ^= static_cast<std::size_t>(key); }
     }
     auto end = std::chrono::steady_clock::now();
 
@@ -259,19 +237,63 @@ BenchResult bench_locality_access(const std::string& tree_name, const BenchConfi
 
     auto start = std::chrono::steady_clock::now();
     for (int key : data.locality_queries) {
-        BinNode<int>* node = tree.search(key);
-        if (node && node->data == key) {
-            ++hits;
-            checksum += static_cast<std::size_t>(node->data);
-        } else {
-            checksum ^= static_cast<std::size_t>(key);
-        }
+        auto node = tree.search(key);
+        if (is_hit(node, key)) { ++hits; checksum += static_cast<std::size_t>(key); }
+        else { checksum ^= static_cast<std::size_t>(key); }
     }
     auto end = std::chrono::steady_clock::now();
 
     const std::size_t ops = data.locality_queries.size();
     double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
     return {tree_name, "Locality Access", data.base_keys.size(), ops,
+            static_cast<std::size_t>(tree.size()), seconds, per_op(ops, seconds),
+            checksum ^ hits};
+}
+
+template <typename Tree>
+BenchResult bench_update_heavy(const std::string& tree_name, const BenchConfig& config,
+                               const Workload& data) {
+    Tree tree;
+    bulk_insert(tree, data.base_keys);
+
+    const std::size_t pairs = std::min(data.insert_keys.size(), data.base_keys.size());
+    const std::size_t ops = pairs * 2; // insert + erase
+
+    std::size_t checksum = tree.size();
+    auto start = std::chrono::steady_clock::now();
+    for (std::size_t i = 0; i < pairs; ++i) {
+        tree.insert(data.insert_keys[i]);
+        checksum += static_cast<std::size_t>(data.insert_keys[i]);
+        tree.remove(data.base_keys[i]);
+        checksum += static_cast<std::size_t>(data.base_keys[i]);
+    }
+    auto end = std::chrono::steady_clock::now();
+
+    double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+    return {tree_name, "Update Heavy", data.base_keys.size(), ops,
+            static_cast<std::size_t>(tree.size()), seconds, per_op(ops, seconds), checksum};
+}
+
+template <typename Tree>
+BenchResult bench_read_heavy(const std::string& tree_name, const BenchConfig& config,
+                             const Workload& data) {
+    Tree tree;
+    bulk_insert(tree, data.base_keys);
+
+    std::size_t checksum = 0;
+    std::size_t hits = 0;
+
+    auto start = std::chrono::steady_clock::now();
+    for (int key : data.read_heavy_queries) {
+        auto node = tree.search(key);
+        if (is_hit(node, key)) { ++hits; checksum += static_cast<std::size_t>(key); }
+        else { checksum ^= static_cast<std::size_t>(key); }
+    }
+    auto end = std::chrono::steady_clock::now();
+
+    const std::size_t ops = data.read_heavy_queries.size();
+    double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+    return {tree_name, "Read Heavy", data.base_keys.size(), ops,
             static_cast<std::size_t>(tree.size()), seconds, per_op(ops, seconds),
             checksum ^ hits};
 }
@@ -289,18 +311,11 @@ void print_result(const BenchResult& result) {
 
 } // namespace
 
-int main(int argc, char** argv) {
-    BenchConfig config;
-    try {
-        config = parse_args(argc, argv);
-    } catch (const std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << '\n';
-        return 1;
-    }
-
+int main() {
+    BenchConfig config = default_config();
     Workload workload = make_workload(config);
 
-    std::cout << "BST family benchmark (AVL / RedBlack / Splay)\n"
+    std::cout << "BST benchmark (AVL / RedBlack / Splay / BTree)\n"
               << "Initial size: " << config.initial_size
               << ", access ops: " << config.access_ops
               << ", locality ops: " << config.locality_ops
@@ -308,24 +323,55 @@ int main(int argc, char** argv) {
               << ", erase ops: " << config.erase_ops
               << ", seed: " << config.seed << "\n\n";
 
-    print_result(bench_random_access<AVL<int>>("AVL", config, workload));
-    print_result(bench_random_access<RedBlack<int>>("RedBlack", config, workload));
-    print_result(bench_random_access<Splay<int>>("Splay", config, workload));
-    std::cout << '\n';
+    using BenchFn = BenchResult (*)(const std::string&, const BenchConfig&, const Workload&);
+    struct Scenario {
+        const char* group;
+        BenchFn fn;
+        const char* tree;
+    };
 
-    print_result(bench_locality_access<AVL<int>>("AVL", config, workload));
-    print_result(bench_locality_access<RedBlack<int>>("RedBlack", config, workload));
-    print_result(bench_locality_access<Splay<int>>("Splay", config, workload));
-    std::cout << '\n';
+    const std::vector<Scenario> scenarios = {
+        // 基础场景先跑，便于观察总体表现
+        {"Random Access", bench_random_access<AVL<int>>, "AVL"},
+        {"Random Access", bench_random_access<RedBlack<int>>, "RedBlack"},
+        {"Random Access", bench_random_access<Splay<int>>, "Splay"},
+        {"Random Access", bench_random_access<BTree<int>>, "BTree"},
 
-    print_result(bench_random_insert<AVL<int>>("AVL", config, workload));
-    print_result(bench_random_insert<RedBlack<int>>("RedBlack", config, workload));
-    print_result(bench_random_insert<Splay<int>>("Splay", config, workload));
-    std::cout << '\n';
+        {"Random Insert", bench_random_insert<AVL<int>>, "AVL"},
+        {"Random Insert", bench_random_insert<RedBlack<int>>, "RedBlack"},
+        {"Random Insert", bench_random_insert<Splay<int>>, "Splay"},
+        {"Random Insert", bench_random_insert<BTree<int>>, "BTree"},
 
-    print_result(bench_random_erase<AVL<int>>("AVL", config, workload));
-    print_result(bench_random_erase<RedBlack<int>>("RedBlack", config, workload));
-    print_result(bench_random_erase<Splay<int>>("Splay", config, workload));
+        {"Random Erase", bench_random_erase<AVL<int>>, "AVL"},
+        {"Random Erase", bench_random_erase<RedBlack<int>>, "RedBlack"},
+        {"Random Erase", bench_random_erase<Splay<int>>, "Splay"},
+        {"Random Erase", bench_random_erase<BTree<int>>, "BTree"},
+
+        // 场景用例集中放在后面
+        {"Locality Access", bench_locality_access<AVL<int>>, "AVL"},
+        {"Locality Access", bench_locality_access<RedBlack<int>>, "RedBlack"},
+        {"Locality Access", bench_locality_access<Splay<int>>, "Splay"},
+        {"Locality Access", bench_locality_access<BTree<int>>, "BTree"},
+
+        {"Update Heavy", bench_update_heavy<AVL<int>>, "AVL"},
+        {"Update Heavy", bench_update_heavy<RedBlack<int>>, "RedBlack"},
+        {"Update Heavy", bench_update_heavy<Splay<int>>, "Splay"},
+        {"Update Heavy", bench_update_heavy<BTree<int>>, "BTree"},
+
+        {"Read Heavy", bench_read_heavy<AVL<int>>, "AVL"},
+        {"Read Heavy", bench_read_heavy<RedBlack<int>>, "RedBlack"},
+        {"Read Heavy", bench_read_heavy<Splay<int>>, "Splay"},
+        {"Read Heavy", bench_read_heavy<BTree<int>>, "BTree"},
+    };
+
+    const char* last_group = "";
+    for (const auto& s : scenarios) {
+        if (std::string(s.group) != last_group) {
+            if (*last_group) std::cout << '\n';
+            last_group = s.group;
+        }
+        print_result(s.fn(s.tree, config, workload));
+    }
 
     return 0;
 }
