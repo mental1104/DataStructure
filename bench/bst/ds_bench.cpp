@@ -1,11 +1,15 @@
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cstdlib>
 #include <cstddef>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <numeric>
 #include <random>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "AVL.h"
@@ -49,6 +53,33 @@ struct BenchResult {
 };
 
 namespace {
+
+struct BenchParams {
+    std::size_t range_window{100};
+    std::size_t range_scans{2000};
+    std::size_t seq_read_ops{100000};
+    std::size_t locality_hot_override{0};  // 0 表示使用默认计算
+};
+
+std::size_t env_size_t(const char* name, std::size_t def) {
+    const char* v = std::getenv(name);
+    if (!v || *v == '\0') return def;
+    char* end = nullptr;
+    unsigned long long val = std::strtoull(v, &end, 10);
+    if (end == v || val == 0) return def;
+    return static_cast<std::size_t>(val);
+}
+
+BenchParams LoadParams() {
+    BenchParams p;
+    p.range_window = env_size_t("DS_RANGE_WINDOW", p.range_window);
+    p.range_scans = env_size_t("DS_RANGE_SCANS", p.range_scans);
+    p.seq_read_ops = env_size_t("DS_SEQ_READ_OPS", p.seq_read_ops);
+    p.locality_hot_override = env_size_t("DS_LOCALITY_HOT", p.locality_hot_override);
+    return p;
+}
+
+const BenchParams kParams = LoadParams();
 
 double per_op(std::size_t ops, double seconds) {
     return ops ? seconds * 1e9 / static_cast<double>(ops) : 0.0;
@@ -160,7 +191,10 @@ Workload make_workload(const BenchConfig& config) {
     }
 
     // 局部性访问序列：小热集合 + burst 模式，突出 Splay 的自适应优势
-    const std::size_t hot_count = std::max<std::size_t>(4, std::min<std::size_t>(32, w.base_keys.size()));
+    std::size_t hot_count = std::max<std::size_t>(4, std::min<std::size_t>(32, w.base_keys.size()));
+    if (kParams.locality_hot_override > 0 && kParams.locality_hot_override < w.base_keys.size()) {
+        hot_count = kParams.locality_hot_override;
+    }
     std::vector<int> hot_keys(w.base_keys.begin(), w.base_keys.begin() + static_cast<std::ptrdiff_t>(hot_count));
 
     std::geometric_distribution<int> burst_len(0.08);     // 平均 ~12 次的连续访问
@@ -365,6 +399,153 @@ BenchResult bench_read_heavy(const std::string& tree_name, const BenchConfig& co
             checksum ^ hits};
 }
 
+// 顺序批量写 + 窗口范围查询（通用）
+template <typename Tree>
+BenchResult bench_range_scan(const std::string& name, const Workload& data) {
+    Tree table;
+    std::vector<int> sorted = data.base_keys;
+    std::sort(sorted.begin(), sorted.end());
+    for (int k : sorted) {
+        table.insert(k);
+    }
+
+    const std::size_t window = kParams.range_window;
+    const std::size_t scans = kParams.range_scans; // 总查询 = window * scans
+    const std::size_t ops = window * scans;
+
+    std::size_t checksum = 0;
+    auto start = std::chrono::steady_clock::now();
+    for (int i = 0; i < scans; ++i) {
+        int start_key = sorted[i % static_cast<int>(sorted.size() - window)];
+        for (int off = 0; off < window; ++off) {
+            int k = start_key + off;
+            auto v = table.search(k);
+            if (is_hit(v, k)) checksum += static_cast<std::size_t>(k);
+        }
+    }
+    auto end = std::chrono::steady_clock::now();
+
+    double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+    return {name, "Range Scan", sorted.size(), ops, static_cast<std::size_t>(table.size()),
+            seconds, per_op(ops, seconds), checksum};
+}
+
+// 顺序批量写 + 少量随机读（通用）
+template <typename Tree>
+BenchResult bench_seq_insert_light_query(const std::string& name, const Workload& data) {
+    Tree tree;
+    // 使用全量顺序写，强调分裂/写放大差异
+    std::vector<int> sorted = data.base_keys;
+    std::sort(sorted.begin(), sorted.end());
+    for (int k : sorted) {
+        tree.insert(k);
+    }
+
+    // 少量随机读：命中 90%，查询次数缩小以避免长时间
+    std::mt19937 rng(123);
+    std::bernoulli_distribution hit(0.9);
+    std::uniform_int_distribution<std::size_t> hit_idx(0, sorted.size() - 1);
+    std::uniform_int_distribution<int> miss_val(static_cast<int>(sorted.size() * 2),
+                                                static_cast<int>(sorted.size() * 3));
+    const std::size_t ops = kParams.seq_read_ops;
+
+    std::size_t checksum = 0, hits = 0;
+    auto start = std::chrono::steady_clock::now();
+    for (std::size_t i = 0; i < ops; ++i) {
+        int k = hit(rng) ? sorted[hit_idx(rng)] : miss_val(rng);
+        auto node = tree.search(k);
+        if (is_hit(node, k)) { ++hits; checksum += static_cast<std::size_t>(k); }
+        else { checksum ^= static_cast<std::size_t>(k); }
+    }
+    auto end = std::chrono::steady_clock::now();
+
+    double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+    return {name, "Seq Insert Light Read", sorted.size(), ops, static_cast<std::size_t>(tree.size()),
+            seconds, per_op(ops, seconds), checksum ^ hits};
+}
+
+// 顺序批量插入耗时（强调分裂/写放大差异）
+template <typename Tree>
+BenchResult bench_seq_bulk_insert(const std::string& name, const Workload& data) {
+    Tree tree;
+    std::vector<int> sorted = data.base_keys;
+    std::sort(sorted.begin(), sorted.end());
+
+    auto start = std::chrono::steady_clock::now();
+    for (int k : sorted) {
+        tree.insert(k);
+    }
+    auto end = std::chrono::steady_clock::now();
+
+    const std::size_t ops = sorted.size();
+    double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+    std::size_t checksum = tree.size();
+    return {name, "Seq Bulk Insert", 0, ops, static_cast<std::size_t>(tree.size()),
+            seconds, per_op(ops, seconds), checksum};
+}
+
+// 多线程随机访问，外层粗锁，规模较小
+template <typename Tree>
+BenchResult bench_mt_random_access(const std::string& tree_name, const BenchConfig&, const Workload&) {
+    const std::size_t init_size = 50000;
+    const std::size_t ops = 100000;
+    std::vector<int> keys(init_size);
+    std::iota(keys.begin(), keys.end(), 0);
+    std::mt19937 rng(999);
+    std::shuffle(keys.begin(), keys.end(), rng);
+
+    Tree tree;
+    for (int k : keys) tree.insert(k);
+
+    std::vector<int> queries;
+    queries.reserve(ops);
+    std::bernoulli_distribution hit(0.8);
+    std::uniform_int_distribution<std::size_t> hit_idx(0, init_size - 1);
+    std::uniform_int_distribution<int> miss_val(static_cast<int>(init_size * 2),
+                                                static_cast<int>(init_size * 3));
+    for (std::size_t i = 0; i < ops; ++i) {
+        queries.push_back(hit(rng) ? keys[hit_idx(rng)] : miss_val(rng));
+    }
+
+    std::mutex mtx;
+    std::atomic<std::size_t> checksum{0};
+    std::atomic<std::size_t> hits{0};
+
+    auto worker = [&](std::size_t lo, std::size_t hi) {
+        for (std::size_t i = lo; i < hi; ++i) {
+            int key = queries[i];
+            auto res = [&]() {
+                std::lock_guard<std::mutex> lk(mtx);
+                return tree.search(key);
+            }();
+            if (is_hit(res, key)) {
+                hits.fetch_add(1, std::memory_order_relaxed);
+                checksum.fetch_add(static_cast<std::size_t>(key), std::memory_order_relaxed);
+            } else {
+                checksum.fetch_xor(static_cast<std::size_t>(key), std::memory_order_relaxed);
+            }
+        }
+    };
+
+    auto start = std::chrono::steady_clock::now();
+    const int threads = 4;
+    std::vector<std::thread> th;
+    std::size_t chunk = (ops + threads - 1) / threads;
+    for (int t = 0; t < threads; ++t) {
+        std::size_t lo = t * chunk;
+        std::size_t hi = std::min(ops, lo + chunk);
+        if (lo >= hi) break;
+        th.emplace_back(worker, lo, hi);
+    }
+    for (auto& x : th) x.join();
+    auto end = std::chrono::steady_clock::now();
+
+    double seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+    return {tree_name + "(MT)", "MT Random Access", init_size, ops,
+            static_cast<std::size_t>(tree.size()), seconds, per_op(ops, seconds),
+            checksum.load() ^ hits.load()};
+}
+
 void print_result(const BenchResult& result) {
     std::cout << std::left << std::setw(9) << result.tree << " | "
               << std::setw(13) << result.scenario << " | "
@@ -459,6 +640,42 @@ int main() {
         //{"Read Heavy", bench_read_heavy<HashtableAdapter>, "HashLinear"},
         {"Read Heavy", bench_read_heavy<QuadraticHTAdapter>, "HashQuad"},
         {"Read Heavy", bench_read_heavy<SkiplistAdapter>, "Skiplist"},
+
+        // 补充场景
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<AVL<int>>(n, d); }, "AVL"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<RedBlack<int>>(n, d); }, "RedBlack"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<Splay<int>>(n, d); }, "Splay"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<BTree<int>>(n, d); }, "BTree"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<BPlusTreeAdapter>(n, d); }, "BPlusTree"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<BStarTreeAdapter>(n, d); }, "BStarTree"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<QuadraticHTAdapter>(n, d); }, "HashQuad"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<SkiplistAdapter>(n, d); }, "Skiplist"},
+
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<AVL<int>>(n, d); }, "AVL"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<RedBlack<int>>(n, d); }, "RedBlack"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<Splay<int>>(n, d); }, "Splay"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<BTree<int>>(n, d); }, "BTree"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<BPlusTreeAdapter>(n, d); }, "BPlusTree"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<BStarTreeAdapter>(n, d); }, "BStarTree"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<QuadraticHTAdapter>(n, d); }, "HashQuad"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<SkiplistAdapter>(n, d); }, "Skiplist"},
+
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<AVL<int>>(n, d); }, "AVL"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<RedBlack<int>>(n, d); }, "RedBlack"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<Splay<int>>(n, d); }, "Splay"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<BTree<int>>(n, d); }, "BTree"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<BPlusTreeAdapter>(n, d); }, "BPlusTree"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<BStarTreeAdapter>(n, d); }, "BStarTree"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<QuadraticHTAdapter>(n, d); }, "HashQuad"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<SkiplistAdapter>(n, d); }, "Skiplist"},
+
+        // 多线程粗锁随机访问（规模较小）
+        {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<AVL<int>>(n, c, w); }, "AVL"},
+        {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<RedBlack<int>>(n, c, w); }, "RedBlack"},
+        {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<BPlusTreeAdapter>(n, c, w); }, "BPlusTree"},
+        {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<BStarTreeAdapter>(n, c, w); }, "BStarTree"},
+        {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<SkiplistAdapter>(n, c, w); }, "Skiplist"},
+        {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<QuadraticHTAdapter>(n, c, w); }, "HashQuad"},
     };
 
     const char* last_group = "";
