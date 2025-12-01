@@ -14,6 +14,9 @@
 #include "BTree.h"
 #include "BPlusTree.h"
 #include "BStarTree.h"
+#include "Hashtable.h"
+#include "HashtableB.h"
+#include "Skiplist.h"
 
 struct BenchConfig {
     std::size_t initial_size = 30000;  // number of elements to prefill
@@ -88,6 +91,40 @@ struct BStarTreeAdapter {
     int size() const { return tree.size(); }
 
     BStarTree<int> tree;
+};
+
+// 线性探测哈希表
+struct HashtableAdapter {
+    HashtableAdapter() : table(1 << 20) {}
+
+    bool insert(int key) { return table.put(key, key); }
+    bool remove(int key) { return table.remove(key); }
+    const int* search(int key) { return table.get(key); }
+    int size() const { return table.size(); }
+
+    Hashtable<int, int> table;
+};
+
+// 二次探测哈希表
+struct QuadraticHTAdapter {
+    QuadraticHTAdapter() : table(1 << 20) {}
+
+    bool insert(int key) { return table.put(key, key); }
+    bool remove(int key) { return table.remove(key); }
+    const int* search(int key) { return table.get(key); }
+    int size() const { return table.size(); }
+
+    QuadraticHT<int, int> table;
+};
+
+// 跳表
+struct SkiplistAdapter {
+    bool insert(int key) { return table.put(key, key); }
+    bool remove(int key) { return table.remove(key); }
+    const int* search(int key) { return table.get(key); }
+    int size() const { return table.size(); }
+
+    Skiplist<int, int> table;
 };
 
 BenchConfig default_config() {
@@ -345,7 +382,7 @@ int main() {
     BenchConfig config = default_config();
     Workload workload = make_workload(config);
 
-    std::cout << "BST benchmark (AVL / RedBlack / Splay / BTree)\n"
+    std::cout << "Data structure benchmark (AVL / RedBlack / Splay / BTree / BPlusTree / BStarTree / Hash / Skiplist)\n"
               << "Initial size: " << config.initial_size
               << ", access ops: " << config.access_ops
               << ", locality ops: " << config.locality_ops
@@ -368,6 +405,9 @@ int main() {
         {"Random Access", bench_random_access<BTree<int>>, "BTree"},
         {"Random Access", bench_random_access<BPlusTreeAdapter>, "BPlusTree"},
         {"Random Access", bench_random_access<BStarTreeAdapter>, "BStarTree"},
+        //{"Random Access", bench_random_access<HashtableAdapter>, "HashLinear"},
+        {"Random Access", bench_random_access<QuadraticHTAdapter>, "HashQuad"},
+        {"Random Access", bench_random_access<SkiplistAdapter>, "Skiplist"},
 
         {"Random Insert", bench_random_insert<AVL<int>>, "AVL"},
         {"Random Insert", bench_random_insert<RedBlack<int>>, "RedBlack"},
@@ -375,6 +415,9 @@ int main() {
         {"Random Insert", bench_random_insert<BTree<int>>, "BTree"},
         {"Random Insert", bench_random_insert<BPlusTreeAdapter>, "BPlusTree"},
         {"Random Insert", bench_random_insert<BStarTreeAdapter>, "BStarTree"},
+        //{"Random Insert", bench_random_insert<HashtableAdapter>, "HashLinear"},
+        {"Random Insert", bench_random_insert<QuadraticHTAdapter>, "HashQuad"},
+        {"Random Insert", bench_random_insert<SkiplistAdapter>, "Skiplist"},
 
         {"Random Erase", bench_random_erase<AVL<int>>, "AVL"},
         {"Random Erase", bench_random_erase<RedBlack<int>>, "RedBlack"},
@@ -382,6 +425,9 @@ int main() {
         {"Random Erase", bench_random_erase<BTree<int>>, "BTree"},
         {"Random Erase", bench_random_erase<BPlusTreeAdapter>, "BPlusTree"},
         {"Random Erase", bench_random_erase<BStarTreeAdapter>, "BStarTree"},
+        //{"Random Erase", bench_random_erase<HashtableAdapter>, "HashLinear"},
+        {"Random Erase", bench_random_erase<QuadraticHTAdapter>, "HashQuad"},
+        {"Random Erase", bench_random_erase<SkiplistAdapter>, "Skiplist"},
 
         // 场景用例集中放在后面
         {"Locality Access", bench_locality_access<AVL<int>>, "AVL"},
@@ -390,6 +436,9 @@ int main() {
         {"Locality Access", bench_locality_access<BTree<int>>, "BTree"},
         {"Locality Access", bench_locality_access<BPlusTreeAdapter>, "BPlusTree"},
         {"Locality Access", bench_locality_access<BStarTreeAdapter>, "BStarTree"},
+        //{"Locality Access", bench_locality_access<HashtableAdapter>, "HashLinear"},
+        {"Locality Access", bench_locality_access<QuadraticHTAdapter>, "HashQuad"},
+        {"Locality Access", bench_locality_access<SkiplistAdapter>, "Skiplist"},
 
         {"Update Heavy", bench_update_heavy<AVL<int>>, "AVL"},
         {"Update Heavy", bench_update_heavy<RedBlack<int>>, "RedBlack"},
@@ -397,6 +446,9 @@ int main() {
         {"Update Heavy", bench_update_heavy<BTree<int>>, "BTree"},
         {"Update Heavy", bench_update_heavy<BPlusTreeAdapter>, "BPlusTree"},
         {"Update Heavy", bench_update_heavy<BStarTreeAdapter>, "BStarTree"},
+        //{"Update Heavy", bench_update_heavy<HashtableAdapter>, "HashLinear"},
+        {"Update Heavy", bench_update_heavy<QuadraticHTAdapter>, "HashQuad"},
+        {"Update Heavy", bench_update_heavy<SkiplistAdapter>, "Skiplist"},
 
         {"Read Heavy", bench_read_heavy<AVL<int>>, "AVL"},
         {"Read Heavy", bench_read_heavy<RedBlack<int>>, "RedBlack"},
@@ -404,6 +456,9 @@ int main() {
         {"Read Heavy", bench_read_heavy<BTree<int>>, "BTree"},
         {"Read Heavy", bench_read_heavy<BPlusTreeAdapter>, "BPlusTree"},
         {"Read Heavy", bench_read_heavy<BStarTreeAdapter>, "BStarTree"},
+        //{"Read Heavy", bench_read_heavy<HashtableAdapter>, "HashLinear"},
+        {"Read Heavy", bench_read_heavy<QuadraticHTAdapter>, "HashQuad"},
+        {"Read Heavy", bench_read_heavy<SkiplistAdapter>, "Skiplist"},
     };
 
     const char* last_group = "";

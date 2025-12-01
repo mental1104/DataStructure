@@ -1,7 +1,7 @@
-set(BST_BENCH_TARGET bst_bench)
+set(BST_BENCH_TARGET ds_bench)
 
 add_executable(${BST_BENCH_TARGET}
-    bst_bench.cpp
+    ds_bench.cpp
 )
 
 target_include_directories(${BST_BENCH_TARGET}
@@ -15,8 +15,8 @@ endif()
 
 if(BUILD_TESTING)
     add_test(
-        NAME bst_bench
+        NAME ds_bench
         COMMAND $<TARGET_FILE:${BST_BENCH_TARGET}>
     )
-    set_tests_properties(bst_bench PROPERTIES LABELS "benchmark;bst")
+    set_tests_properties(ds_bench PROPERTIES LABELS "benchmark;bst")
 endif()
