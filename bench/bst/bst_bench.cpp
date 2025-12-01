@@ -12,6 +12,7 @@
 #include "RedBlack.h"
 #include "Splay.h"
 #include "BTree.h"
+#include "BPlusTree.h"
 
 struct BenchConfig {
     std::size_t initial_size = 30000;  // number of elements to prefill
@@ -59,6 +60,22 @@ inline bool is_hit(BTNode<int>* node, int key) {
     Rank r = node->key.search(key);
     return r >= 0 && r < node->key.size() && node->key[r] == key;
 }
+
+inline bool is_hit(const int* value_ptr, int key) {
+    return value_ptr && *value_ptr == key;
+}
+
+// 轻量包装，使 BPlusTree 适配当前基准的 insert/search/remove 接口
+struct BPlusTreeAdapter {
+    explicit BPlusTreeAdapter(int order = 64) : tree(order) {}
+
+    bool insert(int key) { return tree.insert(key, key); }
+    bool remove(int key) { return tree.remove(key); }
+    const int* search(int key) const { return tree.search(key); }
+    int size() const { return tree.size(); }
+
+    BPlusTree<int, int> tree;
+};
 
 BenchConfig default_config() {
     BenchConfig config;
@@ -336,32 +353,38 @@ int main() {
         {"Random Access", bench_random_access<RedBlack<int>>, "RedBlack"},
         {"Random Access", bench_random_access<Splay<int>>, "Splay"},
         {"Random Access", bench_random_access<BTree<int>>, "BTree"},
+        {"Random Access", bench_random_access<BPlusTreeAdapter>, "BPlusTree"},
 
         {"Random Insert", bench_random_insert<AVL<int>>, "AVL"},
         {"Random Insert", bench_random_insert<RedBlack<int>>, "RedBlack"},
         {"Random Insert", bench_random_insert<Splay<int>>, "Splay"},
         {"Random Insert", bench_random_insert<BTree<int>>, "BTree"},
+        {"Random Insert", bench_random_insert<BPlusTreeAdapter>, "BPlusTree"},
 
         {"Random Erase", bench_random_erase<AVL<int>>, "AVL"},
         {"Random Erase", bench_random_erase<RedBlack<int>>, "RedBlack"},
         {"Random Erase", bench_random_erase<Splay<int>>, "Splay"},
         {"Random Erase", bench_random_erase<BTree<int>>, "BTree"},
+        {"Random Erase", bench_random_erase<BPlusTreeAdapter>, "BPlusTree"},
 
         // 场景用例集中放在后面
         {"Locality Access", bench_locality_access<AVL<int>>, "AVL"},
         {"Locality Access", bench_locality_access<RedBlack<int>>, "RedBlack"},
         {"Locality Access", bench_locality_access<Splay<int>>, "Splay"},
         {"Locality Access", bench_locality_access<BTree<int>>, "BTree"},
+        {"Locality Access", bench_locality_access<BPlusTreeAdapter>, "BPlusTree"},
 
         {"Update Heavy", bench_update_heavy<AVL<int>>, "AVL"},
         {"Update Heavy", bench_update_heavy<RedBlack<int>>, "RedBlack"},
         {"Update Heavy", bench_update_heavy<Splay<int>>, "Splay"},
         {"Update Heavy", bench_update_heavy<BTree<int>>, "BTree"},
+        {"Update Heavy", bench_update_heavy<BPlusTreeAdapter>, "BPlusTree"},
 
         {"Read Heavy", bench_read_heavy<AVL<int>>, "AVL"},
         {"Read Heavy", bench_read_heavy<RedBlack<int>>, "RedBlack"},
         {"Read Heavy", bench_read_heavy<Splay<int>>, "Splay"},
         {"Read Heavy", bench_read_heavy<BTree<int>>, "BTree"},
+        {"Read Heavy", bench_read_heavy<BPlusTreeAdapter>, "BPlusTree"},
     };
 
     const char* last_group = "";
