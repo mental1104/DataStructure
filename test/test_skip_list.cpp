@@ -55,8 +55,8 @@ TEST(SkiplistTest, DuplicateInsertionTest) {
     ASSERT_NE(val, nullptr);
     EXPECT_EQ(*val, 550);
 
-    // 底层链表可能保留重复项，故大小可能为 2
-    EXPECT_EQ(skiplist.size(), 2);
+    // 更新应覆盖原值，规模保持 1
+    EXPECT_EQ(skiplist.size(), 1);
 }
 
 TEST(SkiplistTest, RemoveNonexistentTest) {

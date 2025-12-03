@@ -56,8 +56,14 @@ bool Skiplist<K, V>::put(K k, V v){
     if(this->empty()) this->insertAsFirst(new Quadlist<Entry<K, V>>);
     ListNode<Quadlist<Entry<K, V>>*>* qlist = this->first();
     QuadlistNode<Entry<K, V>>* p = qlist->data->first();//该链中第一个节点
-    if(skipSearch(qlist, p, k))
-        while(p->below) p = p->below;//有雷同词条，强制转至塔底
+    if(skipSearch(qlist, p, k)){
+        // 已存在该键，更新整塔的值，避免重复节点导致结果不确定
+        while(p){ 
+            p->entry.value = v; 
+            p = p->below; 
+        }
+        return true;
+    }
     qlist = this->last();//紧邻p右侧一座新塔开始成长
     QuadlistNode<Entry<K, V>>* b = qlist->data->insertAfterAbove(e, p);
 
