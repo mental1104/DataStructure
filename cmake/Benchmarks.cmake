@@ -1,0 +1,6 @@
+option(ENABLE_BENCHMARKS "Build benchmark executables" ON)
+if(ENABLE_BENCHMARKS AND EXISTS "${CMAKE_SOURCE_DIR}/bench")
+    add_subdirectory(bench)
+else()
+    message(STATUS "Benchmarks are disabled or bench directory missing; skipping benchmark targets.")
+endif()

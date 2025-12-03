@@ -1,0 +1,6 @@
+file(GLOB SRC_FILES "${CMAKE_SOURCE_DIR}/src/*.cpp")
+if(SRC_FILES)
+    add_library(MyProjectLib ${SRC_FILES})
+else()
+    message(STATUS "No source files found in src directory. Skipping MyProjectLib.")
+endif()
