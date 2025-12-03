@@ -13,10 +13,3 @@ if(TARGET MyProjectLib)
     target_link_libraries(${BST_BENCH_TARGET} PRIVATE MyProjectLib)
 endif()
 
-if(BUILD_TESTING)
-    add_test(
-        NAME ds_bench
-        COMMAND $<TARGET_FILE:${BST_BENCH_TARGET}>
-    )
-    set_tests_properties(ds_bench PROPERTIES LABELS "benchmark;bst")
-endif()
