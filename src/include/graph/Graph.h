@@ -43,7 +43,7 @@ struct Vertex {
     int rank;
     Vertex() = default;
     Vertex(int r, Tv const& d = Tv(0)):rank(r), data(d) {}
-    bool operator<(const Vertex<Tv>& rhs) { return priority > rhs.priority;  }//权重越小，优先级越高
+    bool operator<(const Vertex<Tv>& rhs) const { return priority > rhs.priority;  }//权重越小，优先级越高
 };
 
 template<typename Te>
@@ -55,7 +55,7 @@ struct Edge {
     int y;
     Edge() = default;
     Edge(Te const& d, double w, int i, int j):data{d}, weight{w}, x(i), y(j){}
-    bool operator<(const Edge<Te>& rhs) { return weight > rhs.weight;  }//权重越小，优先级越高
+    bool operator<(const Edge<Te>& rhs) const { return weight > rhs.weight;  }//权重越小，优先级越高
 };
 
 template<typename Tv, typename Te>
