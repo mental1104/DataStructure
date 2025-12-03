@@ -4,7 +4,7 @@
 template<typename T, bool MAX = true>
 struct Priority {
     static bool higher(const T& a, const T& b) { //a 是否比 b 优先
-        return MAX ? a > b : a < b;
+        return MAX ? b < a : a < b; //仅依赖operator<，减少自定义类型要求
     }
 };
 
