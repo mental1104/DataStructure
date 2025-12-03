@@ -4,8 +4,8 @@
 #include "BinTree.h"
 #include "PQ.h"
 
-template <typename T>
-class LeftHeap : public PQ<T>, public BinTree<T> { //基于二叉树，以左式堆形式实现的PQ
+template <typename T, bool MAX = true>
+class LeftHeap : public PQ<T, MAX>, public BinTree<T> { //基于二叉树，以左式堆形式实现的PQ
    /*DSA*/friend class UniPrint; //演示输出使用，否则不必设置友类
 private:
     BinNode<T>* merge(BinNode<T>* a, BinNode<T>* b);
@@ -18,18 +18,18 @@ public:
             insert(vec[i]);
     }
    
-    void merge(LeftHeap<T>& right);
+    void merge(LeftHeap<T, MAX>& right);
     void insert(T); //按照比较器确定的优先级次序插入元素
     T getMax(); //取出优先级最高的元素
     T delMax(); //删除优先级最高的元素
 }; //LeftHeap
 
-template <typename T> //根据相对优先级确定适宜的方式，合并以a和b为根节点的两个左式堆
-BinNode<T>* LeftHeap<T>::merge(BinNode<T>* a, BinNode<T>* b) {
+template <typename T, bool MAX> //根据相对优先级确定适宜的方式，合并以a和b为根节点的两个左式堆
+BinNode<T>* LeftHeap<T, MAX>::merge(BinNode<T>* a, BinNode<T>* b) {
     if ( ! a ) return b; //退化情况
     if ( ! b ) return a; //退化情况
-    if ( a->data < b->data ) 
-        swap ( a, b ); //一般情况：首先确保b不大
+    if ( Priority<T, MAX>::higher(b->data, a->data) ) 
+        swap ( a, b ); //一般情况：首先确保a优先级更高
 
     a->rc = merge(a->rc, b); //将a的右子堆，与b合并
     a->rc->parent = a;
@@ -40,21 +40,21 @@ BinNode<T>* LeftHeap<T>::merge(BinNode<T>* a, BinNode<T>* b) {
     return a; //返回合并后的堆顶
 } //本算法只实现结构上的合并，堆的规模须由上层调用者负责更新
 
-template <typename T> 
-void LeftHeap<T>::insert (T e){
+template <typename T, bool MAX> 
+void LeftHeap<T, MAX>::insert (T e){
    this->_root = merge(this->_root, new BinNode<T>(e, nullptr)); //将e封装为左式堆，与当前左式堆合并
    this->_size++; //更新规模
 }
 
-template <typename T> 
-T LeftHeap<T>::getMax(){
+template <typename T, bool MAX> 
+T LeftHeap<T, MAX>::getMax(){
     if (!this->_root) 
         throw std::runtime_error("Heap is empty");
     return this->_root->data; 
 } //按照此处约定，堆顶即优先级最高的词条
 
-template <typename T> 
-T LeftHeap<T>::delMax() {
+template <typename T, bool MAX> 
+T LeftHeap<T, MAX>::delMax() {
    if (!this->_root) 
       throw std::runtime_error("Heap is empty");
    BinNode<T>* lHeap = this->_root->lc; if (lHeap) lHeap->parent = NULL; //左子堆
@@ -66,8 +66,8 @@ T LeftHeap<T>::delMax() {
    return e; //返回原根节点的数据项
 }
 
-template<typename T>
-void LeftHeap<T>::merge(LeftHeap<T>& right){
+template<typename T, bool MAX>
+void LeftHeap<T, MAX>::merge(LeftHeap<T, MAX>& right){
     this->_root = merge(this->_root, right._root);
     right._root = nullptr;
     this->_size += right._size;
