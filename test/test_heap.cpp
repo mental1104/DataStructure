@@ -61,6 +61,16 @@ int main() {
     assert(sum == (100 + 50 + 75 + 25));
     cout << "测试4通过：迭代器遍历正常工作。" << endl;
 
+    // ===== 测试5：小顶堆模式 =====
+    Heap<int, false> minHeap;
+    minHeap.insert(9);
+    minHeap.insert(4);
+    minHeap.insert(7);
+    assert(minHeap.getMax() == 4); // 此时为最小元素
+    assert(minHeap.delMax() == 4);
+    assert(minHeap.getMax() == 7);
+    cout << "测试5通过：小顶堆模式正常工作。" << endl;
+
     cout << "所有 Heap 单元测试均已通过！" << endl;
     return 0;
 }

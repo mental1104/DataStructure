@@ -43,3 +43,14 @@ TEST(FibonacciHeapTest, EmptyHeapTest) {
     EXPECT_THROW(heap.getMax(), std::runtime_error);
     EXPECT_THROW(heap.delMax(), std::runtime_error);
 }
+
+// 小顶堆
+TEST(FibonacciHeapTest, MinHeapTest) {
+    FibonacciHeap<int, false> heap;
+    heap.insert(7);
+    heap.insert(3);
+    heap.insert(9);
+    EXPECT_EQ(heap.getMax(), 3);
+    EXPECT_EQ(heap.delMax(), 3);
+    EXPECT_EQ(heap.getMax(), 7);
+}

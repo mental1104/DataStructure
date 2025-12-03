@@ -43,3 +43,14 @@ TEST(SkewHeapTest, EmptyHeapTest) {
     EXPECT_THROW(heap.getMax(), std::runtime_error);
     EXPECT_THROW(heap.delMax(), std::runtime_error);
 }
+
+// 小顶堆
+TEST(SkewHeapTest, MinHeapTest) {
+    SkewHeap<int, false> heap;
+    heap.insert(10);
+    heap.insert(20);
+    heap.insert(3);
+    EXPECT_EQ(heap.getMax(), 3);
+    EXPECT_EQ(heap.delMax(), 3);
+    EXPECT_EQ(heap.getMax(), 10);
+}

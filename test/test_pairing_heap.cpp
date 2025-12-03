@@ -43,3 +43,14 @@ TEST(PairingHeapTest, EmptyHeapTest) {
     EXPECT_THROW(heap.getMax(), std::runtime_error);
     EXPECT_THROW(heap.delMax(), std::runtime_error);
 }
+
+// 小顶堆
+TEST(PairingHeapTest, MinHeapTest) {
+    PairingHeap<int, false> heap;
+    heap.insert(10);
+    heap.insert(2);
+    heap.insert(8);
+    EXPECT_EQ(heap.getMax(), 2);
+    EXPECT_EQ(heap.delMax(), 2);
+    EXPECT_EQ(heap.getMax(), 8);
+}

@@ -5,11 +5,11 @@
 #include "BinTree.h"
 #include "PQ.h"
 
-template <typename T>
-class FibonacciHeap : public PQ<T>, public BinTree<T> { //基于二叉树与兄弟链表实现的斐波那契堆（最大堆）
+template <typename T, bool MAX = true>
+class FibonacciHeap : public PQ<T, MAX>, public BinTree<T> { //基于二叉树与兄弟链表实现的斐波那契堆（双顶可选）
    /*DSA*/friend class UniPrint; //演示输出使用，否则不必设置友类
 private:
-    BinNode<T>* _maxRoot{nullptr}; //当前根表中的最大根
+    BinNode<T>* _bestRoot{nullptr}; //当前根表中的最优根
 
     BinNode<T>* mergeTrees(BinNode<T>* a, BinNode<T>* b); //按度相同合并两棵树，保留较大者为根
     void consolidate(); //根表合并，保持各度唯一
@@ -21,17 +21,17 @@ public:
             insert(vec[i]);
     }
 
-    void merge(FibonacciHeap<T>& right); //合并两个堆
+    void merge(FibonacciHeap<T, MAX>& right); //合并两个堆
     void insert(T); //按照比较器确定的优先级次序插入元素
     T getMax(); //取出优先级最高的元素
     T delMax(); //删除优先级最高的元素
 }; //FibonacciHeap
 
-template <typename T> //将度数相同的两棵树合并，返回新根
-BinNode<T>* FibonacciHeap<T>::mergeTrees(BinNode<T>* a, BinNode<T>* b) {
+template <typename T, bool MAX> //将度数相同的两棵树合并，返回新根
+BinNode<T>* FibonacciHeap<T, MAX>::mergeTrees(BinNode<T>* a, BinNode<T>* b) {
     if (!a) return b;
     if (!b) return a;
-    if (a->data < b->data) swap(a, b); //保持a为较大根
+    if (Priority<T, MAX>::higher(b->data, a->data)) swap(a, b); //保持a为更优根
 
     // b 挂到 a 的孩子链表，使用 rc 作为兄弟指针
     b->parent = a;
@@ -42,30 +42,30 @@ BinNode<T>* FibonacciHeap<T>::mergeTrees(BinNode<T>* a, BinNode<T>* b) {
     return a;
 } //规模由调用者负责更新
 
-template <typename T> 
-void FibonacciHeap<T>::insert (T e){
+template <typename T, bool MAX> 
+void FibonacciHeap<T, MAX>::insert (T e){
    BinNode<T>* node = new BinNode<T>(e, nullptr);
    node->height = 0; //度数初始化为0
    node->color = RBColor::RED; //未标记
    node->rc = this->_root; //加入根表
    this->_root = node;
-   if (!_maxRoot || _maxRoot->data < node->data) _maxRoot = node;
+    if (!_bestRoot || Priority<T, MAX>::higher(node->data, _bestRoot->data)) _bestRoot = node;
    this->_size++; //更新规模
 }
 
-template <typename T> 
-T FibonacciHeap<T>::getMax(){
-    if (!_maxRoot) 
+template <typename T, bool MAX> 
+T FibonacciHeap<T, MAX>::getMax(){
+    if (!_bestRoot) 
         throw std::runtime_error("Heap is empty");
-    return _maxRoot->data; 
+    return _bestRoot->data; 
 } //按照此处约定，堆顶即优先级最高的词条
 
-template <typename T> 
-T FibonacciHeap<T>::delMax() {
-   if (!_maxRoot) 
+template <typename T, bool MAX> 
+T FibonacciHeap<T, MAX>::delMax() {
+   if (!_bestRoot) 
       throw std::runtime_error("Heap is empty");
 
-   BinNode<T>* maxNode = _maxRoot;
+   BinNode<T>* maxNode = _bestRoot;
 
    //从根表删除 maxNode
    BinNode<T>* prev = nullptr;
@@ -93,13 +93,13 @@ T FibonacciHeap<T>::delMax() {
    T e = maxNode->data; 
    delete maxNode; 
    this->_size--; //删除根节点
-   _maxRoot = nullptr;
+   _bestRoot = nullptr;
    if (this->_root) consolidate(); //合并根表以维护度数唯一并更新最大值
    return e; //返回原根节点的数据项
 }
 
-template <typename T> //根表整理：对相同度数的树两两合并
-void FibonacciHeap<T>::consolidate() {
+template <typename T, bool MAX> //根表整理：对相同度数的树两两合并
+void FibonacciHeap<T, MAX>::consolidate() {
     if (!this->_root) return;
     int bound = 0;
     int n = this->_size <= 0 ? 1 : this->_size;
@@ -124,39 +124,39 @@ void FibonacciHeap<T>::consolidate() {
     }
 
     this->_root = nullptr;
-    _maxRoot = nullptr;
+    _bestRoot = nullptr;
     for (int i = 0; i < bound; i++) {
         if (table[i]) {
             table[i]->parent = nullptr;
             table[i]->rc = this->_root;
             this->_root = table[i];
-            if (!_maxRoot || _maxRoot->data < table[i]->data)
-                _maxRoot = table[i];
+            if (!_bestRoot || Priority<T, MAX>::higher(table[i]->data, _bestRoot->data))
+                _bestRoot = table[i];
         }
     }
     delete [] table;
 }
 
-template<typename T>
-void FibonacciHeap<T>::merge(FibonacciHeap<T>& right){
+template<typename T, bool MAX>
+void FibonacciHeap<T, MAX>::merge(FibonacciHeap<T, MAX>& right){
     if (!right._root) return;
     if (!this->_root) {
         this->_root = right._root;
-        _maxRoot = right._maxRoot;
+        _bestRoot = right._bestRoot;
     } else {
         //将右堆根表接到当前根表前端
         BinNode<T>* tail = right._root;
         while (tail->rc) tail = tail->rc;
         tail->rc = this->_root;
         this->_root = right._root;
-        if (_maxRoot && right._maxRoot && _maxRoot->data < right._maxRoot->data)
-            _maxRoot = right._maxRoot;
-        else if (!_maxRoot)
-            _maxRoot = right._maxRoot;
+        if (_bestRoot && right._bestRoot && Priority<T, MAX>::higher(right._bestRoot->data, _bestRoot->data))
+            _bestRoot = right._bestRoot;
+        else if (!_bestRoot)
+            _bestRoot = right._bestRoot;
     }
     this->_size += right._size;
     right._root = nullptr;
-    right._maxRoot = nullptr;
+    right._bestRoot = nullptr;
     right._size = 0;
 }
 
