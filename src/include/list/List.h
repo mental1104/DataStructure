@@ -22,6 +22,7 @@ public:
     List(List<T> const& L);// copy constructor
     List(List<T> const& L, Rank r, int n);
     List(ListNode<T>* p, int n);
+    List<T>& operator=(List<T> const& L);
     ~List();
 
     Rank size() const { return _size; }
@@ -125,6 +126,16 @@ List<T>::List(List<T> const& L) {   copyNodes(L.first(), L._size); }
 
 template<typename T>
 List<T>::List(List<T> const& L, int r, int n) { copyNodes(L[r], n); }
+
+template<typename T>
+List<T>& List<T>::operator=(List<T> const& L) {
+    if (this == &L) return *this;
+    clear();
+    for (auto p = L.first(); p != L.trailer; p = p->succ) {
+        insertAsLast(p->data);
+    }
+    return *this;
+}
 
 template<typename T>
 T List<T>::remove(ListNode<T>* p){
