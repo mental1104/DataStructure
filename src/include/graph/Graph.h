@@ -8,6 +8,7 @@
 #include "Heap.h"
 #include "WeightedQuickUnionwithCompression.h"
 #include "GraphObserver.h"
+#include <climits>
 
 enum class VStatus {
     SOURCE,
@@ -535,40 +536,52 @@ void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < 
     status(v) = VStatus::VISITED; //对v的访问结束
 }
 
-template <typename Tv, typename Te>
-template<typename PU> 
-void Graph<Tv, Te>::pfs(int s, PU prioUpdater){
-    reset();
-    int v = s;//初始化
-    do 
-        if(VStatus::UNDISCOVERED == status(v))
-            PFS(v, prioUpdater);
-    while(s != (v = (++v % n)));
+template <typename Tv, typename Te> template <typename PU>
+void Graph<Tv, Te>::pfs( int s, PU prioUpdater ) {
+   reset();
+   for ( int v = s; v < s + n; v++ )
+      if ( VStatus::UNDISCOVERED == status( v % n ) )
+         PFS( v % n, prioUpdater );
 }
 
-template <typename Tv, typename Te>
-template<typename PU> 
-void Graph<Tv, Te>::PFS(int s, PU prioUpdater){
-    priority(s) = 0.0;
-    status(s) = VStatus::VISITED;
-    parent(s) = -1;
-    //PQ_ComplHeap<Vertex<Tv>> pq;
-    while(1){
-        for(int w = firstNbr(s); -1 < w; w = nextNbr(s, w))
-            prioUpdater(this, s, w);
+template <typename Tv, typename Te> template <typename PU>
+void Graph<Tv, Te>::PFS( int v, PU prioUpdater ) {
+   priority( v ) = 0; status( v ) = VStatus::VISITED;
+   for ( int k = 1 ; k < n ; k++ ) {
+      for ( int u = firstNbr( v ); - 1 != u; u = nextNbr( v, u ) )
+         prioUpdater( this, v, u );
+      double shortest = priority(v);
+      int next = -1;
+      for ( int u = 0; u < n; u++ )
+         if ( ( VStatus::UNDISCOVERED == status( u ) ) && ( (next == -1) || (priority( u ) < shortest) ) ) {
+            shortest = priority( u ); next = u;
+         }
+      if (next == -1) break;
+      v = next;
+      status( v ) = VStatus::VISITED;
+      if (parent(v) >= 0) type( parent( v ), v ) = EType::TREE;
+   }
+}
 
-        unsigned long infinity = 0x7ff0000000000000;
-        double shortest = *reinterpret_cast<double*>(&infinity);//max double
-        for(int w = 0; w < n; w++)
-            if(VStatus::UNDISCOVERED == status(w))
-                if(shortest > priority(w)){
-                    shortest = priority(w);
-                    s = w;
-                } 
-        if(VStatus::VISITED == status(s)) break;
-        status(s) = VStatus::VISITED;
-        type(parent(s), s) = EType::TREE;
-    }
+template <typename Tv, typename Te> //最短路径Dijkstra算法：适用于一般的有向图
+void Graph<Tv, Te>::dijkstra( int s ) {
+   reset(); priority( s ) = 0;
+   for ( int i = 0; i < n; i++ ) {
+      status( s ) = VStatus::VISITED;
+      if ( -1 != parent( s ) ) type( parent( s ), s ) = EType::TREE;
+      for ( int j = firstNbr( s ); -1 != j; j = nextNbr( s, j ) )
+         if ( ( status( j ) == VStatus::UNDISCOVERED ) && ( priority( j ) > priority( s ) + weight( s, j ) ) )
+            { priority( j ) = priority( s ) + weight( s, j ); parent( j ) = s; }
+      double shortest = priority(s);
+      int next = -1;
+      for ( int j = 0; j < n; j++ )
+         if ( ( status( j ) == VStatus::UNDISCOVERED ) && ( (next == -1) || (priority( j ) < shortest) ) ) {
+            shortest = priority( j );
+            next = j;
+         }
+      if (next == -1) break;
+      s = next;
+   }
 }
 
 template <typename Tv, typename Te>
@@ -605,7 +618,29 @@ void Graph<Tv, Te>::kruskal(bool flag){
             edges.insert(summary);
         }
         observer->onKruskalDone(weight, edges);
-    }
+   }
+}
+
+template <typename Tv, typename Te> //Prim算法：无向连通图，各边表示为方向互逆、权重相等的一对边
+void Graph<Tv, Te>::prim( int s ) { // s < n
+   reset(); priority ( s ) = 0;
+    for ( int i = 0; i < n; i++ ) {
+      status( s ) = VStatus::VISITED;
+      if ( -1 != parent( s ) ) type( parent( s ), s ) = EType::TREE;
+      for ( int j = firstNbr( s ); -1 != j; j = nextNbr( s, j ) )
+         if ( ( status( j ) == VStatus::UNDISCOVERED ) && ( priority( j ) > weight( s, j ) ) ) {
+            priority( j ) = weight( s, j ); parent( j ) = s;
+         }
+      double shortest = priority(s);
+      int next = -1;
+      for ( int j = 0; j < n; j++ )
+         if ( ( status( j ) == VStatus::UNDISCOVERED ) && ( (next == -1) || (priority( j ) < shortest) ) ) {
+            shortest = priority( j );
+            next = j;
+         }
+      if (next == -1) break;
+      s = next;
+   }
 }
 
 #endif

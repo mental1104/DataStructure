@@ -58,14 +58,24 @@ std::vector<std::pair<int, int>> gen_edges(int n, int m, std::uint32_t seed) {
     seen.reserve(static_cast<size_t>(m) * 2);
     std::vector<std::pair<int, int>> edges;
     edges.reserve(m);
-    while ((int)edges.size() < m) {
+    int target = std::max(m, n - 1); // 至少覆盖生成树
+    // ensure weak connectivity with a bidirectional chain
+    for (int i = 0; i + 1 < n && (int)edges.size() < target; ++i) {
+        int u = i, v = i + 1;
+        EdgeKey k1 = make_key(u, v);
+        EdgeKey k2 = make_key(v, u);
+        if (seen.insert(k1).second) edges.emplace_back(u, v);
+        if ((int)edges.size() < target && seen.insert(k2).second) edges.emplace_back(v, u);
+    }
+    // add remaining random edges (bidirectional)
+    while ((int)edges.size() < target) {
         int u = dist(rng);
         int v = dist(rng);
         if (u == v) continue;
-        EdgeKey k = make_key(u, v);
-        if (seen.insert(k).second) {
-            edges.emplace_back(u, v);
-        }
+        EdgeKey k1 = make_key(u, v);
+        EdgeKey k2 = make_key(v, u);
+        if (seen.insert(k1).second) edges.emplace_back(u, v);
+        if ((int)edges.size() < target && seen.insert(k2).second) edges.emplace_back(v, u);
     }
     return edges;
 }
@@ -76,9 +86,9 @@ GraphT build_graph(const BenchCase& c, const std::vector<std::pair<int, int>>& e
     for (int i = 0; i < c.n; ++i) g.insert(i);
     std::mt19937 rng(c.seed + 1);
     std::uniform_real_distribution<double> wdist(1.0, 100.0);
-    for (const auto& e : edges) {
-        int u = e.first;
-        int v = e.second;
+    for (int idx = 0; idx < (int)edges.size(); ++idx) {
+        int u = edges[idx].first;
+        int v = edges[idx].second;
         double w = wdist(rng);
         g.insert(static_cast<int>(w), u, v, w);
     }
@@ -99,15 +109,22 @@ std::vector<BenchResult> run_algos(const std::string& impl, GraphT& g) {
     auto record = [&](const std::string& algo, double ms, bool available = true) {
         res.push_back({impl, algo, ms, get_rss_kb(), available});
     };
+    struct PFSUpdate {
+        void operator()(Graph<int,int>* g, int v, int u) {
+            if (g->status(u) == VStatus::UNDISCOVERED && g->priority(u) > g->priority(v) + g->weight(v, u)) {
+                g->priority(u) = g->priority(v) + g->weight(v, u);
+                g->parent(u) = v;
+            }
+        }
+    };
     record("build", 0.0); // placeholder updated by caller if needed
     record("bfs", time_it(g, [&]() { g.bfs(0); }));
     record("dfs", time_it(g, [&]() { g.dfs(0); }));
     record("bcc", time_it(g, [&]() { g.bcc(0); }));
     record("tSort", time_it(g, [&]() { auto s = g.tSort(0); delete s; }));
-    // unavailable in this codebase; mark n/a to keep列完整
-    record("prim", -1.0, false);
-    record("dijkstra", -1.0, false);
-    record("pfs", -1.0, false);
+    record("dijkstra", time_it(g, [&]() { g.dijkstra(0); }));
+    record("pfs", time_it(g, [&]() { PFSUpdate upd; g.pfs(0, upd); }));
+    record("prim", time_it(g, [&]() { g.prim(0); }));
     record("kruskal", time_it(g, [&]() { g.kruskal(false); }));
     record("connectedComponents", time_it(g, [&]() { g.connectedComponents(false); }));
     record("connected(v,w)", time_it(g, [&]() { g.connectedComponents(0, g.n > 1 ? g.n - 1 : 0); }));
