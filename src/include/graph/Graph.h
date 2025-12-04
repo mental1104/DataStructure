@@ -7,6 +7,7 @@
 #include "Queue.h"
 #include "Heap.h"
 #include "WeightedQuickUnionwithCompression.h"
+#include "GraphObserver.h"
 
 enum class VStatus {
     SOURCE,
@@ -98,7 +99,9 @@ private:
     void KosarajuSCC(int, int&, Vector<bool>&, Vector<int>&);//强连通子图遍历
 
 public:
-    
+    GraphObserver<Tv, Te>* observer{nullptr};
+    void setObserver(GraphObserver<Tv, Te>* obs) { observer = obs; }
+
     //顶点接口
     int n;
     virtual int insert(Tv const& ) = 0;//插入顶点，返回编号
@@ -273,13 +276,13 @@ int Graph<Tv, Te>::connectedComponents(bool flag){
         }
     }
 
-    if(flag){
+    if(flag && observer){
         for(int i = 0; i < count; i++){
+            Vector<int> comp;
             for(int j = 0; j < id.size(); j++){
-                if(id[j] == i)
-                    printf("%d ", j);
+                if(id[j] == i) comp.insert(j);
             }
-            printf("\n");
+            observer->onSCCComponent(comp);
         }
     }
     return count;
@@ -319,13 +322,13 @@ void Graph<Tv, Te>::reachableComponents(int s){
     RC(s, marked);
 
 
-    for(int i = 0; i < this->n; i++){
-        if(marked[i] == true)
-            printf("%d ", i);
+    if(observer){
+        Vector<int> reach;
+        for(int i = 0; i < this->n; i++){
+            if(marked[i]) reach.insert(i);
+        }
+        observer->onSCCComponent(reach);
     }
-    printf("\n");
-
-    return;
 }
 
 template<typename Tv, typename Te>
@@ -455,14 +458,12 @@ int Graph<Tv, Te>::kosarajuSCC(bool flag){
         }
     }
     
-    if(flag){
-        for(int i = 0; i < count; i++){
-            for(int j = 0; j < this->n; j++){
-                if(id[j] == i)
-                    printf("%d ",j);
-            }
-            printf("\n");
+    if(flag && observer){
+        Vector<Vector<int>> comps(count, count, Vector<int>());
+        for (int v = 0; v < this->n; v++) {
+            if (id[v] >= 0 && id[v] < count) comps[id[v]].insert(v);
         }
+        for (int i = 0; i < comps.size(); i++) observer->onSCCComponent(comps[i]);
     }
     return count;
 }
@@ -596,10 +597,14 @@ void Graph<Tv, Te>::kruskal(bool flag){
         status(w) = VStatus::VISITED; 
     }
 
-    if(flag){
-        for(int i = 0; i < mst.size(); i++)
-            printf("%d-%d %.2f\n", mst[i].x, mst[i].y, mst[i].weight);
-        printf("Total weight: %.2f\n", weight);
+    if(flag && observer){
+        Vector<KruskalEdgeSummary<Tv, Te>> edges;
+        for(int i = 0; i < mst.size(); i++){
+            observer->onKruskalEdge(mst[i].x, mst[i].y, mst[i].weight);
+            KruskalEdgeSummary<Tv, Te> summary{mst[i].x, mst[i].y};
+            edges.insert(summary);
+        }
+        observer->onKruskalDone(weight, edges);
     }
 }
 
