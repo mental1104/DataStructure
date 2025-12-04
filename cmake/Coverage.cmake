@@ -17,17 +17,30 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang
 endif()
 
 if(COVERAGE)
-    find_program(LCOV_EXEC lcov REQUIRED)
-    find_program(GENHTML_EXEC genhtml REQUIRED)
-    if(LCOV_EXEC AND GENHTML_EXEC)
+    find_program(GCOVR_EXEC gcovr)
+    if(GCOVR_EXEC)
         add_custom_target(coverage
-            COMMAND ${LCOV_EXEC} --directory ${CMAKE_BINARY_DIR} --capture --ignore-errors inconsistent --output-file coverage.info
-            COMMAND ${LCOV_EXEC} --ignore-errors unused --remove coverage.info '*/test/*' '/usr/*' '*/external/*' '*/gtest/*' --output-file coverage_filtered.info
-            COMMAND ${GENHTML_EXEC} coverage_filtered.info --output-directory ${CMAKE_BINARY_DIR}/coverage_report
-            COMMENT "Generating coverage report..."
+            COMMAND ${CMAKE_COMMAND} -E echo "[info] 清理生成目录下的旧 gcda（仅保留测试覆盖率）"
+            COMMAND find ${CMAKE_BINARY_DIR}/CMakeFiles -name "*.gcda" -delete
+            COMMAND ${CMAKE_COMMAND} -E echo "[info] 运行 ctest 生成覆盖率数据（排除 bench）"
+            COMMAND ctest --output-on-failure -LE bench
+            COMMAND ${GCOVR_EXEC}
+                -r ${CMAKE_SOURCE_DIR}
+                --object-directory ${CMAKE_BINARY_DIR}
+                --filter '${CMAKE_SOURCE_DIR}/src/include'
+                --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/'
+                --exclude '/usr/include/.*'
+                --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*'
+                --exclude-directories '.*/CMakeFiles/.*'
+                --gcov-exclude '.*CMakeFiles/.*'
+                --gcov-ignore-parse-errors
+                --gcov-ignore-errors source_not_found
+                --txt
+                --print-summary
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Coverage summary (gcovr; excludes test/bench/thirdparty/lib/overlay)"
         )
     else()
-        message(WARNING "lcov or genhtml not found, coverage target will not work")
+        message(WARNING "gcovr not found; coverage target will be unavailable")
     endif()
 endif()
