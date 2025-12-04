@@ -1,8 +1,22 @@
 #pragma once
 
+#include <random>
+
+namespace {
+template <typename R>
+inline R rand_inclusive(R lo, R hi) {
+    static thread_local std::mt19937 rng(0xC0FFEEu);
+    std::uniform_int_distribution<R> dist(lo, hi);
+    return dist(rng);
+}
+} // namespace
+
 template <typename T>
 inline Rank VectorSortImpl::partition(Vector<T> &container, Rank lo, Rank hi)
 {
+    Rank pivot = rand_inclusive(lo, hi);
+    if (pivot != lo) swap(container[lo], container[pivot]);
+
     Rank i = lo, j = hi+1;
     T v = container[lo];
     while(true){
@@ -32,6 +46,9 @@ inline void VectorSortImpl::quickSort(Vector<T> &container, Rank lo, Rank hi)
 
 template <typename T>
 inline int VectorSortImpl::partitionB(Vector<T>& container, int lo, int hi) {
+    int pivot_idx = rand_inclusive(lo, hi - 1);
+    if (pivot_idx != lo) swap(container[lo], container[pivot_idx]);
+
     T pivot = container[lo];         // 选择第一个元素作为 pivot
     int i = lo + 1;                  // i 从 lo+1 开始
     int j = hi - 1;                  // j 指向最后一个有效元素
@@ -80,6 +97,9 @@ template <typename T>
 inline void VectorSortImpl::quick3way(Vector<T> &container, Rank lo, Rank hi)
 {
     if(hi - lo < 2) return;  // 区间内少于 2 个元素直接返回
+    Rank pivot_idx = rand_inclusive(lo, hi - 1);
+    if (pivot_idx != lo) swap(container[lo], container[pivot_idx]);
+
     Rank lt = lo, i = lo+1, gt = hi - 1;
     T v = container[lo];
     while(i <= gt){

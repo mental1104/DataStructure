@@ -16,7 +16,7 @@ inline void VectorSortImpl::heapSort(Vector<T> &container, Rank lo, Rank hi) {
     int heap = hi - lo - 1;
     
     // 从 heap/2 - 1 开始构建大顶堆（0-based）
-    for (int k = heap / 2 - 1; k >= 0; k--)
+    for (int k = heap / 2; k >= 0; k--)
         sink(container, k, heap);
     
     while (heap > 0) {
