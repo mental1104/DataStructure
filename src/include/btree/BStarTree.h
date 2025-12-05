@@ -36,6 +36,28 @@ public:
     bool insert(const T& e, bool /*unused*/ = true);
 
     bool remove(const T& e) override;
+
+    template<typename Res, typename Agg>
+    Res rangeAggregate(const T& lo, const T& hi, Res identity, Agg&& agg) const {
+        return rangeAggregateRec(_root, lo, hi, identity, agg);
+    }
+private:
+    template<typename Res, typename Agg>
+    Res rangeAggregateRec(Node* x, const T& lo, const T& hi, Res acc, Agg&& agg) const {
+        if (!x) return acc;
+        int n = x->key.size();
+        for (int i = 0; i < n; ++i) {
+            Node* left = x->child[i];
+            if (left) acc = rangeAggregateRec(left, lo, hi, acc, agg);
+            if (!(x->key[i] < lo) && !(hi < x->key[i])) {
+                acc = agg(acc, x->key[i]);
+            }
+        }
+        if (x->child.size() == n + 1 && x->child[n]) {
+            acc = rangeAggregateRec(x->child[n], lo, hi, acc, agg);
+        }
+        return acc;
+    }
 };
 
 template<typename T>

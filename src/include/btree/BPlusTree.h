@@ -255,6 +255,23 @@ public:
         return nullptr;
     }
 
+    template<typename R, typename Agg>
+    R rangeAggregate(const Key& low, const Key& high, R identity, Agg&& agg) const {
+        if (!_root) return identity;
+        Node* leaf = findLeaf(low);
+        if (!leaf) return identity;
+        int idx = lowerBound(leaf->key, low);
+        R acc = identity;
+        for (Node* cur = leaf; cur; cur = cur->next) {
+            for (int i = idx; i < cur->key.size(); i++) {
+                if (_cmp(high, cur->key[i])) return acc;
+                acc = agg(acc, cur->value[i]);
+            }
+            idx = 0;
+        }
+        return acc;
+    }
+
     bool insert(const Key& k, const Value& v) {
         if (!_root) {
             _root = new Node(true);

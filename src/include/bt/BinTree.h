@@ -11,6 +11,8 @@ protected:
     virtual int updateHeight(BinNode<T>* x);
     void updateHeightAbove(BinNode<T>* x);
     BinNode<T>*& FromParentTo(const BinNode<T>& node);
+    template<typename Res, typename Agg>
+    Res rangeAggregateRec(BinNode<T>* x, const T& lo, const T& hi, Res acc, Agg&& agg) const;
 public:
     BinTree(){}
     ~BinTree() {  if(0 < _size) levelRemove(_root);  }
@@ -28,6 +30,13 @@ public:
     struct iterator;
     iterator begin();
     iterator end();
+    const iterator begin() const { return const_cast<BinTree<T>*>(this)->begin(); }
+    const iterator end() const { return const_cast<BinTree<T>*>(this)->end(); }
+
+    template<typename Res, typename Agg>
+    Res rangeAggregate(const T& lo, const T& hi, Res identity, Agg&& agg) const {
+        return rangeAggregateRec(_root, lo, hi, identity, agg);
+    }
     template<typename VST> void travLevel(VST&& visit){  if(_root) _root->travLevel(visit); }
     template<typename VST> void travPre(VST&& visit){  if(_root) _root->travPre(visit); }
     template<typename VST> void travIn(VST&& visit){  if(_root) _root->travIn(visit); }
@@ -212,6 +221,21 @@ template<typename T>
 typename BinTree<T>::iterator
 BinTree<T>::end() {
     return iterator{nullptr};
+}
+
+template<typename T>
+template<typename Res, typename Agg>
+Res BinTree<T>::rangeAggregateRec(BinNode<T>* x, const T& lo, const T& hi, Res acc, Agg&& agg) const {
+    if (!x) return acc;
+    if (x->data < lo) {
+        return rangeAggregateRec(x->rc, lo, hi, acc, agg);
+    }
+    if (hi < x->data) {
+        return rangeAggregateRec(x->lc, lo, hi, acc, agg);
+    }
+    acc = rangeAggregateRec(x->lc, lo, hi, acc, agg);
+    acc = agg(acc, x->data);
+    return rangeAggregateRec(x->rc, lo, hi, acc, agg);
 }
 
 
