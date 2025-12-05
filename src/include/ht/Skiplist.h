@@ -22,6 +22,9 @@ public:
     bool put(K, V);//插入
     V* get(K k);//读取
     bool remove(K k);//删除
+
+    template<typename Res, typename Agg>
+    Res rangeAggregate(const K& lo, const K& hi, Res identity, Agg&& agg) const;
 };
 
 template<typename K, typename V>
@@ -96,6 +99,24 @@ bool Skiplist<K, V>::remove(K k){
     while(!this->empty() && this->first()->data->empty())//更新链表
         List<Quadlist<Entry<K, V>>*>::remove(this->first());
     return true;
+}
+
+template<typename K, typename V>
+template<typename Res, typename Agg>
+Res Skiplist<K, V>::rangeAggregate(const K& lo, const K& hi, Res identity, Agg&& agg) const {
+    if (this->empty()) return identity;
+    auto bottom = this->last(); // 最底层 Quadlist
+    auto p = bottom->data->first();
+    // 跳过 header 与过小的键
+    while (bottom->data->valid(p) && p->entry.key < lo) {
+        p = p->succ;
+    }
+    Res acc = identity;
+    while (bottom->data->valid(p) && p->entry.key <= hi) {
+        acc = agg(acc, p->entry.value);
+        p = p->succ;
+    }
+    return acc;
 }
 
 #endif
