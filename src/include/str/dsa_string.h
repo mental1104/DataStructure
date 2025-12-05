@@ -6,6 +6,8 @@
 
 class String {
 public:
+    using value_type = char;
+
     String();//默认构造函数
     String(const char* s);//C风格字符串的构造函数
     String(char c);
@@ -40,6 +42,11 @@ public:
     bool operator<(const String& rhs) const; 
     template<typename VST> void traverse(VST&& visit);
     void traverse(void (*visit)(char&));
+
+    char* begin() { return data_; }
+    const char* begin() const { return data_; }
+    char* end() { return end_; }
+    const char* end() const { return end_; }
 
 private:
     char* data_;
