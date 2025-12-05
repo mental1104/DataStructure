@@ -79,8 +79,20 @@ void Vector<T>::copyFrom(T const* A, Rank lo, Rank hi){
 template<typename T>
 Vector<T>& 
 Vector<T>::operator=(Vector<T> const& V){
-    if( _elem ) delete []_elem;
-    copyFrom(V._elem, 0, V.size());
+    // 旧版：if(_elem) delete[] _elem; copyFrom(V._elem, 0, V.size());
+    // 每次赋值都重新分配并拷贝，频繁触发大块内存分配/释放，构建后缀数组这类重度赋值路径会被放大。
+    // 新版：只有在容量不足时才重分配，否则复用现有缓冲区，仅做元素拷贝，显著降低分配开销。
+    // 取舍：省去了无谓分配/释放以换取更快速度，代价是保留原缓冲区可能暂时占用更多容量（但符合 vector 语义）。
+    if (this == &V) return *this;
+    if (_capacity < V._size) {
+        delete []_elem;
+        _capacity = 2 * V._size;
+        _elem = new T[_capacity];
+    }
+    _size = V._size;
+    for (int i = 0; i < _size; ++i) {
+        _elem[i] = V._elem[i];
+    }
     return *this;
 }
 
