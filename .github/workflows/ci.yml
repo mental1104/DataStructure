@@ -35,7 +35,13 @@ jobs:
           sudo apt-get install -y gcovr
 
       - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            COVERAGE_FLAGS="-DCOVERAGE=ON -DENABLE_COVERAGE=ON"
+          else
+            COVERAGE_FLAGS="-DCOVERAGE=OFF -DENABLE_COVERAGE=OFF"
+          fi
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release $COVERAGE_FLAGS
 
       - name: Build
         run: cmake --build build --config Release --parallel
