@@ -69,7 +69,7 @@ Rank Heap<T, MAX>::percolateUp (Rank i) {
         if (Priority<T, MAX>::higher(this->_elem[j], this->_elem[i])) 
             break; //一旦父子顺序正确，上滤完成；否则
 
-        swap (this->_elem[i], this->_elem[j]); i = j; //父子换位，并继续考查上一层
+        ::swap (this->_elem[i], this->_elem[j]); i = j; //父子换位，并继续考查上一层（显式用全局swap避免与std::swap产生歧义；Linux/macOS常靠ADL和不同重载集合躲过去，MSVC更严格而报错）
    } //while
    return i; //返回上滤最终抵达的位置
 }
@@ -78,7 +78,7 @@ template <typename T, bool MAX>
 Rank Heap<T, MAX>::percolateDown(Rank n, Rank i) {
    Rank j; //i及其（至多两个）孩子中，堪为父者
    while (i != (j = ProperParent(n, i ))){ 
-       swap(this->_elem[i], this->_elem[j] ); 
+       ::swap(this->_elem[i], this->_elem[j] ); // 显式调用全局swap（MSVC重载集更严格会歧义，Linux/macOS通常ADL优先解析到全局版本而未触发）
        i = j; 
    } //二者换位，并继续考查下降后的i
    return i; //返回下滤抵达的位置（亦i亦j）

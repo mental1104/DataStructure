@@ -19,7 +19,7 @@ AVL<T>::insert(const T& e){
     this->_size++;
     for(BinNode<T>* g = this->_hot; g; g = g->parent){
         if(!AvlBalanced(*g)){
-            BinNode<T>*& parentLink = this->FromParentTo(*g); // evaluate before rotation to avoid unspecified order
+            BinNode<T>*& parentLink = this->FromParentTo(*g); // C++14 下赋值号两边求值顺序未定义，先拿到父链接再旋转以避免未定义行为
             g = parentLink = this->rotateAt(tallerChild(tallerChild(g)));
         }
         this->updateHeight(g);
@@ -36,7 +36,7 @@ bool AVL<T>::remove(const T& e){
     this->_size--;
     for(BinNode<T>* g = this->_hot; g; g = g->parent){
         if(!AvlBalanced(*g)) {
-            BinNode<T>*& parentLink = this->FromParentTo(*g); // evaluate before rotation to avoid unspecified order
+            BinNode<T>*& parentLink = this->FromParentTo(*g); // 同上：先抓父链接，再旋转，避免未定义的求值顺序污染树结构
             g = parentLink = this->rotateAt(tallerChild(tallerChild(g)));
         }
         this->updateHeight(g);
