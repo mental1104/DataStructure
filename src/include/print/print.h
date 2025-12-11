@@ -83,7 +83,7 @@ void UniPrint::p ( float e ) { printf ( " %4.2f", e ); }
 void UniPrint::p ( double e ) { printf ( " %4.2f", e ); }
 void UniPrint::p ( char e ) { printf ( "%c", ( char(31) < e ) && ( e < char(128) ) ? e : '$' ); }
 void UniPrint::p ( unsigned int e ) {  printf ( " %04u", e ); }
-void UniPrint::p ( size_t e) {   printf ("-%lu", e); }
+void UniPrint::p ( size_t e) {   printf ("-%zu", e); } // size_t的标准占位符，Linux/macOS上%lu凑巧能用，MSVC下size_t是ULL需%zu否则发警告
 
 void UniPrint::p ( VStatus e ) {
    switch ( e ) {
