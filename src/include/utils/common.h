@@ -2,12 +2,15 @@
 #define __DSA_COMMON
 
 #include <ctime>
-#include <unistd.h>
 #include <cstring>
 #include <climits>
 #include <cassert>
 #include <fstream>
 #include <cstdio>
+
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 using size_type = unsigned;
 using Rank = int;
