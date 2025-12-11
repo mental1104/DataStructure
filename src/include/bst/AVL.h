@@ -19,10 +19,10 @@ AVL<T>::insert(const T& e){
     this->_size++;
     for(BinNode<T>* g = this->_hot; g; g = g->parent){
         if(!AvlBalanced(*g)){
-            this->FromParentTo(*g) = this->rotateAt(tallerChild(tallerChild(g)));
-            break;
-        } else
-            this->updateHeight(g);
+            BinNode<T>*& parentLink = this->FromParentTo(*g); // evaluate before rotation to avoid unspecified order
+            g = parentLink = this->rotateAt(tallerChild(tallerChild(g)));
+        }
+        this->updateHeight(g);
     }
     return xx;
 }
@@ -35,8 +35,10 @@ bool AVL<T>::remove(const T& e){
     removeAt(x, this->_hot);
     this->_size--;
     for(BinNode<T>* g = this->_hot; g; g = g->parent){
-        if(!AvlBalanced(*g))
-            g = this->FromParentTo(*g) = this->rotateAt(tallerChild(tallerChild(g)));
+        if(!AvlBalanced(*g)) {
+            BinNode<T>*& parentLink = this->FromParentTo(*g); // evaluate before rotation to avoid unspecified order
+            g = parentLink = this->rotateAt(tallerChild(tallerChild(g)));
+        }
         this->updateHeight(g);
     }
     return true;
