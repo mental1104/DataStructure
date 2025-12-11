@@ -9,6 +9,7 @@
 #include "WeightedQuickUnionwithCompression.h"
 #include "GraphObserver.h"
 #include <climits>
+#include <limits>
 
 enum class VStatus {
     SOURCE,
@@ -70,9 +71,7 @@ private:
             fTime(i) = -1;
             parent(i) = -1;
 
-            unsigned long infinity = 0x7ff0000000000000;
-            double inf = *reinterpret_cast<double*>(&infinity);
-            priority(i) = inf;
+            priority(i) = std::numeric_limits<double>::infinity(); // Windows 的 unsigned long 是 32 位，之前的位模式常量会截断，改用标准写法跨平台
 
             for(int j = 0; j < n; j++)
                 if(exists(i,j))
