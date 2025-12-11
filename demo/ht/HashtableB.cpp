@@ -15,7 +15,7 @@ int main(){
         system("clear");
         ht.put(elem, elem);
         print(ht);
-        sleep(1);
+        sleep_seconds(1); // Windows 无 sleep，使用跨平台封装
     } //Conflict on purpose by the multiples of 7
 
     return 0;

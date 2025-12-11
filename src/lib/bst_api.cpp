@@ -20,7 +20,7 @@ extern "C" {
         for (int i = 0; i < scale; i++)
             vec.insert(i);
         vec.unsort();
-        sleep(1);
+        sleep_seconds(1); // Windows 无 sleep，使用跨平台封装
 
         AVL<int> avl;
         RedBlack<int> rb;

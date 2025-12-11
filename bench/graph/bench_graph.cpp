@@ -10,6 +10,9 @@
 #include <map>
 #include <unordered_set>
 #include <vector>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 #include "GraphMatrix.h"
 #include "GraphList.h"
@@ -30,6 +33,10 @@ struct BenchResult {
 };
 
 long get_rss_kb() {
+#ifdef _WIN32
+    // Windows 下没有 /proc 和 sysconf，这里直接返回 0（基准仍能运行）
+    return 0;
+#else
     std::ifstream status("/proc/self/status");
     std::string key;
     long value = 0;
@@ -46,6 +53,7 @@ long get_rss_kb() {
         return resident * page_size_kb;
     }
     return 0;
+#endif
 }
 
 using EdgeKey = std::uint64_t;

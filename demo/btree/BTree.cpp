@@ -16,7 +16,7 @@ int main(int argc, char** argv){
 
         btree.insert(temp);
         print(btree);
-        sleep(1);
+        sleep_seconds(1); // sleep 在 Windows 缺失，改用跨平台封装
         system("clear");
     }
 
@@ -30,7 +30,7 @@ int main(int argc, char** argv){
             printf("Delete: %d\n\n", temp);
             btree.remove(temp);
             print(btree);
-            sleep(1);
+            sleep_seconds(1); // sleep 在 Windows 缺失，改用跨平台封装
             system("clear");
         }
     }

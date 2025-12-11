@@ -30,7 +30,7 @@ int main(){
         }
             
         print(S);
-        sleep(1);
+        sleep_seconds(1); // Windows 无 sleep，使用跨平台封装
     }
 
     std::cout << "Final traverse" << std::endl;
