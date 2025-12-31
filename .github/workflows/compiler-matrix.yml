@@ -1,0 +1,56 @@
+name: Compiler Matrix
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - name: gcc
+            cc: gcc
+            cxx: g++
+          - name: clang
+            cc: clang
+            cxx: clang++
+        standard: [11, 14, 17, 20, 23]
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ clang
+
+      - name: Configure CMake
+        run: |
+          build_dir="build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}"
+          cmake -S . -B "$build_dir" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }} \
+            -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
+
+      - name: Build
+        run: cmake --build "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --config Release --parallel
+
+      - name: Run tests
+        run: ctest --test-dir "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --output-on-failure --build-config Release
