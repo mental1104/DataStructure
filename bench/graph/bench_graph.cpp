@@ -90,6 +90,7 @@ GraphT build_graph(const BenchCase& c, const std::vector<std::pair<int, int>>& e
 
 template <typename GraphT, typename Fn>
 double time_it(GraphT& g, Fn&& fn) {
+    (void)g;
     auto start = std::chrono::steady_clock::now();
     fn();
     auto end = std::chrono::steady_clock::now();

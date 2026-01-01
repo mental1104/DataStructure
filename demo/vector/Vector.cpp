@@ -12,7 +12,6 @@
 #include "print.h" 
 
 int main(){
-    int random =  100;
     Vector<int> vec;
     display(vec);
 

@@ -5,10 +5,12 @@ inline void VectorSortImpl::selectionSort(Vector<T> &container, Rank lo, Rank hi
 {
     for(int i = lo; i < hi; i++){
         int min = i;
-        for(int j = i+1; j < hi; j++)
-            if(container[j] < container[min]) 
+        for(int j = i+1; j < hi; j++){
+            if(container[j] < container[min]) {
                 min = j;
-            swap(container[i], container[min]);
+            }
+        }
+        swap(container[i], container[min]);
     }
 }
 

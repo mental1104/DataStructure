@@ -9,18 +9,17 @@
 
 class MSD {
 private:
-    static char charAt(const String& s, int d);
+    static int charAt(const String& s, int d);
     static void sort(Vector<String>& a, Vector<String>& aux, int lo, int hi, int d);
     static void insertionSort(Vector<String>& a, int lo, int hi, int d);
 public:
     static void sort(Vector<String>& a);  
 };
 
-char MSD::charAt(const String& s, int d){
-    if(d < s.size())
-        return s[d];
-    else 
-        return -1;
+int MSD::charAt(const String& s, int d){
+    if(d >= 0 && static_cast<size_type>(d) < s.size())
+        return s[static_cast<size_type>(d)];
+    return -1;
 }
 
 void MSD::sort(Vector<String>& a){

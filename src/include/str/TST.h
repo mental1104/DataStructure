@@ -21,12 +21,12 @@ template<typename T>
 class TST : public StringST<T>{
 private:
     TSTNode<T>* root{nullptr};
-    TSTNode<T>* get(TSTNode<T>* x, String& key, int d);
-    TSTNode<T>* put(TSTNode<T>* x, const String& key, T val, int d);
-    TSTNode<T>* remove(TSTNode<T>* x, const String& key, int d);
+    TSTNode<T>* get(TSTNode<T>* x, String& key, size_type d);
+    TSTNode<T>* put(TSTNode<T>* x, const String& key, T val, size_type d);
+    TSTNode<T>* remove(TSTNode<T>* x, const String& key, size_type d);
 
     void collect(TSTNode<T>* x, String prefix, Vector<String>& q);
-    void collect(TSTNode<T>* x, String prefix, int i, String pattern, Vector<String>& q);
+    void collect(TSTNode<T>* x, String prefix, size_type i, String pattern, Vector<String>& q);
 public:
     TST() = default;
     ~TST();
@@ -57,14 +57,14 @@ TST<T>::~TST(){
 }
 
 template<typename T>
-TSTNode<T>* TST<T>::put(TSTNode<T>* x, const String& key, T val, int d){
+TSTNode<T>* TST<T>::put(TSTNode<T>* x, const String& key, T val, size_type d){
     char c = key[d];
     if(x == nullptr){
         x = new TSTNode<T>(c);
     }
     if      (c < x->c) x->left = put(x->left, key, val, d);
     else if (c > x->c) x->right = put(x->right, key, val, d);
-    else if (d < key.size()-1) x->mid = put(x->mid, key, val, d+1);
+    else if (d + 1 < key.size()) x->mid = put(x->mid, key, val, d+1);
     else {
         x->val = val;
         ++this->s;
@@ -87,14 +87,14 @@ T TST<T>::get(const char* key) {
 }
 
 template<typename T>
-TSTNode<T>* TST<T>::get(TSTNode<T>* x, String& key, int d){
+TSTNode<T>* TST<T>::get(TSTNode<T>* x, String& key, size_type d){
     if(x == nullptr)
         return nullptr;
 
     char c = key[d];
     if      (c < x->c)  return get(x->left, key, d);
     else if (c > x->c)  return get(x->right, key, d);
-    else if (d < key.size()-1) 
+    else if (d + 1 < key.size()) 
                         return get(x->mid, key, d+1);
     else return x;
 }
@@ -105,14 +105,14 @@ void TST<T>::remove(const String& key){
 }
 
 template<typename T>
-TSTNode<T>* TST<T>::remove(TSTNode<T>* x, const String& key, int d){
+TSTNode<T>* TST<T>::remove(TSTNode<T>* x, const String& key, size_type d){
     if(x == nullptr)
         return nullptr;
 
     char c = key[d];
     if      (c < x->c) x->left = remove(x->left, key, d);
     else if (c > x->c) x->right = remove(x->right, key, d);
-    else if (d < key.size()-1) x->mid = remove(x->mid, key, d+1);
+    else if (d + 1 < key.size()) x->mid = remove(x->mid, key, d+1);
     else {
         x->val = 0;
         --this->s;
@@ -133,9 +133,9 @@ template<typename T>
 String TST<T>::longestPrefixOf(String s){
     if(s.size() == 0)
         return s;
-    int length = 0;
+    size_type length = 0;
     TSTNode<T>* x = root;
-    int i = 0;
+    size_type i = 0;
     while (x != nullptr && i < s.size()){
         char c = s[i];
         if      (c < x->c) x = x->left;
@@ -182,15 +182,15 @@ Vector<String> TST<T>::keysThatMatch(String s){
 }
 
 template<typename T>
-void TST<T>::collect(TSTNode<T>* x, String prefix, int i, String pattern, Vector<String>& q){
+void TST<T>::collect(TSTNode<T>* x, String prefix, size_type i, String pattern, Vector<String>& q){
     if(x == nullptr) return;
     char c = pattern[i];
     if(c == '.' || c < x->c) 
         collect(x->left, prefix, i, pattern, q);
     if(c == '.' || c == x->c){
-        if(i == pattern.size()-1 && x->val != 0)
+        if(i + 1 == pattern.size() && x->val != 0)
             q.insert(prefix + x->c);
-        if(i < pattern.size() - 1)
+        if(i + 1 < pattern.size())
             collect(x->mid, prefix+x->c, i+1, pattern, q);
     }
     if(c == '.' || c > x->c) collect(x->right, prefix, i, pattern, q);

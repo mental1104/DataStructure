@@ -105,7 +105,7 @@ int main() {
         splay.insert(e);
         skip.put(i, data[i]);
         btree.insert(e);
-        bstartree.insert(e);
+        bstartree.insert(e, true);
         bplustree.insert(i, data[i]);
     }
 

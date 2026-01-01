@@ -12,12 +12,13 @@ TEST(BPlusTreeTest, InsertAndSearch) {
     }
     EXPECT_EQ(tree.size(), static_cast<int>(keys.size()));
 
+    const BPlusTree<int, int>& ctree = tree;
     for (int k : keys) {
-        const int* v = tree.search(k);
+        const int* v = ctree.search(k);
         ASSERT_NE(v, nullptr);
         EXPECT_EQ(*v, k * 10);
     }
-    EXPECT_EQ(tree.search(100), nullptr);
+    EXPECT_EQ(ctree.search(100), nullptr);
 }
 
 TEST(BPlusTreeTest, RejectDuplicate) {
@@ -25,7 +26,8 @@ TEST(BPlusTreeTest, RejectDuplicate) {
     EXPECT_TRUE(tree.insert(1, 11));
     EXPECT_FALSE(tree.insert(1, 22));
     EXPECT_EQ(tree.size(), 1);
-    const int* v = tree.search(1);
+    const BPlusTree<int, int>& ctree = tree;
+    const int* v = ctree.search(1);
     ASSERT_NE(v, nullptr);
     EXPECT_EQ(*v, 11);
 }
@@ -61,7 +63,8 @@ TEST(BPlusTreeTest, RemoveAndCollapse) {
     EXPECT_EQ(tree.size(), 5);
 
     for (int k : toRemove) {
-        EXPECT_EQ(tree.search(k), nullptr);
+        const BPlusTree<int, int>& ctree = tree;
+        EXPECT_EQ(ctree.search(k), nullptr);
     }
     Vector<int> remaining = tree.rangeQuery(1, 10);
     ASSERT_EQ(remaining.size(), 5);
@@ -74,5 +77,6 @@ TEST(BPlusTreeTest, RemoveAndCollapse) {
         EXPECT_TRUE(tree.remove(k));
     }
     EXPECT_TRUE(tree.empty());
-    EXPECT_EQ(tree.search(1), nullptr);
+    const BPlusTree<int, int>& ctree = tree;
+    EXPECT_EQ(ctree.search(1), nullptr);
 }

@@ -30,7 +30,7 @@ void displayRow ( Queen& q ) { //打印当前皇后（放置于col列）所在�
 }
 
 void displayProgress ( Stack<Queen>& S, int nQueen ) { //在棋盘上显示搜查的进展
-   system ( "clear" );
+   clear_screen();
    N = nQueen; S.traverse ( displayRow );
    if ( nQueen <= S.size() )
       printf("%d solution(s) found after %d check(s)\a", nSolu, nCheck);

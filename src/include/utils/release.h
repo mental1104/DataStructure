@@ -20,6 +20,7 @@
 
 template <typename T> struct Cleaner {
    static void clean ( T x ) { //相当于递归基
+      (void)x;
 #ifdef _DEBUG
       static int n = 0;
       if ( 7 > strlen ( typeid ( T ).name() ) ) { //复杂类型一概忽略，只输出基本类型

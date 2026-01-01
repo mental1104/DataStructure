@@ -18,7 +18,7 @@ int main(){
     Stack<int> S;
     for(int i = 1; i < times; i++){
         int num;
-        system("clear");
+        clear_screen();
         if(i % 3 == 0){
             num = S.pop();
             std::cout << "Pop: \t" << num << std::endl;   

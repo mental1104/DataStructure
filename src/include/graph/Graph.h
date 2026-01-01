@@ -42,10 +42,10 @@ struct Vertex {
     int dTime{-1};
     int fTime{-1};
     int parent{-1};
-    double priority;
-    int rank;
+    double priority{std::numeric_limits<double>::infinity()};
+    int rank{-1};
     Vertex() = default;
-    Vertex(int r, Tv const& d = Tv(0)):rank(r), data(d) {}
+    Vertex(int r, Tv const& d = Tv(0)):data(d), rank(r) {}
     bool operator<(const Vertex<Tv>& rhs) const { return priority > rhs.priority;  }//权重越小，优先级越高
 };
 
@@ -148,14 +148,17 @@ public:
 template<typename Tv, typename Te>
 void Graph<Tv, Te>::bfs(int s) {
     reset();
+    if (n <= 0) return;
     int clock = 0;
     int v = s;
-    do 
+    do {
         if(VStatus::UNDISCOVERED == status(v)){//如果没有访问过
             BFS(v, clock); //执行BFS
             status(v) = VStatus::SOURCE;//第一个节点设为起点
         }
-    while(s != (v = (++v%n)));
+        v = (v + 1) % n;
+    }
+    while(v != s);
 }
 
 template<typename Tv, typename Te>
@@ -166,7 +169,8 @@ void Graph<Tv, Te>::BFS(int v, int& clock) {
     while(!Q.empty()) {
         int v = Q.dequeue();
         dTime(v) = ++clock;
-        for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
+        for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)){
+            if (!exists(v, u)) continue;
             if(VStatus::UNDISCOVERED == status(u)){
                 status(u) = VStatus::DISCOVERED;
                 Q.enqueue(u);
@@ -175,6 +179,7 @@ void Graph<Tv, Te>::BFS(int v, int& clock) {
             } else {
                 type(v, u) = EType::CROSS;
             }
+        }
 
         if(status(v)!=VStatus::SOURCE)
             status(v) = VStatus::VISITED;
@@ -184,23 +189,24 @@ void Graph<Tv, Te>::BFS(int v, int& clock) {
 template<typename Tv, typename Te>
 void Graph<Tv, Te>::dfs(int s){
     reset();
+    if (n <= 0) return;
     int clock = 0;
     int v = s;
-    do
-    {
+    do {
         if(VStatus::UNDISCOVERED == status(v)){
             DFS(v, clock);
             status(v) = VStatus::SOURCE;
         }
-            
-    } while (s != (v = (++v % n)));  
+        v = (v + 1) % n;
+    } while (v != s);  
 }
 
 template<typename Tv, typename Te>
 void Graph<Tv, Te>::DFS(int v, int& clock) {
     dTime(v) = ++clock;
     status(v) = VStatus::DISCOVERED;
-    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
+    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)){
+        if (!exists(v, u)) continue;
         switch(status(u)){
             case VStatus::UNDISCOVERED:
                 type(v, u) = EType::TREE;
@@ -214,6 +220,7 @@ void Graph<Tv, Te>::DFS(int v, int& clock) {
                 type(v, u) = (dTime(v) < dTime(u))?EType::FORWARD:EType::CROSS;
                 break;
         }
+    }
     status(v) = VStatus::VISITED;
     fTime(v) = ++clock;
 }
@@ -221,6 +228,7 @@ void Graph<Tv, Te>::DFS(int v, int& clock) {
 template<typename Tv, typename Te>
 Stack<Tv>* Graph<Tv, Te>::tSort(int s){
     reset();
+    if (n <= 0) return new Stack<Tv>;
     
     int clock = 0;
     int v = s;
@@ -234,7 +242,8 @@ Stack<Tv>* Graph<Tv, Te>::tSort(int s){
     do {
         if(VStatus::UNDISCOVERED == status(v))
             TSort(v, clock, S);  
-    } while(s != (v = (++v % n)));
+        v = (v + 1) % n;
+    } while(v != s);
 
     return S;
 }
@@ -243,7 +252,8 @@ template<typename Tv, typename Te>
 void Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
     dTime(v) = ++clock;
     status(v) = VStatus::DISCOVERED;
-    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u))
+    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)){
+        if (!exists(v, u)) continue;
         switch(status(u)){
             case VStatus::UNDISCOVERED:
                 parent(u) = v;
@@ -257,6 +267,7 @@ void Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
                 type(v, u) = (dTime(v) < dTime(u)) ? EType::FORWARD : EType::CROSS;
                 break;
         }
+    }
     status(v) = VStatus::VISITED;
     S->push(vertex(v));
     return;
@@ -481,12 +492,14 @@ void Graph<Tv, Te>::KosarajuSCC(int v, int& count, Vector<bool>& marked, Vector<
 template <typename Tv, typename Te> 
 void Graph<Tv, Te>::bcc(int s){
     reset(); int clock = 0; int v = s; Stack<int> S; //栈S用以记录已访问的顶点
-    do
+    if (n <= 0) return;
+    do {
         if (VStatus::UNDISCOVERED == status(v)) { //一旦发现未发现的顶点（新连通分量）
             BCC ( v, clock, S ); //即从该顶点出发启动一次BCC
             S.pop(); //遍历返回后，弹出栈中最后一个顶点——当前连通域的起点
         }
-    while(s!=(v =(++v % n)));
+        v = (v + 1) % n;
+    } while(v != s);
 }
 
 
@@ -497,9 +510,11 @@ void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < 
    status(v) = VStatus::DISCOVERED; 
    S.push (v); //v被发现并入栈
 
-   for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)) //枚举v的所有邻居u
+   for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)) { //枚举v的所有邻居u
+        if (!exists(v, u)) {
+            continue;
+        }
         switch(status(u)){ //并视u的状态分别处理
-
             case VStatus::UNDISCOVERED:
                 parent(u) = v; 
                 type(v, u)= EType::TREE; 
@@ -532,6 +547,7 @@ void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < 
                 type(v, u) = (dTime(v) < dTime(u))?EType::FORWARD:EType::CROSS;
                 break;
         }
+    }
     status(v) = VStatus::VISITED; //对v的访问结束
 }
 
