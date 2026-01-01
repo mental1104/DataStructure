@@ -17,6 +17,9 @@ target_include_directories(bench_suffix_array
         ${INCLUDE_ROOT}
 )
 
+target_link_libraries(${STR_BENCH_TARGET} PRIVATE project_warnings)
+target_link_libraries(bench_suffix_array PRIVATE project_warnings)
+
 if(TARGET MyProjectLib)
     target_link_libraries(${STR_BENCH_TARGET} PRIVATE MyProjectLib)
     target_link_libraries(bench_suffix_array PRIVATE MyProjectLib)
