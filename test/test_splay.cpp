@@ -117,6 +117,7 @@ TEST(SplayTest, DuplicateInsertion) {
 
     // 重复插入 15，search 内部会伸展已有结点至根
     BinNode<int>*& nodePtr = splay.search(15);
+    (void)nodePtr;
     BinNode<int>* ret = splay.insert(15);
     EXPECT_EQ(splay.size(), oldSize)
         << "重复插入元素不应增加 Splay 树的节点数。";

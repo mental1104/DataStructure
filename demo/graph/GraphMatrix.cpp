@@ -52,8 +52,8 @@ void testPFS(GraphMatrix<Tv, Te>& matrix, PU priorityUpdater, int s){
     double sum;
     for(int i = 0; i < n; i++){
         sum = 0.0;
-        List<size_t> path;
-        size_t pos = i;
+        List<int> path;
+        int pos = i;
         while(pos != -1){
             path.insertAsFirst(pos);
             int parent = matrix.V()[pos].parent;
@@ -67,6 +67,8 @@ void testPFS(GraphMatrix<Tv, Te>& matrix, PU priorityUpdater, int s){
 }
 
 int main(int argc, char** argv){
+    (void)argc;
+    (void)argv;
 
     std::ifstream stream("dataset/algo/tinyEWD.txt");
     GraphMatrix<int,double> tinyG(stream, GType::WEIGHTEDUNDIGRAPH);

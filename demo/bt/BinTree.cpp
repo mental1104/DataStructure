@@ -31,7 +31,7 @@ BinTree<T> generateBinTree() {
 }
 
 int main(){
-    system("clear");
+    clear_screen();
     BinTree<int> tree = generateBinTree<int>();
     print(tree);
     printf("\n\n");
@@ -51,4 +51,3 @@ int main(){
 
     return 0;
 }
-

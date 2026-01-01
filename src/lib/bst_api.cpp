@@ -27,7 +27,8 @@ extern "C" {
         Splay<int> splay;
         BTree<int> btree;
 
-        clock_t start, end;
+        clock_t start = 0;
+        clock_t end = 0;
 
         switch (op) {
             case Operation::INSERT:

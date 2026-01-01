@@ -63,13 +63,13 @@ Cell* goalCell;
 
 void displayLaby() { //┘└┐┌│─
    static const char*   pattern[5][5] = {
-      "┼", "┼", "┼", "┼", "┼",
-      "┼", "  ", "┌", "─", "└",
-      "┼", "┌", "  ", "┐", "│",
-      "┼", "─", "┐", "  ", "┘",
-      "┼", "└", "│", "┘", "  "
+      {"┼", "┼", "┼", "┼", "┼"},
+      {"┼", "  ", "┌", "─", "└"},
+      {"┼", "┌", "  ", "┐", "│"},
+      {"┼", "─", "┐", "  ", "┘"},
+      {"┼", "└", "│", "┘", "  "}
    };
-   system ( "clear" );
+   clear_screen();
    printf ( " " );
    for ( int j = 0; j < labySize; j++ )
       ( j < 10 ) ? printf ( "%X", j ) : printf ( "%c", 'A' - 10 + j );
@@ -97,18 +97,37 @@ void readLaby ( char* labyFile ) { //śÁČëĂÔšŹ
    FILE* fp;
    if ( ! ( fp = fopen ( labyFile, "r" ) ) )
       { std::cout << "can't open " << labyFile << std::endl; exit ( -1 ); }
-   fscanf ( fp, "Laby Size = %d\n", &labySize );
+   if (fscanf ( fp, "Laby Size = %d\n", &labySize ) != 1) {
+      std::cout << "invalid laby size" << std::endl;
+      fclose ( fp );
+      exit ( -1 );
+   }
    if ( LABY_MAX < labySize )
       { std::cout << "Laby size " << labySize << " > " << LABY_MAX << std::endl; exit ( -1 ); }
-   int startX, startY; fscanf ( fp, "Start = (%d, %d)\n", &startX, &startY );
+   int startX, startY;
+   if (fscanf ( fp, "Start = (%d, %d)\n", &startX, &startY ) != 2) {
+      std::cout << "invalid start position" << std::endl;
+      fclose ( fp );
+      exit ( -1 );
+   }
    startCell = &laby[startX][startY];
-   int goalX, goalY; fscanf ( fp, "Goal = (%d, %d)\n", &goalX, &goalY );
+   int goalX, goalY;
+   if (fscanf ( fp, "Goal = (%d, %d)\n", &goalX, &goalY ) != 2) {
+      std::cout << "invalid goal position" << std::endl;
+      fclose ( fp );
+      exit ( -1 );
+   }
    goalCell = &laby[goalX][goalY];
    for ( int j = 0; j < labySize; j ++ )
       for ( int i = 0; i < labySize; i ++ ) {
          laby[i][j].x = i;
          laby[i][j].y = j;
-         int type; fscanf ( fp, "%d", &type );
+         int type;
+         if (fscanf ( fp, "%d", &type ) != 1) {
+            std::cout << "invalid laby cell type" << std::endl;
+            fclose ( fp );
+            exit ( -1 );
+         }
          switch ( type ) {
             case 1:   laby[i][j].status = WALL;      break;
             case 0:   laby[i][j].status = AVAILABLE;   break;
@@ -124,6 +143,7 @@ void readLaby ( char* labyFile ) { //śÁČëĂÔšŹ
  * 算法细节
  ******************************************************************************************/
 bool labyrinth ( Cell Laby[LABY_MAX][LABY_MAX], Cell* s, Cell* t ) {
+   (void)Laby;
    if ( ( AVAILABLE != s->status ) || ( AVAILABLE != t->status ) ) return false; //退化情况
    Stack<Cell*> path; //用栈记录通路（Theseus的线绳）
    s->incoming = UNKNOWN; s->status = ROUTE; path.push ( s ); //起点

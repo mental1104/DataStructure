@@ -30,7 +30,7 @@ struct BinNode{
     BinNode<T>* succ();
 
     template <typename VST> void travLevel(BinNode<T>* x, VST&);
-    template <typename VST> void travLevel(VST& visit){ travLevel(this, visit); };
+    template <typename VST> void travLevel(VST& visit){ travLevel(this, visit); }
 
     template <typename VST>  void travPre(BinNode<T>* x, VST&);
     template <typename VST> void travPre(VST& visit){ travPre(this, visit); }

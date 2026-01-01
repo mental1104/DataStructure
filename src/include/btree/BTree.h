@@ -13,11 +13,11 @@ protected:
     void solveOverflow(BTNode<T>*);
     void solveUnderflow(BTNode<T>*);
 public:
-    BTree(int order = 512):_order(order), _size(0){   _root = new BTNode<T>();    }
+    BTree(int order = 512):_size(0), _order(order){   _root = new BTNode<T>();    }
     ~BTree(){   if(_root) release(_root);   }
 
-    int const order() { return _order; }
-    int const size()  {  return _size; }
+    int order() const { return _order; }
+    int size() const {  return _size; }
     BTNode<T>*& root() {  return _root; }
     bool  empty() const { return !_root || _root->key.empty(); }
 
