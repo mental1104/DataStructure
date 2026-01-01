@@ -10,10 +10,6 @@
 #include <thread>
 #include <chrono>
 
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
 inline void sleep_seconds(unsigned int seconds) {
     // 跨平台 sleep，避免直接依赖 POSIX 的 sleep() 在 Windows 下缺失
     std::this_thread::sleep_for(std::chrono::seconds(seconds));
