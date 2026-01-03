@@ -251,7 +251,6 @@ T Vector<T>::majEleCandidate(){
 
 template<typename T>
 void Vector<T>::range(int k){
-    int r = size()/k;
     Vector<int> vec{k-1, k-1, -1};
     Vector<int> c{k-1, k-1, 0};
     for(int i = 0; i < size(); i++){
@@ -275,6 +274,7 @@ void Vector<T>::range(int k){
         for ( int i = 0; i < size(); i++ ) //逐一遍历A[]的各个元素
             if (vec[j] == _elem[i] ) occurrence++; //每遇到一次maj，均更新计数器
         //if(k * occurrence > size()) print(vec[j]);
+        (void)occurrence;
     }
     //printf("\n");
 }

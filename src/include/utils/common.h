@@ -7,16 +7,18 @@
 #include <cassert>
 #include <fstream>
 #include <cstdio>
+#include <cstdlib>
 #include <thread>
 #include <chrono>
-
-#ifndef _WIN32
-#include <unistd.h>
-#endif
 
 inline void sleep_seconds(unsigned int seconds) {
     // 跨平台 sleep，避免直接依赖 POSIX 的 sleep() 在 Windows 下缺失
     std::this_thread::sleep_for(std::chrono::seconds(seconds));
+}
+
+inline void clear_screen() {
+    int rc = std::system("clear");
+    (void)rc;
 }
 
 using size_type = unsigned;

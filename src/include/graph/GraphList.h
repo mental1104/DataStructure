@@ -122,8 +122,10 @@ public:
     }
 
     virtual EType& type(int i, int j) {
+        static EType dummy = EType::UNDETERMINED;
         ListNode<Edge<Te>*>* pos = nullptr;
-        return findEdge(i, j, pos)->type;
+        Edge<Te>* edge = findEdge(i, j, pos);
+        return edge ? edge->type : dummy;
     }
     virtual Te& edge(int i, int j) {
         ListNode<Edge<Te>*>* pos = nullptr;

@@ -30,7 +30,7 @@ struct BinNode{
     BinNode<T>* succ();
 
     template <typename VST> void travLevel(BinNode<T>* x, VST&);
-    template <typename VST> void travLevel(VST& visit){ travLevel(this, visit); };
+    template <typename VST> void travLevel(VST& visit){ travLevel(this, visit); }
 
     template <typename VST>  void travPre(BinNode<T>* x, VST&);
     template <typename VST> void travPre(VST& visit){ travPre(this, visit); }
@@ -248,10 +248,10 @@ void BinNode<T>::travLevel(BinNode<T>* x, VST& visit){
     Queue<BinNode<T>*> Q;
     Q.enqueue(x);
     while(!Q.empty()){
-        BinNode<T>* x = Q.dequeue();
-        visit(x->data);
-        if(HasLChild(*x)) Q.enqueue(x->lc);
-        if(HasRChild(*x)) Q.enqueue(x->rc);
+        BinNode<T>* node = Q.dequeue();
+        visit(node->data);
+        if(HasLChild(*node)) Q.enqueue(node->lc);
+        if(HasRChild(*node)) Q.enqueue(node->rc);
     }
 }
 

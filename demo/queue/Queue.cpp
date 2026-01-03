@@ -10,7 +10,7 @@ int main(){
     Queue<int> Q;
     for(int i = 1; i < times; i++){
         int num;
-        system("clear");
+        clear_screen();
         if(i % 3 == 0){
             num = Q.dequeue();
             std::cout << "Dequeue: \t" << num << std::endl;   

@@ -47,8 +47,14 @@ struct StdoutMatchObserver : MatchObserver {
 
     void onBCTable(const int* bc, int len) override {
         printf("\n-- bc[] Table ---------------\n");
-        for (int j = 0; j < len; j++) if (bc[j] >= 0) printf("%4c", (char)j); printf("\n");
-        for (int j = 0; j < len; j++) if (bc[j] >= 0) printf("%4d", bc[j]); printf("\n\n");
+        for (int j = 0; j < len; j++) {
+            if (bc[j] >= 0) printf("%4c", static_cast<char>(j));
+        }
+        printf("\n");
+        for (int j = 0; j < len; j++) {
+            if (bc[j] >= 0) printf("%4d", bc[j]);
+        }
+        printf("\n\n");
     }
 
     void onGSTable(const int* gs, int len, const String& pattern) override {
@@ -64,7 +70,11 @@ struct StdoutMatchObserver : MatchObserver {
         size_type n = text.size();
         moPrintIndexLine(n);
         moPrintString(text); printf("\n");
-        for (size_t t = 0; t < k; t++) printf("%4c", ' '); moPrintString(pattern); printf("\n");
+        for (size_t t = 0; t < k; t++) {
+            printf("%4c", ' ');
+        }
+        moPrintString(pattern);
+        printf("\n");
         printf("hashP=%lld, hashT=%lld\n", hashP, hashT);
     }
 

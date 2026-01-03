@@ -5,11 +5,13 @@
 #define N 100
 
 int main(int argc, char** argv){
+    (void)argc;
+    (void)argv;
 
     BTree<int> btree{8};
     int temp;
 
-    system("clear");
+    clear_screen();
     for(int i = 1; i < N; i++){
         temp = dice(RANDOM);
         printf("Insert: %d\n\n", temp);
@@ -17,12 +19,12 @@ int main(int argc, char** argv){
         btree.insert(temp);
         print(btree);
         sleep_seconds(1); // sleep 在 Windows 缺失，改用跨平台封装
-        system("clear");
+        clear_screen();
     }
 
     printf("Press to continue..(Deletion)\n");
     getchar();
-    system("clear");
+    clear_screen();
 
     while(!btree.empty()){
         temp = dice(RANDOM);
@@ -31,7 +33,7 @@ int main(int argc, char** argv){
             btree.remove(temp);
             print(btree);
             sleep_seconds(1); // sleep 在 Windows 缺失，改用跨平台封装
-            system("clear");
+            clear_screen();
         }
     }
     

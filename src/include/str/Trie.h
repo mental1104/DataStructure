@@ -18,13 +18,13 @@ class Trie : public StringST<T> {
 private:
     Node<T>* root{nullptr};
 
-    Node<T>* get(Node<T>* x, String& key, int d);
-    Node<T>* put(Node<T>* x, const String& key, T val, int d);
-    Node<T>* remove(Node<T>* x, const String& key, int d);
+    Node<T>* get(Node<T>* x, String& key, size_type d);
+    Node<T>* put(Node<T>* x, const String& key, T val, size_type d);
+    Node<T>* remove(Node<T>* x, const String& key, size_type d);
 
     void collect(Node<T>* x, String pre, Vector<String>& q);
     void collect(Node<T>* x, String pre, const String &pat, Vector<String>& q);
-    int search(Node<T>* x, String input, int d, int length);
+    size_type search(Node<T>* x, String input, size_type d, size_type length);
     
 public:
     Trie() = default;
@@ -63,7 +63,7 @@ void Trie<T>::put(const String& key, T val){
 }
 
 template<typename T>
-Node<T>* Trie<T>::put(Node<T>* x, const String& key, T val, int d){
+Node<T>* Trie<T>::put(Node<T>* x, const String& key, T val, size_type d){
     if(x == nullptr) x = new Node<T>();
     if(d == key.size()){
         x->val = val;
@@ -91,7 +91,7 @@ T Trie<T>::get(const char* key){
 }
 
 template<typename T>
-Node<T>* Trie<T>::get(Node<T>* x, String& key, int d){
+Node<T>* Trie<T>::get(Node<T>* x, String& key, size_type d){
     if(x == nullptr)
         return nullptr;
     if(d == key.size()) return x;
@@ -130,7 +130,7 @@ Vector<String> Trie<T>::keysThatMatch(String pat){
 
 template<typename T>
 void Trie<T>::collect(Node<T>* x, String pre, const String& pat, Vector<String>& q){
-    int d = pre.size();
+    size_type d = pre.size();
     if(x == nullptr) return;
     if(d == pat.size() && x->val != 0) q.insert(pre);
     if(d == pat.size()) return;
@@ -145,12 +145,12 @@ void Trie<T>::collect(Node<T>* x, String pre, const String& pat, Vector<String>&
 
 template<typename T>
 String Trie<T>::longestPrefixOf(String input){
-    int length = search(root, input, 0, 0);
+    size_type length = search(root, input, 0, 0);
     return input.substr(0, length);
 }
 
 template<typename T>
-int Trie<T>::search(Node<T>* x, String input, int d, int length){
+size_type Trie<T>::search(Node<T>* x, String input, size_type d, size_type length){
     if(x == nullptr) return length;
     if(x->val != 0) length = d;
     if(d == input.size()) return length;
@@ -164,7 +164,7 @@ void Trie<T>::remove(const String& key){
 }
 
 template<typename T>
-Node<T>* Trie<T>::remove(Node<T>* x, const String& key, int d){
+Node<T>* Trie<T>::remove(Node<T>* x, const String& key, size_type d){
     if(x == nullptr)    return nullptr;
     if(d == key.size()){
         x->val = 0;

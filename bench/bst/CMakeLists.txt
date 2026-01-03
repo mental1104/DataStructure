@@ -9,7 +9,8 @@ target_include_directories(${BST_BENCH_TARGET}
         ${INCLUDE_ROOT}
 )
 
+target_link_libraries(${BST_BENCH_TARGET} PRIVATE project_warnings)
+
 if(TARGET MyProjectLib)
     target_link_libraries(${BST_BENCH_TARGET} PRIVATE MyProjectLib)
 endif()
-

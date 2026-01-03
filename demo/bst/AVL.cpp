@@ -11,8 +11,6 @@
 #include "AVL.h"
 #include "print.h"
 
-int times = 30;
-
 int main(){
     AVL<int> avl;
     display(avl);

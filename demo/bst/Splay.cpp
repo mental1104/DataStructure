@@ -15,6 +15,8 @@
 #define N 40
 
 int main(int argc, char** argv){
+    (void)argc;
+    (void)argv;
 
     Splay<int> S;
     display(S);

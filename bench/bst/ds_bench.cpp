@@ -133,9 +133,9 @@ struct BPlusTreeAdapter {
 struct BStarTreeAdapter {
     explicit BStarTreeAdapter(int order = 5) : tree(order) {}
 
-    bool insert(int key) { return tree.insert(key); }
+    bool insert(int key) { return tree.insert(key, true); }
     bool remove(int key) { return tree.remove(key); }
-    BTNode<int>* search(int key) { return tree.search(key); }
+    BTNode<int>* search(int key) { return tree.search(key, 0); }
     int size() const { return tree.size(); }
 
     BStarTree<int> tree;
@@ -302,6 +302,7 @@ BenchResult bench_random_access(const std::string& tree_name, const BenchConfig&
 template <typename Tree>
 BenchResult bench_random_insert(const std::string& tree_name, const BenchConfig& config,
                                 const Workload& data) {
+    (void)config;
     Tree tree;
     bulk_insert(tree, data.base_keys);
 
@@ -322,6 +323,7 @@ BenchResult bench_random_insert(const std::string& tree_name, const BenchConfig&
 template <typename Tree>
 BenchResult bench_random_erase(const std::string& tree_name, const BenchConfig& config,
                                const Workload& data) {
+    (void)config;
     Tree tree;
     bulk_insert(tree, data.erase_initial_keys);
 
@@ -347,6 +349,7 @@ BenchResult bench_random_erase(const std::string& tree_name, const BenchConfig& 
 template <typename Tree>
 BenchResult bench_locality_access(const std::string& tree_name, const BenchConfig& config,
                                   const Workload& data) {
+    (void)config;
     Tree tree;
     bulk_insert(tree, data.base_keys);
 
@@ -371,6 +374,7 @@ BenchResult bench_locality_access(const std::string& tree_name, const BenchConfi
 template <typename Tree>
 BenchResult bench_update_heavy(const std::string& tree_name, const BenchConfig& config,
                                const Workload& data) {
+    (void)config;
     Tree tree;
     bulk_insert(tree, data.base_keys);
 
@@ -395,6 +399,7 @@ BenchResult bench_update_heavy(const std::string& tree_name, const BenchConfig& 
 template <typename Tree>
 BenchResult bench_read_heavy(const std::string& tree_name, const BenchConfig& config,
                              const Workload& data) {
+    (void)config;
     Tree tree;
     bulk_insert(tree, data.base_keys);
 
@@ -432,10 +437,11 @@ BenchResult bench_range_scan(const std::string& name, const Workload& data) {
 
     std::size_t checksum = 0;
     auto start = std::chrono::steady_clock::now();
-    for (int i = 0; i < scans; ++i) {
-        int start_key = sorted[i % static_cast<int>(sorted.size() - window)];
-        for (int off = 0; off < window; ++off) {
-            int k = start_key + off;
+    const std::size_t start_span = (sorted.size() > window) ? (sorted.size() - window) : 1;
+    for (std::size_t i = 0; i < scans; ++i) {
+        int start_key = sorted[i % start_span];
+        for (std::size_t off = 0; off < window; ++off) {
+            int k = start_key + static_cast<int>(off);
             auto v = table.search(k);
             if (is_hit(v, k)) checksum += static_cast<std::size_t>(k);
         }

@@ -73,7 +73,7 @@ TEST(QuadlistTest, TraverseTest) {
     // 利用 trailer->pred 获取 header，从而插入第一个节点
     QuadlistNode<int>* node1 = list.insertAfterAbove(10, list.first()->pred);
     QuadlistNode<int>* node2 = list.insertAfterAbove(20, node1);
-    QuadlistNode<int>* node3 = list.insertAfterAbove(30, node2);
+    list.insertAfterAbove(30, node2);
     // 此时链表中顺序应为：10, 20, 30
 
     std::vector<int> values;

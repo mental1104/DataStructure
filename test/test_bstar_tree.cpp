@@ -14,32 +14,32 @@ TEST(BStarTreeTest, InsertAndSearch) {
     for (int i = 0; i < 200; ++i) keys.push_back(i * 3 + 1);
 
     for (int k : keys) {
-        EXPECT_TRUE(tree.insert(k));
+        EXPECT_TRUE(tree.insert(k, true));
     }
     EXPECT_EQ(tree.size(), static_cast<int>(keys.size()));
 
     for (int k : keys) {
-        EXPECT_TRUE(node_has_key(tree.search(k), k));
+        EXPECT_TRUE(node_has_key(tree.search(k, 0), k));
     }
-    EXPECT_FALSE(node_has_key(tree.search(99999), 99999));
+    EXPECT_FALSE(node_has_key(tree.search(99999, 0), 99999));
 }
 
 TEST(BStarTreeTest, DuplicateRejected) {
     BStarTree<int> tree(6);
-    EXPECT_TRUE(tree.insert(10));
-    EXPECT_FALSE(tree.insert(10));
+    EXPECT_TRUE(tree.insert(10, true));
+    EXPECT_FALSE(tree.insert(10, true));
     EXPECT_EQ(tree.size(), 1);
 }
 
 TEST(BStarTreeTest, RemoveAll) {
     BStarTree<int> tree(5);
     std::vector<int> keys{5, 1, 9, 3, 7, 2, 6, 8, 4};
-    for (int k : keys) tree.insert(k);
+    for (int k : keys) tree.insert(k, true);
     EXPECT_EQ(tree.size(), static_cast<int>(keys.size()));
 
     for (int k : keys) {
         EXPECT_TRUE(tree.remove(k));
-        EXPECT_FALSE(node_has_key(tree.search(k), k));
+        EXPECT_FALSE(node_has_key(tree.search(k, 0), k));
     }
     EXPECT_TRUE(tree.empty());
     EXPECT_EQ(tree.size(), 0);
