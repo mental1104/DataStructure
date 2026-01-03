@@ -1,4 +1,4 @@
-name: Compiler Matrix
+name: macOS
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
@@ -25,7 +25,7 @@ jobs:
           - name: clang
             cc: clang
             cxx: clang++
-        standard: [11, 14, 17, 20, 23]
+        standard: [11, 14, 17, 20, 23] # 26
     defaults:
       run:
         shell: bash
@@ -35,11 +35,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc g++ clang
 
       - name: Configure CMake
         run: |
