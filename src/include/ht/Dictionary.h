@@ -1,10 +1,13 @@
 #ifndef __DSA_DICTIONARY
 #define __DSA_DICTIONARY
 
-static size_t hashCode ( char c ) { return ( size_t ) c; } //字符
-static size_t hashCode ( int k ) { return ( size_t ) k; } //整数以及长长整数
-static size_t hashCode ( long long i ) { return ( size_t ) ( ( i >> 32 ) + ( int ) i ); }
-static size_t hashCode ( const char s[] ) { //生成字符串的循环移位散列码（cyclic shift hash code）
+#include <cstdio>
+#include <cstring>
+
+inline size_t hashCode ( char c ) { return ( size_t ) c; } //字符
+inline size_t hashCode ( int k ) { return ( size_t ) k; } //整数以及长长整数
+inline size_t hashCode ( long long i ) { return ( size_t ) ( ( i >> 32 ) + ( int ) i ); }
+inline size_t hashCode ( const char s[] ) { //生成字符串的循环移位散列码（cyclic shift hash code）
     unsigned int h = 0; //散列码
     for ( size_t n = strlen ( s ), i = 0; i < n; i++ ) //自左向右，逐个处理每一字符
     { 

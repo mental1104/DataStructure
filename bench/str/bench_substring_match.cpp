@@ -67,6 +67,7 @@ Case build_custom_case(const std::string& name, const std::string& text, const s
 }
 
 Result bench(const std::string& algo, const Case& c, const std::function<int()>& fn) {
+    (void)c;
     auto start = std::chrono::steady_clock::now();
     int idx = fn();
     auto end = std::chrono::steady_clock::now();

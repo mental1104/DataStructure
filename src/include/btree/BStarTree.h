@@ -19,20 +19,21 @@ protected:
     void solveUnderflow(Node* v);
 
 public:
+    using BST<T>::search;
+    using BST<T>::insert;
+
     explicit BStarTree(int order = 5)
         : _order(order < 3 ? 3 : order), _size(0), _root(new Node()), _hot(nullptr) {}
 
     ~BStarTree() { if (_root) release(_root); }
 
-    int const order() const { return _order; }
-    int const size() const { return _size; }
+    int order() const { return _order; }
+    int size() const { return _size; }
     Node*& root() { return _root; }
     bool empty() const { return !_root || _root->key.empty(); }
 
-    // 为避免与 BST::search 签名冲突，增加默认参数隐藏基类版本
     Node* search(const T& e, int /*unused*/ = 0);
 
-    // 同上，隐藏 BST::insert 的返回类型
     bool insert(const T& e, bool /*unused*/ = true);
 
     bool remove(const T& e) override;
@@ -75,7 +76,7 @@ typename BStarTree<T>::Node* BStarTree<T>::search(const T& e, int) {
 
 template<typename T>
 bool BStarTree<T>::insert(const T& e, bool) {
-    Node* v = search(e);
+    Node* v = search(e, 0);
     if (v) return false;
     Rank r = _hot->key.search(e);
     _hot->key.insert(r + 1, e);
@@ -117,7 +118,7 @@ void BStarTree<T>::solveOverflow(Node* v) {
 
 template<typename T>
 bool BStarTree<T>::remove(const T& e) {
-    Node* v = search(e);
+    Node* v = search(e, 0);
     if (!v) return false;
     Rank r = v->key.search(e);
     if (v->child[0]) { // 内部节点：用直接后继替换

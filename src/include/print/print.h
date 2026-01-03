@@ -26,17 +26,17 @@
 #include "GraphMatrix.h"
 #include "primeNLT.h"
 
-static void print ( char* x );
-static void print ( const char* x );
+inline void print ( char* x );
+inline void print ( const char* x );
 template <typename T> static void print ( T& x );
 template <typename T> static void print ( const T& x );
 template <typename T> static void print ( T* x );
 
-static void print ( char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
-static void print ( const char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
+inline void print ( char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
+inline void print ( const char* x ) {  printf ( " %s", x ? x : "<NULL>" );  } //字符串特别处理
 
 
-static void print ( String e) {
+inline void print ( const String& e) {
    const char* c = e.c_str();
    while(*c){
       putchar(*c);
@@ -81,7 +81,10 @@ public:
 void UniPrint::p ( int e ) {  printf ( " %04d", e ); }
 void UniPrint::p ( float e ) { printf ( " %4.2f", e ); }
 void UniPrint::p ( double e ) { printf ( " %4.2f", e ); }
-void UniPrint::p ( char e ) { printf ( "%c", ( char(31) < e ) && ( e < char(128) ) ? e : '$' ); }
+void UniPrint::p ( char e ) { 
+   unsigned char ue = static_cast<unsigned char>(e);
+   printf ( "%c", ( ue > 31 && ue < 128 ) ? static_cast<char>(ue) : '$' );
+}
 void UniPrint::p ( unsigned int e ) {  printf ( " %04u", e ); }
 void UniPrint::p ( size_t e) {   printf ("-%zu", e); } // size_t的标准占位符，Linux/macOS上%lu凑巧能用，MSVC下size_t是ULL需%zu否则发警告
 
@@ -199,7 +202,7 @@ static void printBinTree ( BinNode<T>* bt, int depth, int type, Bitmap* bType ) 
  ******************************************************************************************/
 template <typename T> //元素类型
 void UniPrint::p ( BinTree<T> & bt ) { //引用
-   printf ( "%s[%p]*%d:\n", typeid(bt).name(), reinterpret_cast<unsigned*>(&bt), bt.size() ); //基本信息
+   printf ( "%s[%p]*%d:\n", typeid(bt).name(), static_cast<void*>(&bt), bt.size() ); //基本信息
    Bitmap* branchType = new Bitmap; //记录当前节点祖先的方向
    printBinTree ( bt.root(), -1, ROOT, branchType ); //树状结构
    release ( branchType ); 
@@ -210,7 +213,7 @@ void UniPrint::p ( BinTree<T> & bt ) { //引用
 
 template <typename T> //元素类型
 void UniPrint::p ( BST<T> & bt ) { //引用
-   printf ( "%s[%p]*%d:\n", typeid ( bt ).name(), reinterpret_cast<unsigned*>(&bt), bt.size() ); //基本信息
+   printf ( "%s[%p]*%d:\n", typeid ( bt ).name(), static_cast<void*>(&bt), bt.size() ); //基本信息
    Bitmap* branchType = new Bitmap; //记录当前节点祖先的方向
    printBinTree ( bt.root(), -1, ROOT, branchType ); //树状结构
    release ( branchType ); 
@@ -220,7 +223,7 @@ void UniPrint::p ( BST<T> & bt ) { //引用
 
 template <typename T> //元素类型
 void UniPrint::p ( AVL<T> & avl ) { //引用
-   printf ( "%s[%p]*%d:\n", typeid ( avl ).name(), reinterpret_cast<unsigned*>(&avl), avl.size() ); //基本信息
+   printf ( "%s[%p]*%d:\n", typeid ( avl ).name(), static_cast<void*>(&avl), avl.size() ); //基本信息
    Bitmap* branchType = new Bitmap; //记录当前节点祖先的方向
    printBinTree ( avl.root(), -1, ROOT, branchType ); //树状结构
    release ( branchType ); 
@@ -229,7 +232,7 @@ void UniPrint::p ( AVL<T> & avl ) { //引用
 
 template <typename T> //元素类型
 void UniPrint::p ( Splay<T> & bt ) { //引用
-   printf ( "%s[%p]*%d:\n", typeid ( bt ).name(), reinterpret_cast<unsigned*>(&bt), bt.size() ); //基本信息
+   printf ( "%s[%p]*%d:\n", typeid ( bt ).name(), static_cast<void*>(&bt), bt.size() ); //基本信息
    Bitmap* branchType = new Bitmap; //记录当前节点祖先的方向
    printBinTree ( bt.root(), -1, ROOT, branchType ); //树状结构
    release ( branchType ); 
@@ -249,7 +252,7 @@ void UniPrint::p ( Splay<T> & bt ) { //引用
  ******************************************************************************************/
 template <typename T> //元素类型
 void UniPrint::p ( BTree<T> & bt ) { //引用
-   printf ( "%s[%p]*%d:\n", typeid ( bt ).name(), reinterpret_cast<unsigned*>(&bt), bt.size() ); //基本信息
+   printf ( "%s[%p]*%d:\n", typeid ( bt ).name(), static_cast<void*>(&bt), bt.size() ); //基本信息
    Bitmap* leftmosts = new Bitmap; //记录当前节点祖先的方向
    Bitmap* rightmosts = new Bitmap; //记录当前节点祖先的方向
    printBTree ( bt.root(), 0, true, true, leftmosts, rightmosts ); //输出树状结构
@@ -274,10 +277,10 @@ static void printBTree ( BTNode<T>* bt, int depth, bool isLeftmost, bool isRight
       /*DSA*/printf ( parentOK ? " " : "X" );
       print ( bt->key[k] ); printf ( " *>" );
       for ( int i = 0; i < depth; i++ ) //根据相邻各层
-         ( leftmosts->test ( i ) && leftmosts->test ( i + 1 ) || rightmosts->test ( i ) && rightmosts->test ( i + 1 ) ) ? //的拐向是否一致，即可确定
+         ( ( leftmosts->test ( i ) && leftmosts->test ( i + 1 ) ) || ( rightmosts->test ( i ) && rightmosts->test ( i + 1 ) ) ) ? //的拐向是否一致，即可确定
          printf ( "      " ) : printf ( "│    " ); //是否应该打印横向联接线
-      if ( ( ( 0 == depth && 1 < bt->key.size() ) || !isLeftmost && isRightmost ) && bt->key.size() - 1 == k ) printf ( "┌─" );
-      else if ( ( ( 0 == depth && 1 < bt->key.size() ) || isLeftmost && !isRightmost ) && 0 == k )            printf ( "└─" );
+      if ( ( ( 0 == depth && 1 < bt->key.size() ) || ( !isLeftmost && isRightmost ) ) && bt->key.size() - 1 == k ) printf ( "┌─" );
+      else if ( ( ( 0 == depth && 1 < bt->key.size() ) || ( isLeftmost && !isRightmost ) ) && 0 == k )            printf ( "└─" );
       else                                                                                               printf ( "├─" );
       print ( bt->key[k] ); printf ( "\n" );
       printBTree ( bt->child[k], depth + 1, 0 == k, false, leftmosts, rightmosts ); //递归输出子树
@@ -312,10 +315,12 @@ void printRB ( double e , bool red) {
 }
 
 void printRB ( char e , bool red) { 
+   unsigned char ue = static_cast<unsigned char>(e);
+   char out = ( ue > 31 && ue < 128 ) ? static_cast<char>(ue) : '$';
    if(red)
-      printf ( " \033[0m\033[1;31m%c\033[0m", ( char(31) < e ) && ( e < char(128) ) ? e : '$' ); 
+      printf ( " \033[0m\033[1;31m%c\033[0m", out ); 
    else 
-      printf ( " %c", ( char(31) < e ) && ( e < char(128) ) ? e : '$' ); 
+      printf ( " %c", out ); 
 }
 
 template <typename T> void printRBNode( BinNode<T>& node) {
@@ -356,7 +361,7 @@ static void printRBTree ( BinNode<T>* bt, int depth, int type, Bitmap* bType ) {
 
 template <typename T> //元素类型
 void printRedBlack ( RedBlack<T> & rb ) { //引用
-   printf ( "%s[%p]*%d:\n", typeid ( rb ).name(), reinterpret_cast<unsigned*>(&rb), rb.size() ); //基本信息
+   printf ( "%s[%p]*%d:\n", typeid ( rb ).name(), static_cast<void*>(&rb), rb.size() ); //基本信息
    Bitmap* branchType = new Bitmap; //记录当前节点祖先的方向
    printRBTree ( rb.root(), -1, ROOT, branchType ); //树状结构
    release ( branchType ); 
@@ -388,7 +393,7 @@ void UniPrint::p ( RedBlack<T>& q ) {
 
 template <typename K, typename V> //e、value
 void UniPrint::p ( Hashtable<K, V>& ht ) { //引用
-   printf ( "%s[%p]*(%d)/%d:\n", typeid ( ht ).name(), reinterpret_cast<unsigned*>(&ht), ht._N(), ht._M() ); //基本信息
+   printf ( "%s[%p]*(%d)/%d:\n", typeid ( ht ).name(), static_cast<void*>(&ht), ht._N(), ht._M() ); //基本信息
    for ( int i = 0; i < ht._M(); i++ ) //输出桶编号
       printf ( "  %4d  ", i );
    printf ( "\n" );
@@ -409,7 +414,7 @@ void UniPrint::p ( Hashtable<K, V>& ht ) { //引用
 
 template <typename K, typename V> //e、value
 void UniPrint::p ( QuadraticHT<K, V>& ht ) { //引用
-   printf ( "%s[%p]*(%d)/%d:\n", typeid ( ht ).name(), reinterpret_cast<unsigned*>(&ht), ht._N(), ht._M() ); //基本信息
+   printf ( "%s[%p]*(%d)/%d:\n", typeid ( ht ).name(), static_cast<void*>(&ht), ht._N(), ht._M() ); //基本信息
    for ( int i = 0; i < ht._M(); i++ ) //输出桶编号
       printf ( "  %4d  ", i );
    printf ( "\n" );
@@ -436,7 +441,7 @@ void UniPrint::p ( QuadraticHT<K, V>& ht ) { //引用
 
 template <typename T>
 void UniPrint::p ( Quadlist<T>& q ) { //����
-   printf ( "%s[%p]*%03d: ", typeid(q).name(), reinterpret_cast<unsigned*>(&q), q.size() ); //������Ϣ
+   printf ( "%s[%p]*%03d: ", typeid(q).name(), static_cast<void*>(&q), q.size() ); //������Ϣ
    if ( q.size() <= 0 ) {  printf ( "\n" ); return;  }
    QuadlistNode<T>* curr = q.first()->pred; 
    QuadlistNode<T>* base = q.first(); 
@@ -462,7 +467,7 @@ void UniPrint::p ( Quadlist<T>& q ) { //����
 
 template <typename K, typename V> 
 void UniPrint::p ( Skiplist<K, V>& s ) { 
-   printf ( "%s[%p]*%d*%d:\n", typeid ( s ).name(), reinterpret_cast<unsigned*>(&s), s.level(), s.size() ); //������Ϣ
+   printf ( "%s[%p]*%d*%d:\n", typeid ( s ).name(), static_cast<void*>(&s), s.level(), s.size() ); //������Ϣ
    s.traverse ( print ); 
    printf ( "\n" );
 }
@@ -473,7 +478,7 @@ void UniPrint::p ( Skiplist<K, V>& s ) {
  ******************************************************************************************/
 template <typename T> //元素类型
 void UniPrint::p (Heap<T> & pq ) { //引用
-   printf ( "%s[%p]*%d:\n", typeid ( pq ).name(), reinterpret_cast<int*>(&pq), pq.size()); //基本信息
+   printf ( "%s[%p]*%d:\n", typeid ( pq ).name(), static_cast<void*>(&pq), pq.size()); //基本信息
    int branchType[256]; //最深256层 <= 2^256 = 1.16*10^77
    printComplHeap (pq, pq.size(), 0, 0, ROOT, branchType ); //树状结构
    printf ( "\n" );
@@ -519,7 +524,7 @@ template <typename Tv, typename Te> //顶点类型、边类型
 void UniPrint::p ( GraphMatrix<Tv, Te>& s ) { //引用
    int inD = 0; for ( int i = 0; i < s.n; i++ ) inD += s.inDegree ( i );
    int outD = 0; for ( int i = 0; i < s.n; i++ ) outD += s.outDegree ( i );
-   printf ( "%s[%p]*(%d, %d):\n", typeid ( s ).name(), reinterpret_cast<unsigned*>(&s), s.n, s.e ); //基本信息
+   printf ( "%s[%p]*(%d, %d):\n", typeid ( s ).name(), static_cast<void*>(&s), s.n, s.e ); //基本信息
 // 标题行
    print ( s.n ); printf ( "    " ); print ( inD ); printf ( "|" );
    for ( int i = 0; i < s.n; i++ ) { print ( s.vertex ( i ) ); printf(" ");/*printf ( "[" ); print ( s.status ( i ) ); printf ( "] " );*/ }
@@ -552,7 +557,7 @@ void display(Outer<T>& structure){
    int times = 30;
    T random =  100;
    for(int i = 0; i < times; i++){
-      system("clear");
+      clear_screen();
       T val = dice(random); 
       std::cout << "Insert: \t" << val << std::endl;
       structure.insert(val);

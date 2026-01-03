@@ -19,10 +19,10 @@ public:
 
     const char& front() const;//第一个元素
     const char& back()  const;//最后一个元素
-    bool check(int i) const;//下标越界检查
+    bool check(size_type i) const;//下标越界检查
     const char* c_str() const;//C风格字符串
 
-    size_type size() const {  return end_ - data_; }//大小
+    size_type size() const {  return static_cast<size_type>(end_ - data_); }//大小
     bool empty() const {    return end_ == data_;   }//判空
 
     char charAt(size_type i)/* 返回对应字符前进行下标检查 */{   if(check(i))  return (*this)[i]; return '\0';}
@@ -65,21 +65,23 @@ String::String(char c): data_(new char[2]) {
     end_ = data_ + 1;  // ✅ 正确设置 end_ 指向字符串末尾
 }
 
-String::String(const char* s):data_(new char[strlen(s)+1]){
-    strcpy(data_, s);
-    end_ = data_ + strlen(s);
+String::String(const char* s){
+    size_type len = static_cast<size_type>(std::strlen(s));
+    data_ = new char[len + 1];
+    std::memcpy(data_, s, len + 1);
+    end_ = data_ + len;
 }
 
 String::String(const String& rhs){
-    int size = strlen(rhs.c_str());
-    data_ = new char[size+1];
-    strcpy(data_, rhs.c_str());
-    end_ = data_ + strlen(rhs.c_str());
+    size_type len = static_cast<size_type>(std::strlen(rhs.c_str()));
+    data_ = new char[len + 1];
+    std::memcpy(data_, rhs.c_str(), len + 1);
+    end_ = data_ + len;
 }
 
 String::String(const char* s, size_type k){
     data_ = new char[k+1];
-    int i;
+    size_type i;
     for(i = 0; i < k; i++){
         data_[i] = s[i];
     }
@@ -111,14 +113,15 @@ String& String::operator=(const String& rhs){
     if(&rhs != this){
         const char* temp = rhs.c_str();
         delete[] data_;
-        data_ = new char[strlen(temp)+1];
-        strcpy(data_, temp);
-        end_ = data_ + strlen(temp);
+        size_type len = static_cast<size_type>(std::strlen(temp));
+        data_ = new char[len + 1];
+        std::memcpy(data_, temp, len + 1);
+        end_ = data_ + len;
     }
     return *this;
 }
 
-bool String::check(int i) const
+bool String::check(size_type i) const
 {
     if (i >= this->size()) 
         return false;
@@ -135,7 +138,7 @@ String String::substr(size_type i, size_type k){
         String str(data_+i, size);
         ret = str;
     }
-    return std::move(ret);
+    return ret;
 }
 
 bool String::operator==(const String& rhs){
@@ -161,12 +164,12 @@ String& String::concat(const String& rhs){
     size_type r = rhs.size();
     size_type sum = l+r;
     char* n = new char[sum+1];
-    int i;
+    size_type i;
     for(i = 0; i < l; i++){
         *(n+i) = (*this)[i];
     }
 
-    for(int j = 0; i < sum; i++, j++){
+    for(size_type j = 0; i < sum; i++, j++){
         *(n+i) = *(rhs.data_ +j);
     }
 
@@ -183,12 +186,12 @@ String String::operator+(const String& rhs){
     size_type r = rhs.size();
     size_type sum = l+r;
     char* n = new char[sum+1];
-    int i;
+    size_type i;
     for(i = 0; i < l; i++){
         *(n+i) = (*this)[i];
     }
 
-    for(int j = 0; i < sum; i++, j++){
+    for(size_type j = 0; i < sum; i++, j++){
         *(n+i) = *(rhs.data_ +j);
     }
 
@@ -201,7 +204,7 @@ String String::operator+(const String& rhs){
 String String::operator+(char rhs){
     
     char* n = new char[this->size()+2];
-    int i;
+    size_type i;
     for(i = 0; i < this->size(); i++){
         *(n+i) = (*this)[i];
     }

@@ -7,7 +7,6 @@
 
 int main(){
     BST<int> bst;
-    int temp;
 
     display(bst);
 

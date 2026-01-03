@@ -236,6 +236,9 @@ private:
     }
 
 public:
+    using BST<Key>::search;
+    using BST<Key>::insert;
+
     explicit BPlusTree(int order = 4, Compare cmp = Compare()):_order(order < 3 ? 3 : order), _cmp(cmp){ }
     ~BPlusTree(){
         clear(_root);

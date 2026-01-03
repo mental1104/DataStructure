@@ -14,10 +14,9 @@ public:
 };
 
 int Quick3String::charAt(const String& s, int d){
-    if(d < s.size())
-        return s[d];
-    else 
-        return -1;
+    if(d >= 0 && static_cast<size_type>(d) < s.size())
+        return s[static_cast<size_type>(d)];
+    return -1;
 }
 
 void Quick3String::sort(Vector<String>& a){

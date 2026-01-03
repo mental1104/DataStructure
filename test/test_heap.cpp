@@ -30,6 +30,7 @@ int main() {
     assert(max_val == 10);
     max_val = heap.delMax();
     assert(max_val == 5);
+    (void)max_val;
     // 注意：堆为空时，不应调用 getMax()（此处仅做删除测试）
     cout << "测试2通过：delMax 删除最大元素顺序正确。" << endl;
 
@@ -46,6 +47,7 @@ int main() {
         assert(prev >= curr);
         prev = curr;
     }
+    (void)prev;
     cout << "测试3通过：批量构造与堆排序验证正常。" << endl;
 
     // ===== 测试4：遍历底层容器（Vector）的迭代器 =====
@@ -59,6 +61,7 @@ int main() {
         sum += *it;
     // 计算累加和进行简单验证
     assert(sum == (100 + 50 + 75 + 25));
+    (void)sum;
     cout << "测试4通过：迭代器遍历正常工作。" << endl;
 
     // ===== 测试5：小顶堆模式 =====

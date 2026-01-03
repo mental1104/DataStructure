@@ -48,7 +48,11 @@ public:
     //边的确认操作
     virtual bool exists(int i, int j);
     //边的基本操作
-    virtual EType& type(int i, int j) { return _E[i][j]->type; }
+    virtual EType& type(int i, int j) {
+        static EType dummy = EType::UNDETERMINED;
+        if (!_E[i][j]) return dummy;
+        return _E[i][j]->type;
+    }
     virtual Te& edge(int i, int j) {  return _E[i][j]->data; }
     virtual double& weight(int i, int j) { return _E[i][j]->weight; }
     //边的动态操作
