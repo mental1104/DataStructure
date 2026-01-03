@@ -6,6 +6,24 @@ if(EXISTS "${GTEST_DIR}" AND IS_DIRECTORY "${GTEST_DIR}")
         enable_testing()
         add_subdirectory(thirdparty/googletest)
 
+        # Allow gtest headers to emit C++17-attribute warnings without failing the build
+        # when compiling with C++11/14 on Clang-based toolchains.
+        if (CMAKE_CXX_STANDARD LESS 17 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+            set(GTEST_NOERROR_FLAGS "-Wno-error=c++17-attribute-extensions")
+            if (TARGET gtest)
+                target_compile_options(gtest INTERFACE ${GTEST_NOERROR_FLAGS})
+            endif()
+            if (TARGET gtest_main)
+                target_compile_options(gtest_main INTERFACE ${GTEST_NOERROR_FLAGS})
+            endif()
+            if (TARGET gmock)
+                target_compile_options(gmock INTERFACE ${GTEST_NOERROR_FLAGS})
+            endif()
+            if (TARGET gmock_main)
+                target_compile_options(gmock_main INTERFACE ${GTEST_NOERROR_FLAGS})
+            endif()
+        endif()
+
         # 确保可用的线程库
         find_package(Threads REQUIRED)
 
