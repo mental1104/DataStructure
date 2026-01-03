@@ -48,15 +48,15 @@ public:
 };
 
 template<typename T>
-static void levelRemove(BinNode<T>* x){
+static void levelRemove(BinNode<T>* root){
     Queue<BinNode<T>*> Q;
-    Q.enqueue(x);
+    Q.enqueue(root);
     while(!Q.empty()){
-        BinNode<T>* x = Q.dequeue();
-        if(HasLChild(*x)) Q.enqueue(x->lc);
-        if(HasRChild(*x)) Q.enqueue(x->rc);
-        release(x->data);
-        release(x);
+        BinNode<T>* node = Q.dequeue();
+        if(HasLChild(*node)) Q.enqueue(node->lc);
+        if(HasRChild(*node)) Q.enqueue(node->rc);
+        release(node->data);
+        release(node);
     }
 }
 

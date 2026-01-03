@@ -167,22 +167,22 @@ void Graph<Tv, Te>::BFS(int v, int& clock) {
     status(v) = VStatus::DISCOVERED;
     Q.enqueue(v);
     while(!Q.empty()) {
-        int v = Q.dequeue();
-        dTime(v) = ++clock;
-        for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)){
-            if (!exists(v, u)) continue;
+        int cur = Q.dequeue();
+        dTime(cur) = ++clock;
+        for(int u = firstNbr(cur); -1 < u; u = nextNbr(cur, u)){
+            if (!exists(cur, u)) continue;
             if(VStatus::UNDISCOVERED == status(u)){
                 status(u) = VStatus::DISCOVERED;
                 Q.enqueue(u);
-                type(v, u) = EType::TREE;
-                parent(u) = v;
+                type(cur, u) = EType::TREE;
+                parent(u) = cur;
             } else {
-                type(v, u) = EType::CROSS;
+                type(cur, u) = EType::CROSS;
             }
         }
 
-        if(status(v)!=VStatus::SOURCE)
-            status(v) = VStatus::VISITED;
+        if(status(cur)!=VStatus::SOURCE)
+            status(cur) = VStatus::VISITED;
     }
 }
 
@@ -612,14 +612,14 @@ void Graph<Tv, Te>::kruskal(bool flag){
 
     double weight = 0.00;
     while(!pq.empty() && mst.size() < n-1){
-        Edge<Te> e = pq.delMax();
-        int v = e.x;
-        int w = e.y;
+        Edge<Te> edge = pq.delMax();
+        int v = edge.x;
+        int w = edge.y;
         if(uf.connected(v, w)) continue;
         uf.unite(v, w);
-        mst.insert(e);
+        mst.insert(edge);
 
-        weight += e.weight;
+        weight += edge.weight;
         type(v, w) = EType::TREE;
         status(v) = VStatus::VISITED;
         status(w) = VStatus::VISITED; 
