@@ -22,7 +22,7 @@ public:
     bool check(size_type i) const;//下标越界检查
     const char* c_str() const;//C风格字符串
 
-    size_type size() const {  return end_ - data_; }//大小
+    size_type size() const {  return static_cast<size_type>(end_ - data_); }//大小
     bool empty() const {    return end_ == data_;   }//判空
 
     char charAt(size_type i)/* 返回对应字符前进行下标检查 */{   if(check(i))  return (*this)[i]; return '\0';}
@@ -65,16 +65,18 @@ String::String(char c): data_(new char[2]) {
     end_ = data_ + 1;  // ✅ 正确设置 end_ 指向字符串末尾
 }
 
-String::String(const char* s):data_(new char[strlen(s)+1]){
-    strcpy(data_, s);
-    end_ = data_ + strlen(s);
+String::String(const char* s){
+    size_type len = static_cast<size_type>(std::strlen(s));
+    data_ = new char[len + 1];
+    std::memcpy(data_, s, len + 1);
+    end_ = data_ + len;
 }
 
 String::String(const String& rhs){
-    int size = strlen(rhs.c_str());
-    data_ = new char[size+1];
-    strcpy(data_, rhs.c_str());
-    end_ = data_ + strlen(rhs.c_str());
+    size_type len = static_cast<size_type>(std::strlen(rhs.c_str()));
+    data_ = new char[len + 1];
+    std::memcpy(data_, rhs.c_str(), len + 1);
+    end_ = data_ + len;
 }
 
 String::String(const char* s, size_type k){
@@ -111,9 +113,10 @@ String& String::operator=(const String& rhs){
     if(&rhs != this){
         const char* temp = rhs.c_str();
         delete[] data_;
-        data_ = new char[strlen(temp)+1];
-        strcpy(data_, temp);
-        end_ = data_ + strlen(temp);
+        size_type len = static_cast<size_type>(std::strlen(temp));
+        data_ = new char[len + 1];
+        std::memcpy(data_, temp, len + 1);
+        end_ = data_ + len;
     }
     return *this;
 }
