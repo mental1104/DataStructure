@@ -37,23 +37,23 @@ void displayProgress ( Stack<Queen>& S, int nQueen ) { //在棋盘上显示搜�
    getchar();
 }
 
-void placeQueens ( int N ) { //N皇后算法（迭代版）：采用试探/回溯的策略，借助栈记录查找的结果
+void placeQueens ( int boardSize ) { //N皇后算法（迭代版）：采用试探/回溯的策略，借助栈记录查找的结果
    Stack<Queen> solu; //存放（部分）解的栈
    Queen q ( 0, 0 ); //从原点位置出发
    do { //反复试探、回溯
-      if ( solu.size() >= N || q.y >= N ) { //若已出界，则
+      if ( solu.size() >= boardSize || q.y >= boardSize ) { //若已出界，则
          q = solu.pop(); q.y++; //回溯一行，并继续试探下一列
       } else { //否则，试探下一行
-         while ( ( q.y < N ) && ( 0 <= solu.find ( q ) ) ) //通过与已有皇后的比对
+         while ( ( q.y < boardSize ) && ( 0 <= solu.find ( q ) ) ) //通过与已有皇后的比对
             /*DSA*///while ((q.y < N) && (solu.find(q))) //（若基于List实现Stack，则find()返回值的语义有所不同）
             { q.y++; nCheck++; } //尝试找到可摆放下一皇后的列
-         if ( q.y < N ) { //若存在可摆放的列，则
+         if ( q.y < boardSize ) { //若存在可摆放的列，则
             solu.push ( q ); //摆上当前皇后，并
-            if ( solu.size() >= N ) nSolu++; //若部分解已成为全局解，则通过全局变量nSolu计数
+            if ( solu.size() >= boardSize ) nSolu++; //若部分解已成为全局解，则通过全局变量nSolu计数
             q.x++; q.y = 0; //转入下一行，从第0列开始，试探下一皇后
          }
-      }/*DSA*/displayProgress ( solu, N );
-   } while ( ( 0 < q.x ) || ( q.y < N ) ); //所有分支均已或穷举或剪枝之后，算法结束。终止条件为x = 0, y出界
+      }/*DSA*/displayProgress ( solu, boardSize );
+   } while ( ( 0 < q.x ) || ( q.y < boardSize ) ); //所有分支均已或穷举或剪枝之后，算法结束。终止条件为x = 0, y出界
 }
 
 int main(int argc, char** argv){

@@ -62,10 +62,27 @@ struct BenchParams {
 };
 
 std::size_t env_size_t(const char* name, std::size_t def) {
-    const char* v = std::getenv(name);
-    if (!v || *v == '\0') return def;
+    const char* v = nullptr;
+#ifdef _MSC_VER
+    char* env_buf = nullptr;
+    size_t env_len = 0;
+    if (_dupenv_s(&env_buf, &env_len, name) == 0) {
+        v = env_buf;
+    }
+#else
+    v = std::getenv(name);
+#endif
+    if (!v || *v == '\0') {
+#ifdef _MSC_VER
+        std::free(env_buf);
+#endif
+        return def;
+    }
     char* end = nullptr;
     unsigned long long val = std::strtoull(v, &end, 10);
+#ifdef _MSC_VER
+    std::free(env_buf);
+#endif
     if (end == v || val == 0) return def;
     return static_cast<std::size_t>(val);
 }

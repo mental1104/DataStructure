@@ -85,9 +85,9 @@ public:
         if (i < 0 || i >= this->n) return Tv();
         // remove outgoing
         for (auto p = _adj[i].first(); _adj[i].valid(p); p = p->succ) {
-            Edge<Te>* e = p->data;
-            _V[e->y].inDegree--;
-            delete e;
+            Edge<Te>* edge_ptr = p->data;
+            _V[edge_ptr->y].inDegree--;
+            delete edge_ptr;
             this->e--;
         }
         _adj.remove(i);
@@ -100,15 +100,15 @@ public:
             for (auto p = _adj[u].first(); _adj[u].valid(p); ) {
                 auto curr = p;
                 p = p->succ;
-                Edge<Te>* e = curr->data;
-                if (e->y == i) {
+                Edge<Te>* edge_ptr = curr->data;
+                if (edge_ptr->y == i) {
                     _adj[u].remove(curr);
                     _V[u].outDegree--;
                     this->e--;
-                    delete e;
+                    delete edge_ptr;
                 } else {
-                    if (e->y > i) e->y--;
-                    if (e->x > i) e->x--;
+                    if (edge_ptr->y > i) edge_ptr->y--;
+                    if (edge_ptr->x > i) edge_ptr->x--;
                 }
             }
         }
@@ -137,8 +137,8 @@ public:
     // edge dynamic ops
     virtual void insert(Te const& edge, int i, int j, double w = 0.0) {
         if (exists(i, j)) return;
-        Edge<Te>* e = new Edge<Te>(edge, w, i, j);
-        _adj[i].insertAsFirst(e);
+        Edge<Te>* edge_ptr = new Edge<Te>(edge, w, i, j);
+        _adj[i].insertAsFirst(edge_ptr);
         this->e++;
         _V[i].outDegree++;
         _V[j].inDegree++;
@@ -146,14 +146,14 @@ public:
 
     virtual Te remove(int i, int j) {
         ListNode<Edge<Te>*>* pos = nullptr;
-        Edge<Te>* e = findEdge(i, j, pos);
-        if (!e) return Te();
-        Te data = e->data;
+        Edge<Te>* edge_ptr = findEdge(i, j, pos);
+        if (!edge_ptr) return Te();
+        Te data = edge_ptr->data;
         _adj[i].remove(pos);
         this->e--;
         _V[i].outDegree--;
         _V[j].inDegree--;
-        delete e;
+        delete edge_ptr;
         return data;
     }
 
@@ -161,9 +161,9 @@ public:
         Vector<List<Edge<Te>*>> newAdj(this->n, this->n, List<Edge<Te>*>());
         for (int i = 0; i < this->n; ++i) {
             for (auto p = _adj[i].first(); _adj[i].valid(p); p = p->succ) {
-                Edge<Te>* e = p->data;
-                Edge<Te>* r = new Edge<Te>(e->data, e->weight, e->y, e->x);
-                newAdj[e->y].insertAsFirst(r);
+                Edge<Te>* edge_ptr = p->data;
+                Edge<Te>* reversed_edge = new Edge<Te>(edge_ptr->data, edge_ptr->weight, edge_ptr->y, edge_ptr->x);
+                newAdj[edge_ptr->y].insertAsFirst(reversed_edge);
             }
         }
         // clear old edges
