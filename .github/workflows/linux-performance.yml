@@ -1,4 +1,4 @@
-name: Windows & Linux Performance
+name: Linux Performance
 
 on:
   push:
@@ -13,34 +13,6 @@ permissions:
   contents: read
 
 jobs:
-  windows-build-and-test:
-    runs-on: windows-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        standard: [11, 14, 17, 20, 23] # 26
-    defaults:
-      run:
-        shell: bash
-        working-directory: ${{ github.workspace }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Configure CMake
-        run: |
-          build_dir="build-cxx${{ matrix.standard }}"
-          cmake -S . -B "$build_dir" -G "Visual Studio 17 2022" -A x64 \
-            -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
-
-      - name: Build
-        run: cmake --build "build-cxx${{ matrix.standard }}" --config Release --parallel
-
-      - name: Run tests
-        run: ctest --test-dir "build-cxx${{ matrix.standard }}" --output-on-failure --build-config Release
-
   discover-benches:
     runs-on: ubuntu-latest
     outputs:
@@ -68,7 +40,7 @@ jobs:
           print(f"bench_dirs={json.dumps(dirs)}")
           PY
 
-  linux-performance:
+  run-benches:
     needs: discover-benches
     runs-on: ubuntu-latest
     strategy:
