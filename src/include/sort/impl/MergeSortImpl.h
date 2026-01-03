@@ -39,8 +39,8 @@ inline void VectorSortImpl::mergeSortB(Vector<T> &container, Rank lo, Rank hi)
     int N = hi - lo;
     T* aux = new T[N];
     for(int sz = 1; sz < N; sz = sz+sz)
-        for(int lo = 0; lo < N-sz; lo += sz+sz){
-            merge(container, aux, lo, lo+sz-1, min(lo+sz+sz-1, N-1));
+        for(int start = 0; start < N-sz; start += sz+sz){
+            merge(container, aux, start, start+sz-1, min(start+sz+sz-1, N-1));
         }
     delete[] aux;
 }

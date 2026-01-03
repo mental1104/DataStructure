@@ -24,7 +24,7 @@ private:
 
     void collect(Node<T>* x, String pre, Vector<String>& q);
     void collect(Node<T>* x, String pre, const String &pat, Vector<String>& q);
-    int search(Node<T>* x, String s, int d, int length);
+    int search(Node<T>* x, String input, int d, int length);
     
 public:
     Trie() = default;
@@ -37,7 +37,7 @@ public:
 
     Vector<String> keysWithPrefix(String pre);
     Vector<String> keysThatMatch(String pat);
-    String longestPrefixOf(String s);
+    String longestPrefixOf(String input);
 };
 
 template<typename T>
@@ -45,13 +45,13 @@ static void destruct(Node<T>* x){
     Queue<Node<T>*> Q;
     Q.enqueue(x);
     while(!Q.empty()){
-        Node<T>* x = Q.dequeue();
+        Node<T>* node = Q.dequeue();
         for(int i = 0; i < R; i++){
-            if(x->next[i])
-                Q.enqueue(x->next[i]);
+            if(node->next[i])
+                Q.enqueue(node->next[i]);
         }
-        release(x->val);
-        release(x);
+        release(node->val);
+        release(node);
     }
 }
 
@@ -144,18 +144,18 @@ void Trie<T>::collect(Node<T>* x, String pre, const String& pat, Vector<String>&
 }
 
 template<typename T>
-String Trie<T>::longestPrefixOf(String s){
-    int length = search(root, s, 0, 0);
-    return s.substr(0, length);
+String Trie<T>::longestPrefixOf(String input){
+    int length = search(root, input, 0, 0);
+    return input.substr(0, length);
 }
 
 template<typename T>
-int Trie<T>::search(Node<T>* x, String s, int d, int length){
+int Trie<T>::search(Node<T>* x, String input, int d, int length){
     if(x == nullptr) return length;
     if(x->val != 0) length = d;
-    if(d == s.size()) return length;
-    char c = s[d];
-    return search(x->next[c], s, d+1, length);
+    if(d == input.size()) return length;
+    char c = input[d];
+    return search(x->next[c], input, d+1, length);
 }
 
 template<typename T>

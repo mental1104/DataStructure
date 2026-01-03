@@ -35,24 +35,24 @@ public:
     void put(const String& key, T val) {  root = put(root, key, val, 0);  }
     void remove(const String& key);
 
-    String longestPrefixOf(String s);
+    String longestPrefixOf(String input);
     Vector<String> keysWithPrefix(String pre);
-    Vector<String> keysThatMatch(String s);
+    Vector<String> keysThatMatch(String pattern);
 };
 
 template<typename T>
 TST<T>::~TST(){
     Queue<TSTNode<T>*> Q;
     this->s = 0;
-    TSTNode<T>* x = root;
-    Q.enqueue(x);
+    TSTNode<T>* node = root;
+    Q.enqueue(node);
     while(!Q.empty()){
-        TSTNode<T>* x = Q.dequeue();
-        if(x->left) Q.enqueue(x->left);
-        if(x->mid) Q.enqueue(x->mid);
-        if(x->right) Q.enqueue(x->right);
-        release(x->val);
-        release(x);
+        TSTNode<T>* current = Q.dequeue();
+        if(current->left) Q.enqueue(current->left);
+        if(current->mid) Q.enqueue(current->mid);
+        if(current->right) Q.enqueue(current->right);
+        release(current->val);
+        release(current);
     }
 }
 
@@ -130,14 +130,14 @@ TSTNode<T>* TST<T>::remove(TSTNode<T>* x, const String& key, int d){
 }
 
 template<typename T>
-String TST<T>::longestPrefixOf(String s){
-    if(s.size() == 0)
-        return s;
+String TST<T>::longestPrefixOf(String input){
+    if(input.size() == 0)
+        return input;
     int length = 0;
     TSTNode<T>* x = root;
     int i = 0;
-    while (x != nullptr && i < s.size()){
-        char c = s[i];
+    while (x != nullptr && i < input.size()){
+        char c = input[i];
         if      (c < x->c) x = x->left;
         else if (c > x->c) x = x->right;
         else {
@@ -146,7 +146,7 @@ String TST<T>::longestPrefixOf(String s){
             x = x->mid;
         }
     }
-    return s.substr(0, length);
+    return input.substr(0, length);
 }
 
 template<typename T>
@@ -175,9 +175,9 @@ void TST<T>::collect(TSTNode<T>* x, String prefix, Vector<String>& q){
 }
 
 template<typename T>
-Vector<String> TST<T>::keysThatMatch(String s){
+Vector<String> TST<T>::keysThatMatch(String pattern){
     Vector<String> q;
-    collect(root, "", 0, s, q);
+    collect(root, "", 0, pattern, q);
     return q;
 }
 

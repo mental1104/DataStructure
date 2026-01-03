@@ -68,12 +68,16 @@ void append(char*& rpn, double opnd) {
     }
 
     // 拼接字符串
+#ifdef _MSC_VER
+    strcat_s(rpn, newSize, buf);
+#else
     strcat(rpn, buf);
+#endif
 }
 
 void append(char*& rpn, char optr) {
     // 将运算符接至 RPN 末尾
-    int n = strlen(rpn); // RPN 当前长度（以 '\0' 结尾，长度为 n + 1）
+    size_t n = strlen(rpn); // RPN 当前长度（以 '\0' 结尾，长度为 n + 1）
     
     // 扩展空间以容纳运算符和空格
     rpn = static_cast<char*>(realloc(rpn, sizeof(char) * (n + 3))); // 额外增加2个字符和终止符

@@ -10,6 +10,12 @@ inline ESWN nextESWN(ESWN eswn) {
     return ESWN(eswn + 1);
 }
 
+#ifdef _MSC_VER
+#define DSA_FSCANF fscanf_s
+#else
+#define DSA_FSCANF fscanf
+#endif
+
 struct Cell {
     int x, y;
     Status status;
@@ -95,20 +101,24 @@ void displayLaby() { //┘└┐┌│─
  ******************************************************************************************/
 void readLaby ( char* labyFile ) { //śÁČëĂÔšŹ
    FILE* fp;
+#ifdef _MSC_VER
+   if (fopen_s(&fp, labyFile, "r") != 0 || !fp)
+#else
    if ( ! ( fp = fopen ( labyFile, "r" ) ) )
+#endif
       { std::cout << "can't open " << labyFile << std::endl; exit ( -1 ); }
-   fscanf ( fp, "Laby Size = %d\n", &labySize );
+   DSA_FSCANF ( fp, "Laby Size = %d\n", &labySize );
    if ( LABY_MAX < labySize )
       { std::cout << "Laby size " << labySize << " > " << LABY_MAX << std::endl; exit ( -1 ); }
-   int startX, startY; fscanf ( fp, "Start = (%d, %d)\n", &startX, &startY );
+   int startX, startY; DSA_FSCANF ( fp, "Start = (%d, %d)\n", &startX, &startY );
    startCell = &laby[startX][startY];
-   int goalX, goalY; fscanf ( fp, "Goal = (%d, %d)\n", &goalX, &goalY );
+   int goalX, goalY; DSA_FSCANF ( fp, "Goal = (%d, %d)\n", &goalX, &goalY );
    goalCell = &laby[goalX][goalY];
    for ( int j = 0; j < labySize; j ++ )
       for ( int i = 0; i < labySize; i ++ ) {
          laby[i][j].x = i;
          laby[i][j].y = j;
-         int type; fscanf ( fp, "%d", &type );
+         int type; DSA_FSCANF ( fp, "%d", &type );
          switch ( type ) {
             case 1:   laby[i][j].status = WALL;      break;
             case 0:   laby[i][j].status = AVAILABLE;   break;

@@ -5,11 +5,11 @@
 #include "dsa_string.h"
 
 inline void moPrintString(const String& s) {
-    for (size_t m = s.size(), k = 0; k < m; k++) printf("%4c", s[k]);
+    for (size_type m = s.size(), k = 0; k < m; k++) printf("%4c", s[k]);
 }
 
-inline void moPrintIndexLine(size_t n) {
-    for (size_t t = 0; t < n; t++) printf("%4d", (int)t);
+inline void moPrintIndexLine(size_type n) {
+    for (size_type t = 0; t < n; t++) printf("%4u", static_cast<unsigned>(t));
     printf("\n");
 }
 
@@ -36,7 +36,7 @@ struct StdoutMatchObserver : MatchObserver {
 
     void onProgress(const String& text, const String& pattern, int align, int j, const int*, int) override {
         printf("\n-- Step %2d: --\n", ++step);
-        size_t n = text.size();
+        size_type n = text.size();
         moPrintIndexLine(n);
         moPrintString(text); printf("\n");
         if (0 <= align + j) { for (int t = 0; t < align + j; t++) printf("%4c", ' '); printf("%4c", '|'); }
@@ -61,7 +61,7 @@ struct StdoutMatchObserver : MatchObserver {
 
     void onKRProgress(const String& text, const String& pattern, size_t k, long long hashP, long long hashT) override {
         printf("\n-- Step %2d (k=%zu) --\n", ++step, k);
-        size_t n = text.size();
+        size_type n = text.size();
         moPrintIndexLine(n);
         moPrintString(text); printf("\n");
         for (size_t t = 0; t < k; t++) printf("%4c", ' '); moPrintString(pattern); printf("\n");

@@ -72,26 +72,26 @@ inline int matchBM(const String& P, const String& T, BMStrategy strategy = BMStr
     }
 
     int* gs = buildGS(P, m, &observer);
-    size_t i = 0;
-    while (i + (size_t)m <= (size_t)n) {
+    int i = 0;
+    while (i + m <= n) {
         int j = m - 1;
-        while (P[j] == T[i + j]) {
-            observer.onProgress(T, P, (int)i, j, gs, m);
+        while (P[static_cast<size_type>(j)] == T[static_cast<size_type>(i + j)]) {
+            observer.onProgress(T, P, i, j, gs, m);
             observer.onPause();
             if (0 > --j) break;
         }
         if (0 > j) {
-            observer.onProgress(T, P, (int)i, j, gs, m);
+            observer.onProgress(T, P, i, j, gs, m);
             observer.onPause();
             break;
         }
-        observer.onProgress(T, P, (int)i, j, gs, m);
+        observer.onProgress(T, P, i, j, gs, m);
         observer.onPause();
-        i += std::max(gs[j], j - bc[(unsigned char)T[i + j]]);
+        i += std::max(gs[j], j - bc[(unsigned char)T[static_cast<size_type>(i + j)]]);
     }
     delete[] gs;
     delete[] bc;
-    return (int)i;
+    return i;
 }
 
 inline int matchBMBadCharacter(const String& P, const String& T) {
