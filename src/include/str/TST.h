@@ -42,6 +42,9 @@ public:
 
 template<typename T>
 TST<T>::~TST(){
+    if (root == nullptr) {
+        return;
+    }
     Queue<TSTNode<T>*> Q;
     this->s = 0;
     TSTNode<T>* node = root;

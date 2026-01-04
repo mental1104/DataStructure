@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <array>
 #include "match/KMP.h"
 #include "match/BM.h"
 #include "match/KR.h"
@@ -27,4 +28,33 @@ TEST(MatchKR, FindsNumericSubstring) {
     String pattern("159");
     int idx = matchKR(pattern, text, nullptr);
     EXPECT_EQ(idx, 3);
+}
+
+TEST(MatchObserverTest, StdoutObserverCallbacks) {
+    StdoutMatchObserver observer;
+    String pattern("aba");
+    int next[] = {-1, 0, 1};
+    observer.onNextTable(pattern, next, 3);
+    observer.onNextTable(pattern, nullptr, 3);
+
+    String text("ababa");
+    observer.onProgress(text, pattern, 1, 1, nullptr, 0);
+
+    std::array<int, 128> bc;
+    bc.fill(-1);
+    bc[static_cast<unsigned char>('a')] = 0;
+    bc[static_cast<unsigned char>('b')] = 1;
+    observer.onBCTable(bc.data(), static_cast<int>(bc.size()));
+
+    int gs[] = {1, 2, 3};
+    observer.onGSTable(gs, 3, pattern);
+
+    observer.onKRProgress(text, pattern, 2, 123, 456);
+
+    NoopMatchObserver noop;
+    noop.onNextTable(pattern, next, 3);
+    noop.onProgress(text, pattern, 0, 0, nullptr, 0);
+    noop.onBCTable(next, 3);
+    noop.onGSTable(gs, 3, pattern);
+    noop.onKRProgress(text, pattern, 0, 0, 0);
 }
