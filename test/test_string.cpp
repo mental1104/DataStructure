@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cctype>
 #include "Vector.h"
 #include "dsa_string.h"
 #include "LSD.h"
@@ -88,6 +89,69 @@ TEST(StringTest, PrefixSuffix) {
     String s("example");
     EXPECT_STREQ(s.prefix(3).c_str(), "exa");
     EXPECT_STREQ(s.suffix(2).c_str(), "le");
+}
+
+TEST(StringTest, CharAtAndOutOfRange) {
+    String s("abc");
+    EXPECT_EQ(s.charAt(1), 'b');
+    EXPECT_EQ(s.charAt(3), '\0');
+}
+
+TEST(StringTest, SubstringOutOfRange) {
+    String s("abc");
+    String sub = s.substr(10, 2);
+    EXPECT_STREQ(sub.c_str(), "");
+}
+
+TEST(StringTest, SubstringDefaultLength) {
+    String s("substring");
+    String sub = s.substr(3);
+    EXPECT_STREQ(sub.c_str(), "string");
+}
+
+TEST(StringTest, PrefixSuffixOutOfRange) {
+    String s("abc");
+    EXPECT_STREQ(s.prefix(5).c_str(), "abc");
+    EXPECT_STREQ(s.suffix(5).c_str(), "abc");
+}
+
+TEST(StringTest, ConcatInPlace) {
+    String s1("hi");
+    String s2("!");
+    String& ret = s1.concat(s2);
+    EXPECT_EQ(&ret, &s1);
+    EXPECT_STREQ(s1.c_str(), "hi!");
+}
+
+static void bumpChar(char& c) {
+    c = static_cast<char>(c + 1);
+}
+
+TEST(StringTest, TraverseOverloads) {
+    String s("ab");
+    s.traverse([](char& c) {
+        if (c >= 'a' && c <= 'z') {
+            c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+        }
+    });
+    EXPECT_STREQ(s.c_str(), "AB");
+
+    s.traverse(bumpChar);
+    EXPECT_STREQ(s.c_str(), "BC");
+}
+
+TEST(StringTest, ConstIndexAndSelfAssign) {
+    const String s("xyz");
+    EXPECT_EQ(s[2], 'z');
+    String s2("self");
+    s2 = s2;
+    EXPECT_STREQ(s2.c_str(), "self");
+}
+
+TEST(StringTest, EqualMethod) {
+    String s1("same");
+    String s2("same");
+    EXPECT_TRUE(s1.equal(s2));
 }
 
 
