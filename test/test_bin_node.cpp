@@ -5,7 +5,15 @@
  * @LastEditTime: 2025-01-26 16:35:37
  */
 #include <gtest/gtest.h>
+#include <vector>
 #include "BinTree.h" // 假设 BinNode 定义在该头文件中
+
+namespace {
+struct IntCollector {
+    std::vector<int>* out;
+    void operator()(int& v) { out->push_back(v); }
+};
+}
 
 // 测试 BinNode 的 insertAsLC
 TEST(BinNodeTest, InsertAsLC) {
@@ -18,6 +26,50 @@ TEST(BinNodeTest, InsertAsLC) {
 
     // 验证左孩子的父节点是否正确
     EXPECT_EQ(node.lc->parent, &node);
+}
+
+TEST(BinNodeTest, ReplaceChildrenSuccAndTraversals) {
+    BinTree<int> tree;
+    tree.insertAsRoot(10);
+    BinNode<int>* root = tree.root();
+
+    root->insertAsLC(5);
+    root->insertAsLC(3); // replace left child
+    root->insertAsRC(15);
+    root->insertAsRC(20); // replace right child
+    root->lc->insertAsLC(1);
+    root->rc->insertAsLC(12);
+
+    ASSERT_NE(root->lc, nullptr);
+    ASSERT_NE(root->rc, nullptr);
+    EXPECT_EQ(root->lc->data, 3);
+    EXPECT_EQ(root->rc->data, 20);
+
+    ASSERT_NE(root->succ(), nullptr);
+    EXPECT_EQ(root->succ()->data, 12);
+    EXPECT_EQ(root->rc->succ(), nullptr);
+    ASSERT_NE(root->lc->succ(), nullptr);
+    EXPECT_EQ(root->lc->succ()->data, 10);
+
+    std::vector<int> pre;
+    IntCollector preVis{&pre};
+    root->travPre(preVis);
+    EXPECT_EQ(pre, std::vector<int>({10, 3, 1, 20, 12}));
+
+    std::vector<int> in;
+    IntCollector inVis{&in};
+    root->travIn(inVis);
+    EXPECT_EQ(in, std::vector<int>({1, 3, 10, 12, 20}));
+
+    std::vector<int> post;
+    IntCollector postVis{&post};
+    root->travPost(postVis);
+    EXPECT_EQ(post, std::vector<int>({1, 3, 12, 20, 10}));
+
+    std::vector<int> level;
+    IntCollector levelVis{&level};
+    root->travLevel(levelVis);
+    EXPECT_EQ(level, std::vector<int>({10, 3, 20, 1, 12}));
 }
 
 // 测试 BinNode 的 insertAsRC
