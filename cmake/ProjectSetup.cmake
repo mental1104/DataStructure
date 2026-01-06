@@ -1,6 +1,8 @@
 include(CTest)
 
-set(CMAKE_CXX_STANDARD 14)
+if(NOT DEFINED CMAKE_CXX_STANDARD OR CMAKE_CXX_STANDARD STREQUAL "")
+    set(CMAKE_CXX_STANDARD 14)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(ENABLE_WERROR "Treat compiler warnings as errors" ON)

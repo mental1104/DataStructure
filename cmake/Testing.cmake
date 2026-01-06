@@ -37,8 +37,7 @@ if(EXISTS "${GTEST_DIR}" AND IS_DIRECTORY "${GTEST_DIR}")
                     add_executable(${TEST_NAME} ${TEST_FILE})
 
                     # 链接 gtest、gtest_main、线程库
-                    target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main Threads::Threads)
-                    target_link_libraries(${TEST_NAME} PRIVATE project_warnings)
+                    target_link_libraries(${TEST_NAME} PRIVATE project_warnings gtest gtest_main Threads::Threads)
 
                     # 如果 googletest 是以库 target 形式存在，用 target 的输出目录作为测试的 RPATH
                     # 这样在未安装 gtest 的情况下，运行测试也能找到库
