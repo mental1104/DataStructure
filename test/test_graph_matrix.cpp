@@ -2,7 +2,16 @@
 #include "GraphMatrix.h"
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <cstdio>  // for remove()
+
+namespace {
+std::string writeTempFile(const std::string& name, const std::string& content) {
+    std::ofstream ofs(name);
+    ofs << content;
+    return name;
+}
+}
 
 // 测试顶点和边的插入与删除
 TEST(GraphMatrixTest, InsertAndRemoveVertexEdge) {
@@ -27,6 +36,24 @@ TEST(GraphMatrixTest, InsertAndRemoveVertexEdge) {
     int vertexData = graph.remove(3);
     EXPECT_EQ(vertexData, 3);
     EXPECT_EQ(graph.n, 4);
+}
+
+TEST(GraphMatrixTest, AccessorsAndRemoveVertexWithEdges) {
+    GraphMatrix<int, int> graph;
+    for (int i = 0; i < 3; i++) {
+        graph.insert(i);
+    }
+    graph.insert(10, 0, 1, 1.0);
+    graph.insert(20, 0, 2, 1.0);
+
+    EXPECT_EQ(graph.vertex(0), 0);
+    EXPECT_EQ(graph.outDegree(0), 2);
+    EXPECT_EQ(graph.inDegree(1), 1);
+
+    graph.remove(0);
+    EXPECT_EQ(graph.n, 2);
+    EXPECT_EQ(graph.inDegree(0), 0);
+    EXPECT_EQ(graph.inDegree(1), 0);
 }
 
 // 测试 BFS 算法（基类方法）
@@ -202,4 +229,38 @@ TEST(GraphMatrixTest, ConstructFromFile) {
     EXPECT_TRUE(graph.exists(0, 1));
     EXPECT_TRUE(graph.exists(1, 2));
     EXPECT_FALSE(graph.exists(2, 0));
+}
+
+TEST(GraphMatrixTest, ConstructFromFileVariants) {
+    const std::string unweighted = writeTempFile("temp_graph_unweighted_matrix.txt", "3 2\n0 1\n1 2\n");
+    const std::string weighted = writeTempFile("temp_graph_weighted_matrix.txt", "3 2\n0 1 1.5\n1 2 2.5\n");
+
+    {
+        std::ifstream ifs(unweighted);
+        GraphMatrix<int, int> graph(ifs, GType::UNDIGRAPH);
+        EXPECT_TRUE(graph.exists(0, 1));
+        EXPECT_TRUE(graph.exists(1, 0));
+        EXPECT_TRUE(graph.exists(1, 2));
+        EXPECT_TRUE(graph.exists(2, 1));
+    }
+
+    {
+        std::ifstream ifs(weighted);
+        GraphMatrix<int, int> graph(ifs, GType::WEIGHTEDDIGRAPH);
+        EXPECT_TRUE(graph.exists(0, 1));
+        EXPECT_TRUE(graph.exists(1, 2));
+        EXPECT_FALSE(graph.exists(1, 0));
+    }
+
+    {
+        std::ifstream ifs(weighted);
+        GraphMatrix<int, int> graph(ifs, GType::WEIGHTEDUNDIGRAPH);
+        EXPECT_TRUE(graph.exists(0, 1));
+        EXPECT_TRUE(graph.exists(1, 0));
+        EXPECT_TRUE(graph.exists(1, 2));
+        EXPECT_TRUE(graph.exists(2, 1));
+    }
+
+    std::remove(unweighted.c_str());
+    std::remove(weighted.c_str());
 }

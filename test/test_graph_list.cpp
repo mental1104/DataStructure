@@ -2,7 +2,16 @@
 #include "GraphList.h"
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <cstdio>  // for remove()
+
+namespace {
+std::string writeTempFile(const std::string& name, const std::string& content) {
+    std::ofstream ofs(name);
+    ofs << content;
+    return name;
+}
+}
 
 // 直接复用 GraphMatrix 的测试逻辑，只是类型替换为 GraphList
 
@@ -22,6 +31,28 @@ TEST(GraphListTest, InsertAndRemoveVertexEdge) {
     int vertexData = graph.remove(3);
     EXPECT_EQ(vertexData, 3);
     EXPECT_EQ(graph.n, 4);
+}
+
+TEST(GraphListTest, AccessorsAndEdgeData) {
+    GraphList<int, int> graph;
+    for (int i = 0; i < 2; i++) graph.insert(i);
+    graph.insert(42, 0, 1, 3.0);
+
+    EXPECT_EQ(graph.outDegree(0), 1);
+    EXPECT_EQ(graph.inDegree(1), 1);
+    EXPECT_EQ(graph.edge(0, 1), 42);
+}
+
+TEST(GraphListTest, RemoveVertexUpdatesDegrees) {
+    GraphList<int, int> graph;
+    for (int i = 0; i < 3; i++) graph.insert(i);
+    graph.insert(10, 0, 1, 1.0);
+    graph.insert(20, 0, 2, 1.0);
+
+    graph.remove(0);
+    EXPECT_EQ(graph.n, 2);
+    EXPECT_EQ(graph.inDegree(0), 0);
+    EXPECT_EQ(graph.inDegree(1), 0);
 }
 
 TEST(GraphListTest, BFSTraversal) {
@@ -136,4 +167,38 @@ TEST(GraphListTest, ConstructFromFile) {
     EXPECT_TRUE(graph.exists(0, 1));
     EXPECT_TRUE(graph.exists(1, 2));
     EXPECT_FALSE(graph.exists(2, 0));
+}
+
+TEST(GraphListTest, ConstructFromFileVariants) {
+    const std::string unweighted = writeTempFile("temp_graph_unweighted.txt", "3 2\n0 1\n1 2\n");
+    const std::string weighted = writeTempFile("temp_graph_weighted.txt", "3 2\n0 1 1.5\n1 2 2.5\n");
+
+    {
+        std::ifstream ifs(unweighted);
+        GraphList<int, int> graph(ifs, GType::UNDIGRAPH);
+        EXPECT_TRUE(graph.exists(0, 1));
+        EXPECT_TRUE(graph.exists(1, 0));
+        EXPECT_TRUE(graph.exists(1, 2));
+        EXPECT_TRUE(graph.exists(2, 1));
+    }
+
+    {
+        std::ifstream ifs(weighted);
+        GraphList<int, int> graph(ifs, GType::WEIGHTEDDIGRAPH);
+        EXPECT_TRUE(graph.exists(0, 1));
+        EXPECT_TRUE(graph.exists(1, 2));
+        EXPECT_FALSE(graph.exists(1, 0));
+    }
+
+    {
+        std::ifstream ifs(weighted);
+        GraphList<int, int> graph(ifs, GType::WEIGHTEDUNDIGRAPH);
+        EXPECT_TRUE(graph.exists(0, 1));
+        EXPECT_TRUE(graph.exists(1, 0));
+        EXPECT_TRUE(graph.exists(1, 2));
+        EXPECT_TRUE(graph.exists(2, 1));
+    }
+
+    std::remove(unweighted.c_str());
+    std::remove(weighted.c_str());
 }

@@ -90,6 +90,28 @@ bool verifyRedBlackTree(BinNode<int>* root) {
     return valid;
 }
 
+class RedBlackHarness : public RedBlack<int> {
+public:
+    using RedBlack<int>::_root;
+    using RedBlack<int>::_size;
+    using RedBlack<int>::_hot;
+    using RedBlack<int>::solveDoubleBlack;
+};
+
+static BinNode<int>* makeNode(int value, RBColor color, int height = 0) {
+    return new BinNode<int>(value, nullptr, nullptr, nullptr, height, 1, color);
+}
+
+static void linkLeft(BinNode<int>* parent, BinNode<int>* child) {
+    parent->lc = child;
+    if (child) child->parent = parent;
+}
+
+static void linkRight(BinNode<int>* parent, BinNode<int>* child) {
+    parent->rc = child;
+    if (child) child->parent = parent;
+}
+
 // ================= 单元测试 =================
 
 /*
@@ -120,6 +142,26 @@ TEST(RBTreeTest, InsertionMaintainsInOrderAndRBProperty) {
         EXPECT_TRUE(verifyRedBlackTree(rb.root()))
             << "插入 " << num << " 后，红黑树的性质被破坏。";
     }
+}
+
+TEST(RBTreeTest, InsertTriggersZigZigRotation) {
+    RedBlack<int> rb;
+    rb.insert(10);
+    rb.insert(5);
+    rb.insert(1);
+    ASSERT_TRUE(rb.root() != nullptr);
+    EXPECT_EQ(rb.root()->data, 5);
+    EXPECT_TRUE(verifyRedBlackTree(rb.root()));
+}
+
+TEST(RBTreeTest, InsertTriggersZigZagRotation) {
+    RedBlack<int> rb;
+    rb.insert(10);
+    rb.insert(5);
+    rb.insert(7);
+    ASSERT_TRUE(rb.root() != nullptr);
+    EXPECT_EQ(rb.root()->data, 7);
+    EXPECT_TRUE(verifyRedBlackTree(rb.root()));
 }
 
 /*
@@ -203,6 +245,119 @@ TEST(RBTreeTest, RemoveMaintainsInOrderAndRBProperty) {
     EXPECT_TRUE(arraysEqual(inOrder, inCount, expected, expectedCount));
     EXPECT_EQ(rb.size(), expectedCount);
     EXPECT_TRUE(verifyRedBlackTree(rb.root()));
+}
+
+TEST(RBTreeTest, RemoveRootWithSingleChild) {
+    RedBlack<int> rb;
+    rb.insert(10);
+    rb.insert(5);
+    EXPECT_TRUE(rb.remove(10));
+    ASSERT_TRUE(rb.root() != nullptr);
+    EXPECT_EQ(rb.root()->data, 5);
+    EXPECT_TRUE(IsBlack(rb.root()));
+    EXPECT_TRUE(verifyRedBlackTree(rb.root()));
+}
+
+TEST(RBTreeTest, RemoveTriggersDoubleBlackFixup) {
+    RedBlackHarness rb;
+    BinNode<int>* root = makeNode(10, RBColor::BLACK);
+    BinNode<int>* left = makeNode(5, RBColor::BLACK);
+    BinNode<int>* right = makeNode(15, RBColor::BLACK);
+    BinNode<int>* left_left = makeNode(2, RBColor::BLACK);
+    BinNode<int>* left_right = makeNode(7, RBColor::BLACK);
+
+    linkLeft(root, left);
+    linkRight(root, right);
+    linkLeft(left, left_left);
+    linkRight(left, left_right);
+
+    rb._root = root;
+    rb._size = 5;
+
+    EXPECT_TRUE(rb.remove(2));
+    EXPECT_EQ(rb.size(), 4);
+    BinNode<int>*& res = rb.search(2);
+    EXPECT_EQ(res, nullptr);
+}
+
+TEST(RBTreeTest, SolveDoubleBlackBlackSiblingWithRedChild) {
+    RedBlackHarness rb;
+    BinNode<int>* root = makeNode(10, RBColor::BLACK);
+    BinNode<int>* r = makeNode(5, RBColor::BLACK);
+    BinNode<int>* s = makeNode(15, RBColor::BLACK);
+    BinNode<int>* t = makeNode(20, RBColor::RED);
+
+    linkLeft(root, r);
+    linkRight(root, s);
+    linkRight(s, t);
+
+    rb._root = root;
+    rb._size = 4;
+
+    rb.solveDoubleBlack(r);
+    ASSERT_TRUE(rb.root() != nullptr);
+    EXPECT_EQ(rb.root()->data, 15);
+    ASSERT_TRUE(rb.root()->lc != nullptr);
+    ASSERT_TRUE(rb.root()->rc != nullptr);
+    EXPECT_EQ(rb.root()->lc->color, RBColor::BLACK);
+    EXPECT_EQ(rb.root()->rc->color, RBColor::BLACK);
+}
+
+TEST(RBTreeTest, SolveDoubleBlackBlackSiblingNoRedChildParentRed) {
+    RedBlackHarness rb;
+    BinNode<int>* root = makeNode(10, RBColor::RED);
+    BinNode<int>* r = makeNode(5, RBColor::BLACK);
+    BinNode<int>* s = makeNode(15, RBColor::BLACK);
+
+    linkLeft(root, r);
+    linkRight(root, s);
+
+    rb._root = root;
+    rb._size = 3;
+
+    rb.solveDoubleBlack(r);
+    EXPECT_EQ(root->color, RBColor::BLACK);
+    EXPECT_EQ(s->color, RBColor::RED);
+}
+
+TEST(RBTreeTest, SolveDoubleBlackBlackSiblingNoRedChildParentBlack) {
+    RedBlackHarness rb;
+    BinNode<int>* root = makeNode(10, RBColor::BLACK, 2);
+    BinNode<int>* r = makeNode(5, RBColor::BLACK);
+    BinNode<int>* s = makeNode(15, RBColor::BLACK);
+
+    linkLeft(root, r);
+    linkRight(root, s);
+
+    rb._root = root;
+    rb._size = 3;
+
+    rb.solveDoubleBlack(r);
+    EXPECT_EQ(root->color, RBColor::BLACK);
+    EXPECT_EQ(s->color, RBColor::RED);
+    EXPECT_EQ(root->height, 1);
+}
+
+TEST(RBTreeTest, SolveDoubleBlackRedSibling) {
+    RedBlackHarness rb;
+    BinNode<int>* root = makeNode(10, RBColor::BLACK);
+    BinNode<int>* r = makeNode(5, RBColor::BLACK);
+    BinNode<int>* s = makeNode(15, RBColor::RED);
+    BinNode<int>* s_left = makeNode(13, RBColor::BLACK);
+    BinNode<int>* s_right = makeNode(20, RBColor::BLACK);
+
+    linkLeft(root, r);
+    linkRight(root, s);
+    linkLeft(s, s_left);
+    linkRight(s, s_right);
+
+    rb._root = root;
+    rb._size = 5;
+
+    rb.solveDoubleBlack(r);
+    ASSERT_TRUE(rb.root() != nullptr);
+    EXPECT_EQ(rb.root()->data, 15);
+    EXPECT_EQ(rb.root()->color, RBColor::BLACK);
 }
 
 /*
