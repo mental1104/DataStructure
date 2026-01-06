@@ -127,6 +127,10 @@ static void bumpChar(char& c) {
     c = static_cast<char>(c + 1);
 }
 
+static void assignString(String& dest, const String& src) {
+    dest = src;
+}
+
 TEST(StringTest, TraverseOverloads) {
     String s("ab");
     s.traverse([](char& c) {
@@ -144,7 +148,7 @@ TEST(StringTest, ConstIndexAndSelfAssign) {
     const String s("xyz");
     EXPECT_EQ(s[2], 'z');
     String s2("self");
-    s2 = s2;
+    assignString(s2, s2);
     EXPECT_STREQ(s2.c_str(), "self");
 }
 
