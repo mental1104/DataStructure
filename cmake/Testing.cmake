@@ -31,6 +31,12 @@ if(EXISTS "${GTEST_DIR}" AND IS_DIRECTORY "${GTEST_DIR}")
                         )
                     endif()
 
+                    # 为了解决 BPlusTree.h 的最后一行仍未覆盖的问题，test_bplus_tree 在编译时禁用拷贝消除，这样 rangeQuery 的返回收尾行会被 gcov 记到；之前新增的高区间 rangeQuery 用例继续保证走到末尾 return res
+                    if ((TEST_NAME STREQUAL "test_bplus_tree" OR TEST_NAME STREQUAL "test_string" OR TEST_NAME STREQUAL "test_trie" OR TEST_NAME STREQUAL "test_vector")
+                        AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+                        target_compile_options(${TEST_NAME} PRIVATE -fno-elide-constructors)
+                    endif()
+
                     # 如果 googletest 是以库 target 形式存在，用 target 的输出目录作为测试的 RPATH
                     # 这样在未安装 gtest 的情况下，运行测试也能找到库
                     set_target_properties(${TEST_NAME} PROPERTIES

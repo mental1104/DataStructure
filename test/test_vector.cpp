@@ -1,5 +1,22 @@
 #include "gtest/gtest.h"
+#include <atomic>
 #include "Vector.h"
+
+namespace {
+struct TrackedValue {
+    static std::atomic<int> live;
+    int value;
+    TrackedValue(int v = 0) : value(v) { live.fetch_add(1, std::memory_order_relaxed); }
+    TrackedValue(const TrackedValue& other) : value(other.value) { live.fetch_add(1, std::memory_order_relaxed); }
+    TrackedValue& operator=(const TrackedValue& other) {
+        value = other.value;
+        return *this;
+    }
+    ~TrackedValue() { live.fetch_sub(1, std::memory_order_relaxed); }
+};
+
+std::atomic<int> TrackedValue::live{0};
+}
 
 // 测试 Vector 的构造函数
 TEST(VectorTest, Constructor) {
@@ -45,6 +62,20 @@ TEST(VectorTest, Remove) {
 
     vec.remove(0, 2);
     EXPECT_EQ(vec.size(), 2);
+}
+
+TEST(VectorTest, RemoveNonTrivialType) {
+    TrackedValue::live.store(0, std::memory_order_relaxed);
+    {
+        Vector<TrackedValue> vec;
+        vec.insert(TrackedValue(1));
+        vec.insert(TrackedValue(2));
+        TrackedValue removed = vec.remove(0);
+        EXPECT_EQ(removed.value, 1);
+        EXPECT_EQ(vec.size(), 1);
+        EXPECT_GT(TrackedValue::live.load(std::memory_order_relaxed), 0);
+    }
+    EXPECT_EQ(TrackedValue::live.load(std::memory_order_relaxed), 0);
 }
 
 // 测试查找功能
