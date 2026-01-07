@@ -258,6 +258,14 @@ TEST(RBTreeTest, RemoveRootWithSingleChild) {
     EXPECT_TRUE(verifyRedBlackTree(rb.root()));
 }
 
+TEST(RBTreeTest, RemoveSingleRoot) {
+    RedBlack<int> rb;
+    rb.insert(42);
+    EXPECT_TRUE(rb.remove(42));
+    EXPECT_EQ(rb.size(), 0);
+    EXPECT_EQ(rb.root(), nullptr);
+}
+
 TEST(RBTreeTest, RemoveTriggersDoubleBlackFixup) {
     RedBlackHarness rb;
     BinNode<int>* root = makeNode(10, RBColor::BLACK);

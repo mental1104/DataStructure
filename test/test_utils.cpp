@@ -46,4 +46,5 @@ TEST(UtilsCommonTest, SwapMinMaxAndSleep) {
     EXPECT_EQ(::min(3, 4), 3);
     EXPECT_EQ(::max(3, 4), 4);
     sleep_seconds(0);
+    clear_screen();
 }

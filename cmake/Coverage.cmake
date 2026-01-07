@@ -1,4 +1,4 @@
-if(MSVC)
+if(WIN32)
     set(COVERAGE_DEFAULT OFF)
 else()
     set(COVERAGE_DEFAULT ON)
@@ -8,11 +8,16 @@ endif()
 option(ENABLE_COVERAGE "Use gcov-style coverage flags" ${COVERAGE_DEFAULT})
 option(COVERAGE "Enable coverage reporting" ${ENABLE_COVERAGE})
 
+if(NOT WIN32)
+    set(ENABLE_COVERAGE ON CACHE BOOL "Use gcov-style coverage flags" FORCE)
+    set(COVERAGE ON CACHE BOOL "Enable coverage reporting" FORCE)
+endif()
+
 message(STATUS "ENABLE_COVERAGE=${ENABLE_COVERAGE}")
 message(STATUS "COVERAGE=${COVERAGE}")
 
-if(COVERAGE AND MSVC)
-    message(WARNING "Coverage requested but MSVC does not support gcov-style flags; disabling coverage.")
+if(COVERAGE AND WIN32)
+    message(WARNING "Coverage requested but Windows does not support gcov-style flags; disabling coverage.")
     set(COVERAGE OFF CACHE BOOL "Enable coverage reporting" FORCE)
 endif()
 

@@ -60,6 +60,11 @@ TEST(QueueTest, DequeueEmptyQueue) {
     EXPECT_THROW(q.dequeue(), std::runtime_error); // 需要确保实现中抛出异常
 }
 
+TEST(QueueTest, FrontEmptyQueue) {
+    Queue<int> q;
+    EXPECT_THROW(q.front(), std::runtime_error);
+}
+
 // 测试队列的清空
 TEST(QueueTest, ClearQueue) {
     Queue<int> q;

@@ -104,3 +104,30 @@ TEST(BinNodeTest, InsertBothChildren) {
     EXPECT_EQ(node.lc->parent, &node);
     EXPECT_EQ(node.rc->parent, &node);
 }
+
+TEST(BinNodeTest, TallerChildTieBreaksBySide) {
+    BinNode<int> parent(10);
+    BinNode<int> left(5, &parent);
+    BinNode<int> right(15, &parent);
+    parent.lc = &left;
+    parent.rc = &right;
+
+    BinNode<int> left_l(2, &left);
+    BinNode<int> left_r(7, &left);
+    left.lc = &left_l;
+    left.rc = &left_r;
+    left_l.height = 0;
+    left_r.height = 0;
+    left.height = 1;
+
+    BinNode<int> right_l(12, &right);
+    BinNode<int> right_r(18, &right);
+    right.lc = &right_l;
+    right.rc = &right_r;
+    right_l.height = 0;
+    right_r.height = 0;
+    right.height = 1;
+
+    EXPECT_EQ(tallerChild(&left), left.lc);
+    EXPECT_EQ(tallerChild(&right), right.rc);
+}

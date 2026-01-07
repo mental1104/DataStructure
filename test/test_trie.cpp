@@ -148,3 +148,8 @@ TEST_F(TSTTest, RemovePrunesLeaf) {
     Vector<String> keys = tst.keysWithPrefix("s");
     EXPECT_EQ(keys.size(), 0);
 }
+
+TEST_F(TSTTest, RemoveMissingFromEmpty) {
+    tst.remove("ghost");
+    EXPECT_EQ(tst.size(), 0);
+}

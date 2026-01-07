@@ -139,4 +139,14 @@ TEST(BinTreeTest, TraversalWrappersAndIterator) {
     BinTree<int>::iterator it = tree.begin();
     EXPECT_TRUE(it != tree.end());
     EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(*it, 5);
+    ++it;
+    EXPECT_EQ(*it, 7);
+    ++it;
+    EXPECT_EQ(*it, 10);
+    ++it;
+    EXPECT_EQ(*it, 15);
+    ++it;
+    EXPECT_FALSE(it != tree.end());
 }

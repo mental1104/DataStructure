@@ -136,3 +136,17 @@ TEST(ListSortTest, EdgeCases) {
         EXPECT_EQ(*it, 100);
     }
 }
+
+TEST(SortImplTest, UnsupportedStrategies) {
+    Vector<int> vec;
+    vec.insert(3);
+    vec.insert(1);
+    Sort(vec, static_cast<SortStrategy>(999));
+    EXPECT_EQ(vec.size(), 2);
+
+    List<int> lst;
+    lst.insert(2);
+    lst.insert(1);
+    Sort(lst, static_cast<SortStrategy>(999));
+    EXPECT_EQ(lst.size(), 2);
+}

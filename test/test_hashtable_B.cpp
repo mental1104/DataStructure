@@ -83,3 +83,17 @@ TEST(QuadraticHTTest, RemovalAndReinsertionTest) {
     ASSERT_NE(val, nullptr);
     EXPECT_EQ(*val, 777);
 }
+
+TEST(QuadraticHTTest, IntrospectionAndQuadraticProbe) {
+    QuadraticHT<int, int> table(5);
+    int cap = table._M();
+    EXPECT_EQ(table._N(), 0);
+    EXPECT_NE(table._lazyRemoval(), nullptr);
+    EXPECT_EQ(table._ht(0), nullptr);
+
+    EXPECT_TRUE(table.put(0, 1));
+    EXPECT_TRUE(table.put(cap, 2));
+    EXPECT_TRUE(table.put(2 * cap, 3));
+    EXPECT_EQ(table.size(), 3);
+    EXPECT_EQ(*table.get(cap), 2);
+}
