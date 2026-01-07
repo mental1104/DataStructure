@@ -1,8 +1,15 @@
 #include <gtest/gtest.h>
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include "Graph.h"
 #undef private
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #include "GraphList.h"
 #include "GraphMatrix.h"

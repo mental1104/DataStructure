@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   build-and-test:
+    name: ${{ matrix.compiler.name }}-cxx${{ matrix.standard }}
     runs-on: macos-latest
     strategy:
       fail-fast: false
@@ -36,6 +37,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install gcovr
+        run: brew install gcovr
+
       - name: Configure CMake
         run: |
           build_dir="build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}"
@@ -43,10 +47,11 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
             -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }} \
-            -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
+            -DCMAKE_CXX_STANDARD=${{ matrix.standard }} \
+            -DCOVERAGE=ON -DENABLE_COVERAGE=ON
 
       - name: Build
         run: cmake --build "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --config Release --parallel
 
-      - name: Run tests
-        run: ctest --test-dir "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --output-on-failure --build-config Release
+      - name: Run coverage
+        run: cmake --build "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --config Release --target coverage

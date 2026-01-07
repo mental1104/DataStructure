@@ -5,9 +5,16 @@
 #include <vector>
 #include "BST.h"
 #include "Vector.h"
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
 #define private public
 #include "BPlusTree.h"
 #undef private
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 namespace {
 template <typename T>

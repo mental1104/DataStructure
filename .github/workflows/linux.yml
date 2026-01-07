@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   build-and-test:
+    name: ${{ matrix.compiler.name }}-cxx${{ matrix.standard }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -39,33 +40,20 @@ jobs:
       - name: Install Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc g++ clang
-
-      - name: Install gcovr (g++20 only)
-        if: matrix.compiler.name == 'gcc' && matrix.standard == 20
-        run: sudo apt-get install -y gcovr
+          sudo apt-get install -y gcc g++ clang gcovr
 
       - name: Configure CMake
         run: |
           build_dir="build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}"
-          coverage_flags=""
-          if [ "${{ matrix.compiler.name }}" = "gcc" ] && [ "${{ matrix.standard }}" = "20" ]; then
-            coverage_flags="-DCOVERAGE=ON -DENABLE_COVERAGE=ON"
-          fi
           cmake -S . -B "$build_dir" -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER=${{ matrix.compiler.cc }} \
             -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cxx }} \
             -DCMAKE_CXX_STANDARD=${{ matrix.standard }} \
-            $coverage_flags
+            -DCOVERAGE=ON -DENABLE_COVERAGE=ON
 
       - name: Build
         run: cmake --build "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --config Release --parallel
 
-      - name: Run tests
-        if: matrix.compiler.name != 'gcc' || matrix.standard != 20
-        run: ctest --test-dir "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --output-on-failure --build-config Release
-
-      - name: Coverage (g++20 only)
-        if: matrix.compiler.name == 'gcc' && matrix.standard == 20
-        run: make -C "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" coverage
+      - name: Run coverage
+        run: cmake --build "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --config Release --target coverage
