@@ -6,24 +6,6 @@ if(EXISTS "${GTEST_DIR}" AND IS_DIRECTORY "${GTEST_DIR}")
         enable_testing()
         add_subdirectory(thirdparty/googletest)
 
-        # Allow gtest headers to emit C++17-attribute warnings without failing the build
-        # when compiling with C++11/14 on Clang-based toolchains.
-        if (CMAKE_CXX_STANDARD LESS 17 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-            set(GTEST_NOERROR_FLAGS "-Wno-error=c++17-attribute-extensions")
-            if (TARGET gtest)
-                target_compile_options(gtest INTERFACE ${GTEST_NOERROR_FLAGS})
-            endif()
-            if (TARGET gtest_main)
-                target_compile_options(gtest_main INTERFACE ${GTEST_NOERROR_FLAGS})
-            endif()
-            if (TARGET gmock)
-                target_compile_options(gmock INTERFACE ${GTEST_NOERROR_FLAGS})
-            endif()
-            if (TARGET gmock_main)
-                target_compile_options(gmock_main INTERFACE ${GTEST_NOERROR_FLAGS})
-            endif()
-        endif()
-
         # 确保可用的线程库
         find_package(Threads REQUIRED)
 
@@ -38,6 +20,16 @@ if(EXISTS "${GTEST_DIR}" AND IS_DIRECTORY "${GTEST_DIR}")
 
                     # 链接 gtest、gtest_main、线程库
                     target_link_libraries(${TEST_NAME} PRIVATE project_warnings gtest gtest_main Threads::Threads)
+
+                    # Suppress Clang's C++17 attribute-extension warning triggered by gtest macros in tests.
+                    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+                        target_compile_options(${TEST_NAME} PRIVATE
+                            -Wno-c++17-attribute-extensions
+                            -Wno-error=c++17-attribute-extensions
+                            -Wno-keyword-macro
+                            -Wno-error=keyword-macro
+                        )
+                    endif()
 
                     # 如果 googletest 是以库 target 形式存在，用 target 的输出目录作为测试的 RPATH
                     # 这样在未安装 gtest 的情况下，运行测试也能找到库
