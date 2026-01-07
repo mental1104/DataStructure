@@ -40,6 +40,17 @@ jobs:
       - name: Install gcovr
         run: brew install gcovr
 
+      - name: Ensure llvm-cov available
+        run: |
+          if command -v llvm-cov >/dev/null 2>&1; then
+            echo "llvm-cov available in PATH"
+          elif xcrun --find llvm-cov >/dev/null 2>&1; then
+            echo "llvm-cov available via xcrun"
+          else
+            brew install llvm
+            echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
+          fi
+
       - name: Configure CMake
         run: |
           build_dir="build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}"

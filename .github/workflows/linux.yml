@@ -41,6 +41,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc g++ clang gcovr
+          if [ "${{ matrix.compiler.name }}" = "clang" ]; then
+            sudo apt-get install -y llvm
+          fi
 
       - name: Configure CMake
         run: |
