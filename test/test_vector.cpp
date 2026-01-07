@@ -1,6 +1,22 @@
 #include "gtest/gtest.h"
 #include "Vector.h"
 
+namespace {
+struct TrackedValue {
+    static volatile int live;
+    int value;
+    TrackedValue(int v = 0) : value(v) { ++live; }
+    TrackedValue(const TrackedValue& other) : value(other.value) { ++live; }
+    TrackedValue& operator=(const TrackedValue& other) {
+        value = other.value;
+        return *this;
+    }
+    ~TrackedValue() { --live; }
+};
+
+volatile int TrackedValue::live = 0;
+}
+
 // 测试 Vector 的构造函数
 TEST(VectorTest, Constructor) {
     Vector<int> vec1(10, 5, 1);
@@ -45,6 +61,20 @@ TEST(VectorTest, Remove) {
 
     vec.remove(0, 2);
     EXPECT_EQ(vec.size(), 2);
+}
+
+TEST(VectorTest, RemoveNonTrivialType) {
+    TrackedValue::live = 0;
+    {
+        Vector<TrackedValue> vec;
+        vec.insert(TrackedValue(1));
+        vec.insert(TrackedValue(2));
+        TrackedValue removed = vec.remove(0);
+        EXPECT_EQ(removed.value, 1);
+        EXPECT_EQ(vec.size(), 1);
+        EXPECT_GT(TrackedValue::live, 0);
+    }
+    EXPECT_EQ(TrackedValue::live, 0);
 }
 
 // 测试查找功能

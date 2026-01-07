@@ -92,6 +92,12 @@ TEST(BPlusTreeTest, RangeQueryReturnsSortedValues) {
     for (int i = 0; i < range.size(); i++) {
         EXPECT_EQ(range[i], i + 4);
     }
+
+    Vector<int> range_all = tree.rangeQuery(4, 100);
+    ASSERT_EQ(range_all.size(), 12);
+    for (int i = 0; i < range_all.size(); i++) {
+        EXPECT_EQ(range_all[i], i + 4);
+    }
 }
 
 TEST(BPlusTreeTest, RemoveAndCollapse) {
