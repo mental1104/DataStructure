@@ -97,6 +97,12 @@ TEST(StringTest, CharAtAndOutOfRange) {
     EXPECT_EQ(s.charAt(3), '\0');
 }
 
+TEST(StringTest, BoundsCheck) {
+    String s("abc");
+    EXPECT_TRUE(s.check(2));
+    EXPECT_FALSE(s.check(3));
+}
+
 TEST(StringTest, SubstringOutOfRange) {
     String s("abc");
     String sub = s.substr(10, 2);
@@ -156,6 +162,30 @@ TEST(StringTest, EqualMethod) {
     String s1("same");
     String s2("same");
     EXPECT_TRUE(s1.equal(s2));
+}
+
+TEST(StringTest, CoverageExercise) {
+    String empty;
+    String single('z');
+    EXPECT_STREQ(empty.c_str(), "");
+    EXPECT_STREQ(single.c_str(), "z");
+    EXPECT_EQ(single.front(), 'z');
+    EXPECT_EQ(single.back(), 'z');
+
+    String word("word");
+    char& ref = word[1];
+    ref = 'o';
+    const String const_word("hi");
+    EXPECT_EQ(const_word[0], 'h');
+
+    EXPECT_TRUE(word.check(0));
+    EXPECT_FALSE(word.check(999));
+    EXPECT_TRUE(String("aa") == String("aa"));
+    EXPECT_TRUE(String("aa") < String("ab"));
+
+    void (*fn)(char&) = bumpChar;
+    word.traverse(fn);
+    EXPECT_STREQ(word.c_str(), "xpse");
 }
 
 
@@ -219,6 +249,17 @@ TEST(MSDTest, HandlesEmptyString) {
     EXPECT_STREQ(strings[0].c_str(), "");
 }
 
+TEST(MSDTest, SmallInsertionSort) {
+    Vector<String> strings;
+    strings.insert("b");
+    strings.insert("a");
+    strings.insert("c");
+    MSD::sort(strings);
+    EXPECT_STREQ(strings[0].c_str(), "a");
+    EXPECT_STREQ(strings[1].c_str(), "b");
+    EXPECT_STREQ(strings[2].c_str(), "c");
+}
+
 TEST(Quick3StringTest, BasicSorting) {
     Vector<String> strings;
     strings.insert("dab");
@@ -241,9 +282,9 @@ TEST(Quick3StringTest, BasicSorting) {
 
 TEST(Quick3StringTest, HandlesEmptyString) {
     Vector<String> strings;
-    strings.insert("b");
     strings.insert("");
     strings.insert("a");
+    strings.insert("aa");
     Quick3String::sort(strings);
     EXPECT_STREQ(strings[0].c_str(), "");
 }

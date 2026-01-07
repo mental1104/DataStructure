@@ -91,9 +91,9 @@ void Heap<T, MAX>::insert(T e){ //将词条插入完全二叉堆中
 }
 
 template <typename T, bool MAX> 
-T Heap<T, MAX>::getMax(){  
-    return this->_elem[0];  
-} //取优先级最高的词条
+DSA_NOINLINE T Heap<T, MAX>::getMax(){
+    return this->_elem[0];
+}
 
 template <typename T, bool MAX> 
 T Heap<T, MAX>::delMax() { //删除非空完全二叉堆中优先级最高的词条

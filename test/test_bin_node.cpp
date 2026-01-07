@@ -18,10 +18,11 @@ struct IntCollector {
 // 测试 BinNode 的 insertAsLC
 TEST(BinNodeTest, InsertAsLC) {
     BinNode<int> node(10); // 根节点
-    node.insertAsLC(5);    // 插入左孩子
+    BinNode<int>* left = node.insertAsLC(5);    // 插入左孩子
 
     // 验证左孩子是否存在且值正确
     ASSERT_NE(node.lc, nullptr);
+    EXPECT_EQ(left, node.lc);
     EXPECT_EQ(node.lc->data, 5);
 
     // 验证左孩子的父节点是否正确
@@ -75,13 +76,31 @@ TEST(BinNodeTest, ReplaceChildrenSuccAndTraversals) {
 // 测试 BinNode 的 insertAsRC
 TEST(BinNodeTest, InsertAsRC) {
     BinNode<int> node(20); // 根节点
-    node.insertAsRC(30);   // 插入右孩子
+    BinNode<int>* right = node.insertAsRC(30);   // 插入右孩子
 
     // 验证右孩子是否存在且值正确
     ASSERT_NE(node.rc, nullptr);
+    EXPECT_EQ(right, node.rc);
     EXPECT_EQ(node.rc->data, 30);
 
     // 验证右孩子的父节点是否正确
+    EXPECT_EQ(node.rc->parent, &node);
+}
+
+TEST(BinNodeTest, ReplaceChildrenReturnsNewNode) {
+    BinNode<int> node(1);
+    node.insertAsLC(2);
+    BinNode<int>* secondLeft = node.insertAsLC(3);
+    ASSERT_NE(secondLeft, nullptr);
+    EXPECT_EQ(secondLeft, node.lc);
+    EXPECT_EQ(node.lc->data, 3);
+    EXPECT_EQ(node.lc->parent, &node);
+
+    node.insertAsRC(4);
+    BinNode<int>* secondRight = node.insertAsRC(5);
+    ASSERT_NE(secondRight, nullptr);
+    EXPECT_EQ(secondRight, node.rc);
+    EXPECT_EQ(node.rc->data, 5);
     EXPECT_EQ(node.rc->parent, &node);
 }
 

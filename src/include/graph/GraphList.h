@@ -78,7 +78,8 @@ public:
     virtual int insert(Tv const& vertex) {
         _adj.insert(List<Edge<Te>*>());
         this->n++;
-        return _V.insert(Vertex<Tv>(this->n - 1, vertex));
+        int idx = _V.insert(Vertex<Tv>(this->n - 1, vertex));
+        return idx;
     }
 
     virtual Tv remove(int i) {

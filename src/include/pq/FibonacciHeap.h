@@ -54,11 +54,11 @@ void FibonacciHeap<T, MAX>::insert (T e){
 }
 
 template <typename T, bool MAX> 
-T FibonacciHeap<T, MAX>::getMax(){
+DSA_NOINLINE T FibonacciHeap<T, MAX>::getMax(){
     if (!_bestRoot) 
         throw std::runtime_error("Heap is empty");
     return _bestRoot->data; 
-} //按照此处约定，堆顶即优先级最高的词条
+}
 
 template <typename T, bool MAX> 
 T FibonacciHeap<T, MAX>::delMax() {

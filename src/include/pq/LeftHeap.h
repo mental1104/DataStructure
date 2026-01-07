@@ -47,11 +47,11 @@ void LeftHeap<T, MAX>::insert (T e){
 }
 
 template <typename T, bool MAX> 
-T LeftHeap<T, MAX>::getMax(){
+DSA_NOINLINE T LeftHeap<T, MAX>::getMax(){
     if (!this->_root) 
         throw std::runtime_error("Heap is empty");
     return this->_root->data; 
-} //按照此处约定，堆顶即优先级最高的词条
+}
 
 template <typename T, bool MAX> 
 T LeftHeap<T, MAX>::delMax() {

@@ -83,6 +83,32 @@ TEST_F(TrieTest, PrefixWithNoMatch) {
     EXPECT_EQ(keys.size(), 0);
 }
 
+TEST(TrieTestCoverage, WrapperMethods) {
+    Trie<int> local;
+    local.put("zero", 0);
+    EXPECT_TRUE(local.empty());
+
+    Vector<String> emptyPrefix = local.keysWithPrefix("z");
+    EXPECT_EQ(emptyPrefix.size(), 0);
+    Vector<String> emptyMatch = local.keysThatMatch("z..");
+    EXPECT_EQ(emptyMatch.size(), 0);
+
+    local.remove("missing");
+    local.put("abc", 1);
+    local.remove("abc");
+    EXPECT_EQ(local.size(), 0);
+}
+
+TEST(TrieTestCoverage, DestructorWithContent) {
+    {
+        Trie<int> local;
+        local.put("a", 1);
+        local.put("b", 2);
+        EXPECT_EQ(local.size(), 2);
+    }
+    SUCCEED();
+}
+
 class TSTTest : public ::testing::Test {
 protected:
     TST<int> tst;
@@ -152,4 +178,20 @@ TEST_F(TSTTest, RemovePrunesLeaf) {
 TEST_F(TSTTest, RemoveMissingFromEmpty) {
     tst.remove("ghost");
     EXPECT_EQ(tst.size(), 0);
+}
+
+TEST(TSTCoverageTest, WrapperMethods) {
+    TST<int> local;
+    local.put("app", 1);
+    local.put("apple", 2);
+
+    Vector<String> keys = local.keysWithPrefix("app");
+    EXPECT_TRUE(containsString(keys, "app"));
+    EXPECT_TRUE(containsString(keys, "apple"));
+
+    Vector<String> matches = local.keysThatMatch("a..");
+    EXPECT_TRUE(containsString(matches, "app"));
+
+    local.remove(String("app"));
+    EXPECT_EQ(local.get("app"), 0);
 }
