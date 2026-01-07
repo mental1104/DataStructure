@@ -17,8 +17,9 @@ inline void sleep_seconds(unsigned int seconds) {
 }
 
 inline void clear_screen() {
-    int rc = std::system("clear");
-    (void)rc;
+    if (std::system("clear") == -1) {
+        // ignore errors; clear is best-effort
+    }
 }
 
 using size_type = unsigned;

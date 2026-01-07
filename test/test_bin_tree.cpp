@@ -21,10 +21,11 @@ TEST(BinTreeTest, Initialization) {
 // 测试插入根节点
 TEST(BinTreeTest, InsertRoot) {
     BinTree<int> tree;
-    tree.insertAsRoot(10);
+    BinNode<int>* root = tree.insertAsRoot(10);
 
     // 验证根节点是否插入成功
     ASSERT_NE(tree.root(), nullptr);
+    EXPECT_EQ(root, tree.root());
     EXPECT_EQ(tree.size(), 1);
     EXPECT_EQ(tree.root()->data, 10);
     EXPECT_EQ(tree.root()->parent, nullptr);
