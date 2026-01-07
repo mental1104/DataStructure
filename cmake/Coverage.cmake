@@ -17,7 +17,14 @@ if(COVERAGE AND MSVC)
 endif()
 
 if(COVERAGE)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(COVERAGE_SUPPORTED_COMPILER OFF)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(COVERAGE_SUPPORTED_COMPILER ON)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        set(COVERAGE_SUPPORTED_COMPILER ON)
+    endif()
+
+    if(COVERAGE_SUPPORTED_COMPILER)
         message(STATUS "Building with coverage support")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
@@ -30,29 +37,77 @@ endif()
 
 if(COVERAGE)
     find_program(GCOVR_EXEC gcovr)
+
+    set(GCOVR_GCOV_EXECUTABLE "")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        find_program(LLVM_COV_EXEC llvm-cov)
+        if(NOT LLVM_COV_EXEC AND APPLE)
+            find_program(XCRUN_EXEC xcrun)
+            if(XCRUN_EXEC)
+                execute_process(
+                    COMMAND ${XCRUN_EXEC} --find llvm-cov
+                    OUTPUT_VARIABLE LLVM_COV_EXEC
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    ERROR_QUIET
+                )
+            endif()
+        endif()
+        if(LLVM_COV_EXEC AND EXISTS "${LLVM_COV_EXEC}")
+            set(GCOVR_GCOV_EXECUTABLE "${LLVM_COV_EXEC} gcov")
+        else()
+            message(WARNING "llvm-cov not found; gcovr may fail for Clang coverage.")
+        endif()
+    endif()
+
     if(GCOVR_EXEC)
-        add_custom_target(coverage
-            COMMAND ${CMAKE_COMMAND} -E echo "[info] 清理生成目录下的旧 gcda（仅保留测试覆盖率）"
-            COMMAND find ${CMAKE_BINARY_DIR}/CMakeFiles -name "*.gcda" -delete
-            COMMAND ${CMAKE_COMMAND} -E echo "[info] 运行 ctest 生成覆盖率数据（排除 bench）"
-            COMMAND ctest --output-on-failure -LE bench
-            COMMAND ${GCOVR_EXEC}
-                -r ${CMAKE_SOURCE_DIR}
-                --object-directory ${CMAKE_BINARY_DIR}
-                --filter '${CMAKE_SOURCE_DIR}/src/include'
-                --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/'
-                --exclude '${CMAKE_SOURCE_DIR}/src/include/print/.*'
-                --exclude '/usr/include/.*'
-                --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*'
-                --exclude-directories '.*/CMakeFiles/.*'
-                --gcov-exclude '.*CMakeFiles/.*'
-                --gcov-ignore-parse-errors
-                --gcov-ignore-errors source_not_found
-                --txt
-                --print-summary
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMENT "Coverage summary (gcovr; excludes test/bench/thirdparty/lib/overlay)"
-        )
+        if(GCOVR_GCOV_EXECUTABLE)
+            add_custom_target(coverage
+                COMMAND ${CMAKE_COMMAND} -E echo "[info] 清理生成目录下的旧 gcda（仅保留测试覆盖率）"
+                COMMAND find ${CMAKE_BINARY_DIR}/CMakeFiles -name "*.gcda" -delete
+                COMMAND ${CMAKE_COMMAND} -E echo "[info] 运行 ctest 生成覆盖率数据（排除 bench）"
+                COMMAND ctest --output-on-failure -LE bench
+                COMMAND ${GCOVR_EXEC}
+                    --gcov-executable "${GCOVR_GCOV_EXECUTABLE}"
+                    -r ${CMAKE_SOURCE_DIR}
+                    --object-directory ${CMAKE_BINARY_DIR}
+                    --filter '${CMAKE_SOURCE_DIR}/src/include'
+                    --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/'
+                    --exclude '${CMAKE_SOURCE_DIR}/src/include/print/.*'
+                    --exclude '/usr/include/.*'
+                    --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*'
+                    --exclude-directories '.*/CMakeFiles/.*'
+                    --gcov-exclude '.*CMakeFiles/.*'
+                    --gcov-ignore-parse-errors
+                    --gcov-ignore-errors source_not_found
+                    --txt
+                    --print-summary
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                COMMENT "Coverage summary (gcovr; excludes test/bench/thirdparty/lib/overlay)"
+            )
+        else()
+            add_custom_target(coverage
+                COMMAND ${CMAKE_COMMAND} -E echo "[info] 清理生成目录下的旧 gcda（仅保留测试覆盖率）"
+                COMMAND find ${CMAKE_BINARY_DIR}/CMakeFiles -name "*.gcda" -delete
+                COMMAND ${CMAKE_COMMAND} -E echo "[info] 运行 ctest 生成覆盖率数据（排除 bench）"
+                COMMAND ctest --output-on-failure -LE bench
+                COMMAND ${GCOVR_EXEC}
+                    -r ${CMAKE_SOURCE_DIR}
+                    --object-directory ${CMAKE_BINARY_DIR}
+                    --filter '${CMAKE_SOURCE_DIR}/src/include'
+                    --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/'
+                    --exclude '${CMAKE_SOURCE_DIR}/src/include/print/.*'
+                    --exclude '/usr/include/.*'
+                    --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*'
+                    --exclude-directories '.*/CMakeFiles/.*'
+                    --gcov-exclude '.*CMakeFiles/.*'
+                    --gcov-ignore-parse-errors
+                    --gcov-ignore-errors source_not_found
+                    --txt
+                    --print-summary
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                COMMENT "Coverage summary (gcovr; excludes test/bench/thirdparty/lib/overlay)"
+            )
+        endif()
     else()
         message(WARNING "gcovr not found; coverage target will be unavailable")
     endif()
