@@ -100,8 +100,14 @@ double time_it(GraphT& g, Fn&& fn) {
 template <typename GraphT>
 std::vector<BenchResult> run_algos(const std::string& impl, GraphT& g) {
     std::vector<BenchResult> res;
-    auto record = [&](const std::string& algo, double ms, bool available = true) {
-        res.push_back({impl, algo, ms, get_rss_kb(), available});
+    auto record = [&](const std::string& algo, double ms, bool available) {
+        BenchResult r;
+        r.impl = impl;
+        r.algo = algo;
+        r.ms = ms;
+        r.rss_kb = get_rss_kb();
+        r.available = available;
+        res.push_back(r);
     };
     struct PFSUpdate {
         void operator()(Graph<int,int>* g, int v, int u) {
@@ -111,19 +117,19 @@ std::vector<BenchResult> run_algos(const std::string& impl, GraphT& g) {
             }
         }
     };
-    record("build", 0.0); // placeholder updated by caller if needed
-    record("bfs", time_it(g, [&]() { g.bfs(0); }));
-    record("dfs", time_it(g, [&]() { g.dfs(0); }));
-    record("bcc", time_it(g, [&]() { g.bcc(0); }));
-    record("tSort", time_it(g, [&]() { auto s = g.tSort(0); delete s; }));
-    record("dijkstra", time_it(g, [&]() { g.dijkstra(0); }));
-    record("pfs", time_it(g, [&]() { PFSUpdate upd; g.pfs(0, upd); }));
-    record("prim", time_it(g, [&]() { g.prim(0); }));
-    record("kruskal", time_it(g, [&]() { g.kruskal(false); }));
-    record("connectedComponents", time_it(g, [&]() { g.connectedComponents(false); }));
-    record("connected(v,w)", time_it(g, [&]() { g.connectedComponents(0, g.n > 1 ? g.n - 1 : 0); }));
-    record("reachableComponents", time_it(g, [&]() { if (g.n > 0) g.reachableComponents(0); }));
-    record("kosarajuSCC", time_it(g, [&]() { g.kosarajuSCC(false); }));
+    record("build", 0.0, true); // placeholder updated by caller if needed
+    record("bfs", time_it(g, [&]() { g.bfs(0); }), true);
+    record("dfs", time_it(g, [&]() { g.dfs(0); }), true);
+    record("bcc", time_it(g, [&]() { g.bcc(0); }), true);
+    record("tSort", time_it(g, [&]() { auto s = g.tSort(0); delete s; }), true);
+    record("dijkstra", time_it(g, [&]() { g.dijkstra(0); }), true);
+    record("pfs", time_it(g, [&]() { PFSUpdate upd; g.pfs(0, upd); }), true);
+    record("prim", time_it(g, [&]() { g.prim(0); }), true);
+    record("kruskal", time_it(g, [&]() { g.kruskal(false); }), true);
+    record("connectedComponents", time_it(g, [&]() { g.connectedComponents(false); }), true);
+    record("connected(v,w)", time_it(g, [&]() { g.connectedComponents(0, g.n > 1 ? g.n - 1 : 0); }), true);
+    record("reachableComponents", time_it(g, [&]() { if (g.n > 0) g.reachableComponents(0); }), true);
+    record("kosarajuSCC", time_it(g, [&]() { g.kosarajuSCC(false); }), true);
     return res;
 }
 

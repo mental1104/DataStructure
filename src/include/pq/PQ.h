@@ -1,6 +1,16 @@
 #ifndef __DSA_PQ
 #define __DSA_PQ
 
+#ifndef DSA_NOINLINE
+#if defined(_MSC_VER)
+#define DSA_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+#define DSA_NOINLINE __attribute__((noinline))
+#else
+#define DSA_NOINLINE
+#endif
+#endif
+
 template<typename T, bool MAX = true>
 struct Priority {
     static bool higher(const T& a, const T& b) { //a 是否比 b 优先

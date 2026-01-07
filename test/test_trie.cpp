@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cstring>
 #include "dsa_string.h"
 #include "Trie.h"
 #include "TST.h"
@@ -8,6 +9,15 @@ class TrieTest : public ::testing::Test {
 protected:
     Trie<int> trie;
 };
+
+static bool containsString(const Vector<String>& values, const char* target) {
+    for (Rank i = 0; i < values.size(); ++i) {
+        if (std::strcmp(values[i].c_str(), target) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
 
 TEST_F(TrieTest, PutAndGet) {
     trie.put("apple", 10);
@@ -33,6 +43,70 @@ TEST_F(TrieTest, PrefixMatching) {
     EXPECT_NE(keys.search(String("apple")), -1);
     EXPECT_NE(keys.search(String("app")), -1);
     EXPECT_NE(keys.search(String("apply")), -1);
+}
+
+TEST_F(TrieTest, PutZeroIgnoredAndContains) {
+    trie.put("zero", 0);
+    EXPECT_TRUE(trie.empty());
+    EXPECT_EQ(trie.size(), 0);
+    EXPECT_FALSE(trie.contains(String("zero")));
+    trie.keys();
+}
+
+TEST_F(TrieTest, KeysThatMatchAndLongestPrefix) {
+    trie.put("cat", 1);
+    trie.put("car", 2);
+    trie.put("cart", 3);
+    Vector<String> matches = trie.keysThatMatch("c..");
+    EXPECT_TRUE(containsString(matches, "cat"));
+    EXPECT_TRUE(containsString(matches, "car"));
+    EXPECT_FALSE(containsString(matches, "cart"));
+
+    String prefix = trie.longestPrefixOf("carton");
+    EXPECT_STREQ(prefix.c_str(), "cart");
+    EXPECT_STREQ(trie.longestPrefixOf("").c_str(), "");
+}
+
+TEST_F(TrieTest, RemovePrunesLeaf) {
+    trie.put("solo", 42);
+    EXPECT_EQ(trie.get("solo"), 42);
+    trie.remove("solo");
+    EXPECT_EQ(trie.get("solo"), 0);
+    EXPECT_EQ(trie.size(), 0);
+    Vector<String> keys = trie.keysWithPrefix("s");
+    EXPECT_EQ(keys.size(), 0);
+}
+
+TEST_F(TrieTest, PrefixWithNoMatch) {
+    trie.put("apple", 10);
+    Vector<String> keys = trie.keysWithPrefix("zzz");
+    EXPECT_EQ(keys.size(), 0);
+}
+
+TEST(TrieTestCoverage, WrapperMethods) {
+    Trie<int> local;
+    local.put("zero", 0);
+    EXPECT_TRUE(local.empty());
+
+    Vector<String> emptyPrefix = local.keysWithPrefix("z");
+    EXPECT_EQ(emptyPrefix.size(), 0);
+    Vector<String> emptyMatch = local.keysThatMatch("z..");
+    EXPECT_EQ(emptyMatch.size(), 0);
+
+    local.remove("missing");
+    local.put("abc", 1);
+    local.remove("abc");
+    EXPECT_EQ(local.size(), 0);
+}
+
+TEST(TrieTestCoverage, DestructorWithContent) {
+    {
+        Trie<int> local;
+        local.put("a", 1);
+        local.put("b", 2);
+        EXPECT_EQ(local.size(), 2);
+    }
+    SUCCEED();
 }
 
 class TSTTest : public ::testing::Test {
@@ -64,4 +138,60 @@ TEST_F(TSTTest, PrefixMatching) {
     EXPECT_NE(keys.search(String("banana")), -1);
     EXPECT_NE(keys.search(String("band")), -1);
     EXPECT_NE(keys.search(String("banner")), -1);
+}
+
+TEST_F(TSTTest, ContainsAndKeys) {
+    tst.put("dog", 3);
+    EXPECT_TRUE(tst.contains(String("dog")));
+    EXPECT_FALSE(tst.contains(String("do")));
+    tst.keys();
+}
+
+TEST_F(TSTTest, GetCStrAndLongestPrefix) {
+    tst.put("ship", 7);
+    tst.put("shore", 9);
+    EXPECT_EQ(tst.get("ship"), 7);
+    EXPECT_STREQ(tst.longestPrefixOf("shoreline").c_str(), "shore");
+    EXPECT_STREQ(tst.longestPrefixOf("").c_str(), "");
+}
+
+TEST_F(TSTTest, KeysThatMatchAndEmptyPrefix) {
+    tst.put("tap", 1);
+    tst.put("tip", 2);
+    Vector<String> all = tst.keysWithPrefix("");
+    EXPECT_TRUE(containsString(all, "tap"));
+    EXPECT_TRUE(containsString(all, "tip"));
+
+    Vector<String> matches = tst.keysThatMatch("t.p");
+    EXPECT_TRUE(containsString(matches, "tap"));
+    EXPECT_TRUE(containsString(matches, "tip"));
+}
+
+TEST_F(TSTTest, RemovePrunesLeaf) {
+    tst.put("solo", 1);
+    tst.remove("solo");
+    EXPECT_EQ(tst.size(), 0);
+    Vector<String> keys = tst.keysWithPrefix("s");
+    EXPECT_EQ(keys.size(), 0);
+}
+
+TEST_F(TSTTest, RemoveMissingFromEmpty) {
+    tst.remove("ghost");
+    EXPECT_EQ(tst.size(), 0);
+}
+
+TEST(TSTCoverageTest, WrapperMethods) {
+    TST<int> local;
+    local.put("app", 1);
+    local.put("apple", 2);
+
+    Vector<String> keys = local.keysWithPrefix("app");
+    EXPECT_TRUE(containsString(keys, "app"));
+    EXPECT_TRUE(containsString(keys, "apple"));
+
+    Vector<String> matches = local.keysThatMatch("a..");
+    EXPECT_TRUE(containsString(matches, "app"));
+
+    local.remove(String("app"));
+    EXPECT_EQ(local.get("app"), 0);
 }

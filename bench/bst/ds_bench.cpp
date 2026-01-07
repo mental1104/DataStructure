@@ -20,6 +20,8 @@
 #include "BStarTree.h"
 #include "Hashtable.h"
 #include "HashtableB.h"
+#include "HashtableChain.h"
+#include "HashMap.h"
 #include "Skiplist.h"
 
 struct BenchConfig {
@@ -163,6 +165,30 @@ struct QuadraticHTAdapter {
     int size() const { return table.size(); }
 
     QuadraticHT<int, int> table;
+};
+
+// 独立链式哈希表
+struct HashtableChainAdapter {
+    HashtableChainAdapter() : table(1 << 20) {}
+
+    bool insert(int key) { return table.put(key, key); }
+    bool remove(int key) { return table.remove(key); }
+    const int* search(int key) { return table.get(key); }
+    int size() const { return table.size(); }
+
+    HashtableChain<int, int> table;
+};
+
+// 链表长度到阈值后树化的哈希表
+struct HashMapAdapter {
+    HashMapAdapter() : table(1 << 20) {}
+
+    bool insert(int key) { return table.put(key, key); }
+    bool remove(int key) { return table.remove(key); }
+    const int* search(int key) { return table.get(key); }
+    int size() const { return table.size(); }
+
+    HashMap<int, int> table;
 };
 
 // 跳表
@@ -586,7 +612,7 @@ int main() {
     BenchConfig config = default_config();
     Workload workload = make_workload(config);
 
-    std::cout << "Data structure benchmark (AVL / RedBlack / Splay / BTree / BPlusTree / BStarTree / Hash / Skiplist)\n"
+    std::cout << "Data structure benchmark (AVL / RedBlack / Splay / BTree / BPlusTree / BStarTree / HashChain / HashMap / HashQuad / Skiplist)\n"
               << "Initial size: " << config.initial_size
               << ", access ops: " << config.access_ops
               << ", locality ops: " << config.locality_ops
@@ -610,6 +636,8 @@ int main() {
         {"Random Access", bench_random_access<BPlusTreeAdapter>, "BPlusTree"},
         {"Random Access", bench_random_access<BStarTreeAdapter>, "BStarTree"},
         //{"Random Access", bench_random_access<HashtableAdapter>, "HashLinear"},
+        {"Random Access", bench_random_access<HashtableChainAdapter>, "HashChain"},
+        {"Random Access", bench_random_access<HashMapAdapter>, "HashMap"},
         {"Random Access", bench_random_access<QuadraticHTAdapter>, "HashQuad"},
         {"Random Access", bench_random_access<SkiplistAdapter>, "Skiplist"},
 
@@ -620,6 +648,8 @@ int main() {
         {"Random Insert", bench_random_insert<BPlusTreeAdapter>, "BPlusTree"},
         {"Random Insert", bench_random_insert<BStarTreeAdapter>, "BStarTree"},
         //{"Random Insert", bench_random_insert<HashtableAdapter>, "HashLinear"},
+        {"Random Insert", bench_random_insert<HashtableChainAdapter>, "HashChain"},
+        {"Random Insert", bench_random_insert<HashMapAdapter>, "HashMap"},
         {"Random Insert", bench_random_insert<QuadraticHTAdapter>, "HashQuad"},
         {"Random Insert", bench_random_insert<SkiplistAdapter>, "Skiplist"},
 
@@ -630,6 +660,8 @@ int main() {
         {"Random Erase", bench_random_erase<BPlusTreeAdapter>, "BPlusTree"},
         {"Random Erase", bench_random_erase<BStarTreeAdapter>, "BStarTree"},
         //{"Random Erase", bench_random_erase<HashtableAdapter>, "HashLinear"},
+        {"Random Erase", bench_random_erase<HashtableChainAdapter>, "HashChain"},
+        {"Random Erase", bench_random_erase<HashMapAdapter>, "HashMap"},
         {"Random Erase", bench_random_erase<QuadraticHTAdapter>, "HashQuad"},
         {"Random Erase", bench_random_erase<SkiplistAdapter>, "Skiplist"},
 
@@ -641,6 +673,8 @@ int main() {
         {"Locality Access", bench_locality_access<BPlusTreeAdapter>, "BPlusTree"},
         {"Locality Access", bench_locality_access<BStarTreeAdapter>, "BStarTree"},
         //{"Locality Access", bench_locality_access<HashtableAdapter>, "HashLinear"},
+        {"Locality Access", bench_locality_access<HashtableChainAdapter>, "HashChain"},
+        {"Locality Access", bench_locality_access<HashMapAdapter>, "HashMap"},
         {"Locality Access", bench_locality_access<QuadraticHTAdapter>, "HashQuad"},
         {"Locality Access", bench_locality_access<SkiplistAdapter>, "Skiplist"},
 
@@ -651,6 +685,8 @@ int main() {
         {"Update Heavy", bench_update_heavy<BPlusTreeAdapter>, "BPlusTree"},
         {"Update Heavy", bench_update_heavy<BStarTreeAdapter>, "BStarTree"},
         //{"Update Heavy", bench_update_heavy<HashtableAdapter>, "HashLinear"},
+        {"Update Heavy", bench_update_heavy<HashtableChainAdapter>, "HashChain"},
+        {"Update Heavy", bench_update_heavy<HashMapAdapter>, "HashMap"},
         {"Update Heavy", bench_update_heavy<QuadraticHTAdapter>, "HashQuad"},
         {"Update Heavy", bench_update_heavy<SkiplistAdapter>, "Skiplist"},
 
@@ -661,6 +697,8 @@ int main() {
         {"Read Heavy", bench_read_heavy<BPlusTreeAdapter>, "BPlusTree"},
         {"Read Heavy", bench_read_heavy<BStarTreeAdapter>, "BStarTree"},
         //{"Read Heavy", bench_read_heavy<HashtableAdapter>, "HashLinear"},
+        {"Read Heavy", bench_read_heavy<HashtableChainAdapter>, "HashChain"},
+        {"Read Heavy", bench_read_heavy<HashMapAdapter>, "HashMap"},
         {"Read Heavy", bench_read_heavy<QuadraticHTAdapter>, "HashQuad"},
         {"Read Heavy", bench_read_heavy<SkiplistAdapter>, "Skiplist"},
 
@@ -671,6 +709,8 @@ int main() {
         {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<BTree<int>>(n, d); }, "BTree"},
         {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<BPlusTreeAdapter>(n, d); }, "BPlusTree"},
         {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<BStarTreeAdapter>(n, d); }, "BStarTree"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<HashtableChainAdapter>(n, d); }, "HashChain"},
+        {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<HashMapAdapter>(n, d); }, "HashMap"},
         {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<QuadraticHTAdapter>(n, d); }, "HashQuad"},
         {"Range Scan", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_range_scan<SkiplistAdapter>(n, d); }, "Skiplist"},
 
@@ -680,6 +720,8 @@ int main() {
         {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<BTree<int>>(n, d); }, "BTree"},
         {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<BPlusTreeAdapter>(n, d); }, "BPlusTree"},
         {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<BStarTreeAdapter>(n, d); }, "BStarTree"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<HashtableChainAdapter>(n, d); }, "HashChain"},
+        {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<HashMapAdapter>(n, d); }, "HashMap"},
         {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<QuadraticHTAdapter>(n, d); }, "HashQuad"},
         {"Seq Insert Light Read", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_insert_light_query<SkiplistAdapter>(n, d); }, "Skiplist"},
 
@@ -689,6 +731,8 @@ int main() {
         {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<BTree<int>>(n, d); }, "BTree"},
         {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<BPlusTreeAdapter>(n, d); }, "BPlusTree"},
         {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<BStarTreeAdapter>(n, d); }, "BStarTree"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<HashtableChainAdapter>(n, d); }, "HashChain"},
+        {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<HashMapAdapter>(n, d); }, "HashMap"},
         {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<QuadraticHTAdapter>(n, d); }, "HashQuad"},
         {"Seq Bulk Insert", +[](const std::string& n, const BenchConfig&, const Workload& d) { return bench_seq_bulk_insert<SkiplistAdapter>(n, d); }, "Skiplist"},
 
@@ -698,6 +742,8 @@ int main() {
         {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<BPlusTreeAdapter>(n, c, w); }, "BPlusTree"},
         {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<BStarTreeAdapter>(n, c, w); }, "BStarTree"},
         {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<SkiplistAdapter>(n, c, w); }, "Skiplist"},
+        {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<HashtableChainAdapter>(n, c, w); }, "HashChain"},
+        {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<HashMapAdapter>(n, c, w); }, "HashMap"},
         {"MT Random Access", +[](const std::string& n, const BenchConfig& c, const Workload& w) { return bench_mt_random_access<QuadraticHTAdapter>(n, c, w); }, "HashQuad"},
     };
 

@@ -68,7 +68,9 @@ void RedBlack<T>::solveDoubleRed(BinNode<T>* x){
         g->color = RBColor::RED;
 
         BinNode<T>* gg = g->parent;//曾祖父节点
-        BinNode<T>* r = this->FromParentTo(*g) = this->rotateAt(x);//新根节点
+        BinNode<T>*& fromParent = this->FromParentTo(*g);
+        BinNode<T>* r = this->rotateAt(x);//新根节点
+        fromParent = r;
         r->parent = gg;
     } else {// RR-2-u为红色
         p->color = RBColor::BLACK;//向上传递红色
@@ -122,7 +124,9 @@ void RedBlack<T>::solveDoubleBlack(BinNode<T>* r){
         if(IsRed(s->lc)) t = s->lc;
         if(t){// BB-1：黑s有至少一个红孩子
             RBColor oldcolor = p->color;//保存p原先的颜色
-            BinNode<T>* b = this->FromParentTo(*p) = this->rotateAt(t);//zig-zig,  return s
+            BinNode<T>*& fromParent = this->FromParentTo(*p);
+            BinNode<T>* b = this->rotateAt(t);//zig-zig,  return s
+            fromParent = b;
             
             if(HasLChild(*b)){ 
                 b->lc->color = RBColor::BLACK;//将平衡后的左孩子设为黑
@@ -152,7 +156,9 @@ void RedBlack<T>::solveDoubleBlack(BinNode<T>* r){
         p->color = RBColor::RED;
         BinNode<T>* t = IsLChild(*s)?s->lc:s->rc;
         this->_hot = p;
-        this->FromParentTo(*p) = this->rotateAt(t);
+        BinNode<T>*& fromParent = this->FromParentTo(*p);
+        BinNode<T>* b = this->rotateAt(t);
+        fromParent = b;
         solveDoubleBlack(r);//x的后继节点r此时的兄弟必为黑，转入BB-1 或 BB-2-R
     }
 }

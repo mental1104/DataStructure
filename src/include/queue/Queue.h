@@ -11,17 +11,27 @@
 #include "utils.h"
 #include "List.h"
 
+#ifndef DSA_NOINLINE
+#if defined(_MSC_VER)
+#define DSA_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+#define DSA_NOINLINE __attribute__((noinline))
+#else
+#define DSA_NOINLINE
+#endif
+#endif
+
 template<typename T> 
 class Queue : public List<T> {
 public:
     void enqueue (T const& e)   { this->insertAsLast(e); }
-    T dequeue() { 
+    DSA_NOINLINE T dequeue() { 
         if (this->empty()) {
             throw std::runtime_error("Dequeue called on an empty queue.");
         }
         return this->remove(this->first()); 
     }
-    T& front() {
+    DSA_NOINLINE T& front() {
         if (this->empty()) { // 检查队列是否为空
             throw std::runtime_error("Front called on an empty queue.");
         } 

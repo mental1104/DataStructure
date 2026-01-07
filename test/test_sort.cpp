@@ -78,6 +78,29 @@ TEST(VectorSortTest, EdgeCases) {
     }
 }
 
+TEST(VectorSortTest, SmallVectorStrategies) {
+    Vector<int> bubbleVec;
+    bubbleVec.insert(2);
+    bubbleVec.insert(1);
+    Sort(bubbleVec, SortStrategy::BubbleSort);
+    EXPECT_TRUE(isSorted(bubbleVec));
+
+    Vector<int> insertionVec;
+    insertionVec.insert(3);
+    insertionVec.insert(1);
+    insertionVec.insert(2);
+    Sort(insertionVec, SortStrategy::InsertionSort);
+    EXPECT_TRUE(isSorted(insertionVec));
+
+    Vector<int> quickBVec;
+    quickBVec.insert(3);
+    quickBVec.insert(1);
+    quickBVec.insert(2);
+    quickBVec.insert(0);
+    Sort(quickBVec, SortStrategy::QuickSortB);
+    EXPECT_TRUE(isSorted(quickBVec));
+}
+
 // ======================== List 排序单元测试 =========================
 
 // 测试不同排序策略下 List 排序的正确性
@@ -135,4 +158,18 @@ TEST(ListSortTest, EdgeCases) {
         EXPECT_NE(it, lstSingle.end());
         EXPECT_EQ(*it, 100);
     }
+}
+
+TEST(SortImplTest, UnsupportedStrategies) {
+    Vector<int> vec;
+    vec.insert(3);
+    vec.insert(1);
+    Sort(vec, static_cast<SortStrategy>(999));
+    EXPECT_EQ(vec.size(), 2);
+
+    List<int> lst;
+    lst.insert(2);
+    lst.insert(1);
+    Sort(lst, static_cast<SortStrategy>(999));
+    EXPECT_EQ(lst.size(), 2);
 }

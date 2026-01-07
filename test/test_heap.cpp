@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include "Heap.h"  // 包含 Heap 的实现
+#include "Vector.h"
 
 using namespace std;
 
@@ -73,6 +74,16 @@ int main() {
     assert(minHeap.delMax() == 4);
     assert(minHeap.getMax() == 7);
     cout << "测试5通过：小顶堆模式正常工作。" << endl;
+
+    // ===== 测试6：Vector 构造堆 =====
+    Vector<int> vec;
+    vec.insert(4);
+    vec.insert(1);
+    vec.insert(9);
+    vec.insert(2);
+    Heap<int> heap4(vec);
+    assert(heap4.getMax() == 9);
+    cout << "测试6通过：Vector 构造堆正常工作。" << endl;
 
     cout << "所有 Heap 单元测试均已通过！" << endl;
     return 0;

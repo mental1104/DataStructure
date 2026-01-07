@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "LeftHeap.h" // 假设 LeftHeap 的实现文件
+#include "Vector.h"
 
 // 测试插入元素
 TEST(LeftHeapTest, InsertTest) {
@@ -48,4 +49,13 @@ TEST(LeftHeapTest, MinHeapTest) {
     EXPECT_EQ(heap.getMax(), 5);
     EXPECT_EQ(heap.delMax(), 5);
     EXPECT_EQ(heap.getMax(), 10);
+}
+
+TEST(LeftHeapTest, ConstructFromVector) {
+    Vector<int> vec;
+    vec.insert(4);
+    vec.insert(12);
+    vec.insert(7);
+    LeftHeap<int> heap(vec);
+    EXPECT_EQ(heap.getMax(), 12);
 }

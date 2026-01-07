@@ -12,9 +12,12 @@ struct KruskalEdgeSummary {
 template<typename Tv, typename Te>
 struct GraphObserver {
     virtual ~GraphObserver() = default;
-    virtual void onSCCComponent(const Vector<int>& /*nodes*/) {}
-    virtual void onKruskalEdge(int /*u*/, int /*v*/, double /*w*/) {}
-    virtual void onKruskalDone(double /*totalWeight*/, const Vector<KruskalEdgeSummary<Tv, Te>>& /*edges*/) {}
+    virtual void onSCCComponent(const Vector<int>& nodes) { (void)nodes; }
+    virtual void onKruskalEdge(int u, int v, double w) { (void)u; (void)v; (void)w; }
+    virtual void onKruskalDone(double totalWeight, const Vector<KruskalEdgeSummary<Tv, Te>>& edges) {
+        (void)totalWeight;
+        (void)edges;
+    }
 };
 
 template<typename Tv, typename Te>

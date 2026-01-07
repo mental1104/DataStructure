@@ -1,7 +1,35 @@
 #include <gtest/gtest.h>
 
 #include "dsa_string.h"
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
+#define private public
 #include "suffix_array.h"
+#undef private
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
+namespace {
+struct FlakyLess {
+    static bool flaky;
+    static int calls;
+    static void setFlaky(bool enable) {
+        flaky = enable;
+        calls = 0;
+    }
+    bool operator()(char a, char b) const {
+        if (!flaky) return a < b;
+        ++calls;
+        return calls == 1;
+    }
+};
+
+bool FlakyLess::flaky = false;
+int FlakyLess::calls = 0;
+}
 
 TEST(SuffixArrayTest, BananaOrderAndQueries) {
     String text("banana");
@@ -41,4 +69,27 @@ TEST(SuffixArrayTest, RepeatedCharacters) {
     EXPECT_EQ(sa.lcp(1), 1);
     EXPECT_EQ(sa.lcp(2), 2);
     EXPECT_EQ(sa.lcp(3), 3);
+}
+
+TEST(SuffixArrayTest, IndexChecksAndCharRefOps) {
+    String text("abc");
+    SuffixArray<String> sa(text);
+
+    EXPECT_THROW(sa.select_view(-1), std::out_of_range);
+    EXPECT_THROW(sa.lcp(0), std::out_of_range);
+    EXPECT_EQ(sa.lcp(1), 0);
+
+    SuffixArray<String>::CharRef a{0, &sa};
+    SuffixArray<String>::CharRef b{1, &sa};
+    EXPECT_EQ(a > b, b < a);
+}
+
+TEST(SuffixArrayTest, CompareKeySuffixFallbackReturn) {
+    FlakyLess::setFlaky(false);
+    String text("abc");
+    SuffixArray<String, FlakyLess> sa(text);
+    FlakyLess::setFlaky(true);
+
+    int idx = sa.rank(String("z"));
+    EXPECT_GE(idx, 0);
 }
