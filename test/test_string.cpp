@@ -249,6 +249,23 @@ TEST(MSDTest, HandlesEmptyString) {
     EXPECT_STREQ(strings[0].c_str(), "");
 }
 
+TEST(MSDTest, HandlesEmptyStringInLargerInput) {
+    Vector<String> strings;
+    strings.insert("");
+    strings.insert("b");
+    strings.insert("a");
+    strings.insert("aa");
+    strings.insert("ab");
+
+    MSD::sort(strings);
+
+    EXPECT_STREQ(strings[0].c_str(), "");
+    EXPECT_STREQ(strings[1].c_str(), "a");
+    EXPECT_STREQ(strings[2].c_str(), "aa");
+    EXPECT_STREQ(strings[3].c_str(), "ab");
+    EXPECT_STREQ(strings[4].c_str(), "b");
+}
+
 TEST(MSDTest, SmallInsertionSort) {
     Vector<String> strings;
     strings.insert("b");
