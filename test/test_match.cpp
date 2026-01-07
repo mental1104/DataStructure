@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <array>
+#include <cstdio>
 #include "match/KMP.h"
 #include "match/BM.h"
 #include "match/KR.h"
@@ -21,6 +22,13 @@ TEST(MatchBM, BadCharacterAndFull) {
     int idx_full = matchBM(pattern, text, BMStrategy::Full, nullptr);
     EXPECT_EQ(idx_bc, 9);
     EXPECT_EQ(idx_full, 9);
+}
+
+TEST(MatchBM, BuildSSTrickyPattern) {
+    String pattern("abab");
+    int* ss = buildSS(pattern, static_cast<int>(pattern.size()));
+    EXPECT_EQ(ss[1], 2);
+    delete[] ss;
 }
 
 TEST(MatchKR, FindsNumericSubstring) {
@@ -50,6 +58,12 @@ TEST(MatchObserverTest, StdoutObserverCallbacks) {
     observer.onGSTable(gs, 3, pattern);
 
     observer.onKRProgress(text, pattern, 2, 123, 456);
+
+    ungetc('\n', stdin);
+    observer.onPause();
+
+    MatchObserver* base = new MatchObserver();
+    delete base;
 
     NoopMatchObserver noop;
     noop.onNextTable(pattern, next, 3);

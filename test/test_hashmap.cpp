@@ -1,5 +1,14 @@
 #include <gtest/gtest.h>
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
+#define private public
 #include "HashMap.h"
+#undef private
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 TEST(HashMapTest, ListBucketOperations) {
     HashMap<int, int> map(5);
@@ -87,4 +96,32 @@ TEST(HashMapTest, RehashMovesListAndTreeBuckets) {
         EXPECT_EQ(*val, 200 + i);
         ++inserted;
     }
+}
+
+TEST(HashMapTest, TreeifyNoOpOnTreeBucket) {
+    HashMap<int, int> map(17);
+    int cap = map.capacity();
+    int idx = 0;
+
+    for (int i = 0; i < 8; ++i) {
+        EXPECT_TRUE(map.put(i * cap, i));
+    }
+    ASSERT_TRUE(map.bucketIsTree(idx));
+
+    HashMap<int, int>::Bucket& bucket = map.buckets[idx];
+    map.treeify(bucket);
+    EXPECT_TRUE(map.bucketIsTree(idx));
+}
+
+TEST(HashMapTest, RehashTriggeredFromTreeBucket) {
+    HashMap<int, int> map(11);
+    int cap = map.capacity();
+    int target = cap * 2 + 1;
+
+    for (int i = 0; i < target; ++i) {
+        EXPECT_TRUE(map.put(i * cap, i));
+    }
+
+    EXPECT_EQ(map.size(), target);
+    EXPECT_GT(map.capacity(), cap);
 }

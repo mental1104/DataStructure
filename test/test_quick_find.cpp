@@ -24,6 +24,7 @@ TEST(QuickFindTest, Connected) {
     EXPECT_FALSE(qf.connected(1, 2));
     qf.unite(1, 2);
     EXPECT_TRUE(qf.connected(1, 2));
+    qf.traverse();
 }
 
 TEST(QuickFindTest, ConstructorWithFile) {

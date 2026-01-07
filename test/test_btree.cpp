@@ -87,6 +87,8 @@ TEST(BTreeTest, SolveUnderflowBorrowRight) {
     BTNode<int>* parent = makeNode(std::vector<int>{50}, 2);
     BTNode<int>* node = makeNode(std::vector<int>{10}, 2);
     BTNode<int>* right = makeNode(std::vector<int>{60, 70, 80}, 4);
+    BTNode<int>* right_child0 = makeNode(std::vector<int>{55}, 1);
+    attachChild(right, 0, right_child0);
 
     attachChild(parent, 0, node);
     attachChild(parent, 1, right);
@@ -98,6 +100,7 @@ TEST(BTreeTest, SolveUnderflowBorrowRight) {
     EXPECT_EQ(node->key.size(), 2);
     EXPECT_EQ(node->key[1], 50);
     EXPECT_EQ(right->key.size(), 2);
+    EXPECT_EQ(right_child0->parent, node);
 }
 
 TEST(BTreeTest, SolveUnderflowMergeLeft) {
@@ -122,6 +125,31 @@ TEST(BTreeTest, SolveUnderflowMergeLeft) {
     EXPECT_EQ(left->key[1], 40);
 }
 
+TEST(BTreeTest, SolveUnderflowMergeLeftReparentsChildren) {
+    BTreeHarness tree(5);
+    release(tree._root);
+
+    BTNode<int>* parent = makeNode(std::vector<int>{40, 80}, 3);
+    BTNode<int>* left = makeNode(std::vector<int>{10}, 2);
+    BTNode<int>* node = makeNode(std::vector<int>{60}, 2);
+    BTNode<int>* right = makeNode(std::vector<int>{90}, 2);
+
+    BTNode<int>* node_child0 = makeNode(std::vector<int>{55}, 1);
+    BTNode<int>* node_child1 = makeNode(std::vector<int>{65}, 1);
+    attachChild(node, 0, node_child0);
+    attachChild(node, 1, node_child1);
+
+    attachChild(parent, 0, left);
+    attachChild(parent, 1, node);
+    attachChild(parent, 2, right);
+    tree._root = parent;
+
+    tree.solveUnderflow(node);
+
+    EXPECT_EQ(node_child0->parent, left);
+    EXPECT_EQ(node_child1->parent, left);
+}
+
 TEST(BTreeTest, SolveUnderflowMergeRightAndCollapseRoot) {
     BTreeHarness tree(4);
     release(tree._root);
@@ -140,4 +168,27 @@ TEST(BTreeTest, SolveUnderflowMergeRightAndCollapseRoot) {
     EXPECT_EQ(right->parent, nullptr);
     EXPECT_EQ(right->key.size(), 2);
     EXPECT_EQ(right->key[0], 50);
+}
+
+TEST(BTreeTest, SolveUnderflowMergeRightReparentsChildren) {
+    BTreeHarness tree(5);
+    release(tree._root);
+
+    BTNode<int>* parent = makeNode(std::vector<int>{50}, 2);
+    BTNode<int>* node = makeNode(std::vector<int>{30}, 2);
+    BTNode<int>* right = makeNode(std::vector<int>{70, 80}, 3);
+
+    BTNode<int>* node_child0 = makeNode(std::vector<int>{25}, 1);
+    BTNode<int>* node_child1 = makeNode(std::vector<int>{35}, 1);
+    attachChild(node, 0, node_child0);
+    attachChild(node, 1, node_child1);
+
+    attachChild(parent, 0, node);
+    attachChild(parent, 1, right);
+    tree._root = parent;
+
+    tree.solveUnderflow(node);
+
+    EXPECT_EQ(node_child1->parent, right);
+    EXPECT_EQ(node_child0->parent, right);
 }

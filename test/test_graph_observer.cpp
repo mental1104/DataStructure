@@ -14,3 +14,8 @@ TEST(GraphObserverTest, DefaultCallbacks) {
     edges.insert(summary);
     observer.onKruskalDone(3.5, edges);
 }
+
+TEST(GraphObserverTest, VirtualDestructor) {
+    GraphObserver<int, int>* observer = new NoopGraphObserver<int, int>();
+    delete observer;
+}

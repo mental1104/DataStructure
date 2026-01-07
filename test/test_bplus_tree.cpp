@@ -126,6 +126,17 @@ TEST(BPlusTreeTest, RemoveAndCollapse) {
     EXPECT_EQ(ctree.search(1), nullptr);
 }
 
+TEST(BPlusTreeTest, ChildIndexNotFound) {
+    BPlusTree<int, int> tree(3);
+    BPlusTree<int, int>::Node* parent = makeInternal(std::vector<int>{10, 20}, 3);
+    BPlusTree<int, int>::Node* child = new BPlusTree<int, int>::Node(true);
+
+    EXPECT_EQ(tree.childIndex(parent, child), -1);
+
+    delete child;
+    delete parent;
+}
+
 TEST(BPlusTreeTest, BorrowFromLeftLeafOnUnderflow) {
     BPlusTree<int, int> tree(4);
     BPlusTree<int, int>::Node* parent = makeInternal(std::vector<int>{4}, 0);

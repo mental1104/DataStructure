@@ -33,6 +33,12 @@ TEST(GraphListTest, InsertAndRemoveVertexEdge) {
     EXPECT_EQ(graph.n, 4);
 }
 
+TEST(GraphListTest, InsertReturnValue) {
+    GraphList<int, int> graph;
+    int idx = graph.insert(42);
+    EXPECT_EQ(idx, 0);
+}
+
 TEST(GraphListTest, AccessorsAndEdgeData) {
     GraphList<int, int> graph;
     for (int i = 0; i < 2; i++) graph.insert(i);

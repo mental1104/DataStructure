@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Bitmap.h"
+#include "Eratosthenes.h"
 
 TEST(BitmapTest, SetClearAndExpandPreservesBits) {
     Bitmap bm(8);
@@ -40,6 +41,21 @@ TEST(BitmapTest, DumpAndLoadFromFile) {
     EXPECT_TRUE(loaded.test(5));
     EXPECT_FALSE(loaded.test(6));
     EXPECT_FALSE(loaded.test(7));
+
+    std::remove(path.c_str());
+}
+
+TEST(BitmapTest, EratosthenesToFileWritesCompositeBits) {
+    const std::string path = "eratosthenes_test.bin";
+
+    eratosthenes_to_file(32, path.c_str());
+
+    Bitmap loaded(path.c_str(), 32);
+    EXPECT_TRUE(loaded.test(0));
+    EXPECT_TRUE(loaded.test(1));
+    EXPECT_FALSE(loaded.test(2));
+    EXPECT_TRUE(loaded.test(4));
+    EXPECT_FALSE(loaded.test(5));
 
     std::remove(path.c_str());
 }

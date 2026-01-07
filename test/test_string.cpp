@@ -210,6 +210,15 @@ TEST(MSDTest, BasicSorting) {
     EXPECT_TRUE(compareVectors(strings, expected));
 }
 
+TEST(MSDTest, HandlesEmptyString) {
+    Vector<String> strings;
+    strings.insert("");
+    strings.insert("a");
+    strings.insert("aa");
+    MSD::sort(strings);
+    EXPECT_STREQ(strings[0].c_str(), "");
+}
+
 TEST(Quick3StringTest, BasicSorting) {
     Vector<String> strings;
     strings.insert("dab");
@@ -228,4 +237,13 @@ TEST(Quick3StringTest, BasicSorting) {
     expected.insert("dab");
 
     EXPECT_TRUE(compareVectors(strings, expected));
+}
+
+TEST(Quick3StringTest, HandlesEmptyString) {
+    Vector<String> strings;
+    strings.insert("b");
+    strings.insert("");
+    strings.insert("a");
+    Quick3String::sort(strings);
+    EXPECT_STREQ(strings[0].c_str(), "");
 }

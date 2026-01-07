@@ -66,6 +66,28 @@ TEST(ListTest, Uniquify) {
     EXPECT_EQ(list[2], 30);
 }
 
+static void bumpListValue(int& v) {
+    v += 1;
+}
+
+TEST(ListTest, UniquifyWithSingleElement) {
+    List<int> list;
+    list.insertAsLast(10);
+    EXPECT_EQ(list.uniquify(), 0);
+    EXPECT_EQ(list.size(), 1);
+}
+
+TEST(ListTest, TraverseFunctionPointer) {
+    List<int> list;
+    list.insertAsLast(1);
+    list.insertAsLast(2);
+    list.insertAsLast(3);
+    list.traverse(bumpListValue);
+    EXPECT_EQ(list[0], 2);
+    EXPECT_EQ(list[1], 3);
+    EXPECT_EQ(list[2], 4);
+}
+
 // 测试反转功能
 TEST(ListTest, Reverse) {
     List<int> list;
@@ -79,6 +101,12 @@ TEST(ListTest, Reverse) {
     EXPECT_EQ(list[0], 30);
     EXPECT_EQ(list[1], 20);
     EXPECT_EQ(list[2], 10);
+}
+
+TEST(ListTest, ReverseEmptyList) {
+    List<int> list;
+    list.reverse();
+    EXPECT_TRUE(list.empty());
 }
 
 // 测试迭代器

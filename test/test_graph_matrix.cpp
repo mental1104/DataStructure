@@ -1,5 +1,14 @@
 #include "gtest/gtest.h"
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
+#define private public
 #include "GraphMatrix.h"
+#undef private
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -49,11 +58,25 @@ TEST(GraphMatrixTest, AccessorsAndRemoveVertexWithEdges) {
     EXPECT_EQ(graph.vertex(0), 0);
     EXPECT_EQ(graph.outDegree(0), 2);
     EXPECT_EQ(graph.inDegree(1), 1);
+    EXPECT_EQ(graph.V().size(), 3);
 
     graph.remove(0);
     EXPECT_EQ(graph.n, 2);
     EXPECT_EQ(graph.inDegree(0), 0);
     EXPECT_EQ(graph.inDegree(1), 0);
+}
+
+TEST(GraphMatrixTest, InsertReturnAndDuplicateEdge) {
+    GraphMatrix<int, int> graph;
+    int idx0 = graph.insert(10);
+    int idx1 = graph.insert(20);
+    EXPECT_EQ(idx0, 0);
+    EXPECT_EQ(idx1, 1);
+
+    graph.insert(5, 0, 1, 1.0);
+    int edges_before = graph.e;
+    graph.insert(5, 0, 1, 1.0);
+    EXPECT_EQ(graph.e, edges_before);
 }
 
 // 测试 BFS 算法（基类方法）
@@ -167,6 +190,18 @@ TEST(GraphMatrixTest, DirectedCycleAndSCC) {
     int sccCount = graph.kosarajuSCC(false);
     // 对于图中存在环的情况，强连通分量应为 2：{0,1,2} 和 {3}
     EXPECT_EQ(sccCount, 2);
+}
+
+TEST(GraphMatrixTest, DirectedCycleFlagAndAcyclicSCC) {
+    GraphMatrix<int, int> graph;
+    for (int i = 0; i < 3; i++) {
+        graph.insert(i);
+    }
+    graph.insert(10, 0, 1, 1.0);
+    graph.insert(20, 1, 2, 1.0);
+
+    EXPECT_FALSE(graph.directedCycle(true));
+    EXPECT_EQ(graph.kosarajuSCC(false), 0);
 }
 
 

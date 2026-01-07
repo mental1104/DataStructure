@@ -201,3 +201,17 @@ TEST(AVLTest, SearchAfterRemoval) {
         << "删除后的元素在 AVL 树中应查找不到。";
     EXPECT_TRUE(isAVL(avl.root()));
 }
+
+TEST(AVLTest, RemoveTriggersRebalance) {
+    AVL<int> avl;
+    int nums[] = {3, 2, 4, 1};
+    for (int i = 0; i < 4; ++i) {
+        avl.insert(nums[i]);
+    }
+    EXPECT_TRUE(isAVL(avl.root()));
+
+    EXPECT_TRUE(avl.remove(4));
+    EXPECT_TRUE(isAVL(avl.root()));
+    ASSERT_NE(avl.root(), nullptr);
+    EXPECT_EQ(avl.root()->data, 2);
+}

@@ -86,3 +86,17 @@ TEST(HashtableTest, RemovalAndReinsertionTest) {
     ASSERT_NE(val, nullptr);
     EXPECT_EQ(*val, 777);
 }
+
+TEST(HashtableTest, IntrospectionAndCollisionProbe) {
+    Hashtable<int, int> table(3);
+    int cap = table._M();
+    EXPECT_EQ(table._N(), 0);
+    EXPECT_NE(table._lazyRemoval(), nullptr);
+    EXPECT_EQ(table._ht(0), nullptr);
+
+    EXPECT_TRUE(table.put(0, 1));
+    EXPECT_TRUE(table.put(cap, 2));
+    EXPECT_EQ(table.size(), 2);
+    EXPECT_EQ(*table.get(0), 1);
+    EXPECT_EQ(*table.get(cap), 2);
+}

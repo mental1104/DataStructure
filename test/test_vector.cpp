@@ -95,3 +95,17 @@ TEST(VectorTest, Disordered) {
     EXPECT_EQ(vec2.disordered(), 3);
 }
 
+TEST(VectorTest, UnsortAndShrink) {
+    Vector<int> vec;
+    for (int i = 0; i < 10; ++i) {
+        vec.insert(i);
+    }
+    vec.unsort();
+    EXPECT_EQ(vec.size(), 10);
+
+    Vector<int> big(4096, 10, 7);
+    int oldCap = big.capacity();
+    big.remove(0, big.size());
+    EXPECT_LT(big.capacity(), oldCap);
+    EXPECT_EQ(big.size(), 0);
+}
