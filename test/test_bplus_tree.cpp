@@ -1,7 +1,52 @@
 // bplus_tree_test.cpp
 #include "gtest/gtest.h"
-#include "BPlusTree.h"
+#include <functional>
+#include <utility>
 #include <vector>
+#include "BST.h"
+#include "Vector.h"
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wkeyword-macro"
+#endif
+#define private public
+#include "BPlusTree.h"
+#undef private
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
+namespace {
+template <typename T>
+void pushVector(Vector<T>& vec, const T& value) {
+    vec.insert(vec.size(), value);
+}
+
+BPlusTree<int, int>::Node* makeLeaf(const std::vector<std::pair<int, int>>& items) {
+    BPlusTree<int, int>::Node* node = new BPlusTree<int, int>::Node(true);
+    for (size_t i = 0; i < items.size(); ++i) {
+        pushVector(node->key, items[i].first);
+        pushVector(node->value, items[i].second);
+    }
+    return node;
+}
+
+BPlusTree<int, int>::Node* makeInternal(const std::vector<int>& keys, int childCount) {
+    BPlusTree<int, int>::Node* node = new BPlusTree<int, int>::Node(false);
+    for (size_t i = 0; i < keys.size(); ++i) {
+        pushVector(node->key, keys[i]);
+    }
+    for (int i = 0; i < childCount; ++i) {
+        pushVector(node->child, static_cast<BPlusTree<int, int>::Node*>(nullptr));
+    }
+    return node;
+}
+
+void appendChild(BPlusTree<int, int>::Node* parent, BPlusTree<int, int>::Node* child) {
+    pushVector(parent->child, child);
+    if (child) child->parent = parent;
+}
+}
 
 TEST(BPlusTreeTest, InsertAndSearch) {
     BPlusTree<int, int> tree(3);
@@ -79,4 +124,51 @@ TEST(BPlusTreeTest, RemoveAndCollapse) {
     EXPECT_TRUE(tree.empty());
     const BPlusTree<int, int>& ctree = tree;
     EXPECT_EQ(ctree.search(1), nullptr);
+}
+
+TEST(BPlusTreeTest, ChildIndexNotFound) {
+    BPlusTree<int, int> tree(3);
+    BPlusTree<int, int>::Node* parent = makeInternal(std::vector<int>{10, 20}, 3);
+    BPlusTree<int, int>::Node* child = new BPlusTree<int, int>::Node(true);
+
+    EXPECT_EQ(tree.childIndex(parent, child), -1);
+
+    delete child;
+    delete parent;
+}
+
+TEST(BPlusTreeTest, BorrowFromLeftLeafOnUnderflow) {
+    BPlusTree<int, int> tree(4);
+    BPlusTree<int, int>::Node* parent = makeInternal(std::vector<int>{4}, 0);
+    BPlusTree<int, int>::Node* left = makeLeaf({{1, 10}, {2, 20}, {3, 30}});
+    BPlusTree<int, int>::Node* right = makeLeaf({{4, 40}});
+
+    appendChild(parent, left);
+    appendChild(parent, right);
+    tree._root = parent;
+
+    tree.handleUnderflow(right);
+
+    EXPECT_EQ(left->key.size(), 2);
+    EXPECT_EQ(right->key.size(), 2);
+    EXPECT_EQ(right->key[0], 3);
+    EXPECT_EQ(parent->key[0], 3);
+}
+
+TEST(BPlusTreeTest, BorrowFromLeftInternalOnUnderflow) {
+    BPlusTree<int, int> tree(4);
+    BPlusTree<int, int>::Node* parent = makeInternal(std::vector<int>{50}, 0);
+    BPlusTree<int, int>::Node* left = makeInternal(std::vector<int>{10, 20}, 3);
+    BPlusTree<int, int>::Node* node = makeInternal(std::vector<int>(), 1);
+
+    appendChild(parent, left);
+    appendChild(parent, node);
+    tree._root = parent;
+
+    tree.handleUnderflow(node);
+
+    EXPECT_EQ(node->key.size(), 1);
+    EXPECT_EQ(node->key[0], 50);
+    EXPECT_EQ(parent->key[0], 20);
+    EXPECT_EQ(left->key.size(), 1);
 }

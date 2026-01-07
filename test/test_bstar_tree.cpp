@@ -1,11 +1,36 @@
 // bstar_tree_test.cpp
 #include "gtest/gtest.h"
 #include "BStarTree.h"
+#include <vector>
 
 static bool node_has_key(BTNode<int>* node, int key) {
     if (!node) return false;
     Rank r = node->key.search(key);
     return r >= 0 && r < node->key.size() && node->key[r] == key;
+}
+
+class BStarTreeHarness : public BStarTree<int> {
+public:
+    explicit BStarTreeHarness(int order)
+        : BStarTree<int>(order) {}
+
+    using BStarTree<int>::_order;
+    using BStarTree<int>::_root;
+    using BStarTree<int>::solveUnderflow;
+};
+
+namespace {
+BTNode<int>* makeNodeWithKeys(const std::vector<int>& keys, int childCount) {
+    BTNode<int>* node = new BTNode<int>();
+    node->child.remove(0);
+    for (size_t i = 0; i < keys.size(); ++i) {
+        node->key.insert(node->key.size(), keys[i]);
+    }
+    for (int i = 0; i < childCount; ++i) {
+        node->child.insert(node->child.size(), static_cast<BTNode<int>*>(nullptr));
+    }
+    return node;
+}
 }
 
 TEST(BStarTreeTest, InsertAndSearch) {
@@ -44,4 +69,61 @@ TEST(BStarTreeTest, RemoveAll) {
     EXPECT_TRUE(tree.empty());
     EXPECT_EQ(tree.size(), 0);
     EXPECT_FALSE(tree.remove(42));
+}
+
+TEST(BStarTreeTest, BorrowFromLeftSiblingOnUnderflow) {
+    BStarTreeHarness tree(5);
+    BTNode<int>* parent = makeNodeWithKeys(std::vector<int>{50}, 2);
+    BTNode<int>* left = makeNodeWithKeys(std::vector<int>{10, 20, 30}, 4);
+    BTNode<int>* node = makeNodeWithKeys(std::vector<int>{5}, 2);
+
+    parent->child[0] = left;
+    parent->child[1] = node;
+    left->parent = parent;
+    node->parent = parent;
+    tree._root = parent;
+
+    tree.solveUnderflow(node);
+
+    EXPECT_EQ(node->key[0], 50);
+    EXPECT_EQ(parent->key[0], 30);
+    EXPECT_EQ(left->key.size(), 2);
+}
+
+TEST(BStarTreeTest, BorrowFromRightSiblingOnUnderflow) {
+    BStarTreeHarness tree(5);
+    BTNode<int>* parent = makeNodeWithKeys(std::vector<int>{55}, 2);
+    BTNode<int>* node = makeNodeWithKeys(std::vector<int>{5}, 2);
+    BTNode<int>* right = makeNodeWithKeys(std::vector<int>{60, 70, 80}, 4);
+
+    parent->child[0] = node;
+    parent->child[1] = right;
+    node->parent = parent;
+    right->parent = parent;
+    tree._root = parent;
+
+    tree.solveUnderflow(node);
+
+    EXPECT_EQ(node->key.size(), 2);
+    EXPECT_EQ(node->key[1], 55);
+    EXPECT_EQ(parent->key[0], 60);
+    EXPECT_EQ(right->key.size(), 2);
+}
+
+TEST(BStarTreeTest, MergeWithRightSiblingOnUnderflow) {
+    BStarTreeHarness tree(5);
+    BTNode<int>* parent = makeNodeWithKeys(std::vector<int>{50}, 2);
+    BTNode<int>* node = makeNodeWithKeys(std::vector<int>{5}, 2);
+    BTNode<int>* right = makeNodeWithKeys(std::vector<int>{70, 80}, 3);
+
+    parent->child[0] = node;
+    parent->child[1] = right;
+    node->parent = parent;
+    right->parent = parent;
+    tree._root = parent;
+
+    tree.solveUnderflow(node);
+
+    EXPECT_EQ(tree.root(), right);
+    EXPECT_EQ(right->parent, nullptr);
 }

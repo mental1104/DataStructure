@@ -1,0 +1,83 @@
+name: Linux Performance
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover-benches:
+    runs-on: ubuntu-latest
+    outputs:
+      bench_dirs: ${{ steps.set-matrix.outputs.bench_dirs }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Discover bench directories
+        id: set-matrix
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          bench_root = "bench"
+          dirs = sorted(
+              d for d in os.listdir(bench_root)
+              if os.path.isdir(os.path.join(bench_root, d))
+          )
+          print(f"bench_dirs={json.dumps(dirs)}")
+          PY
+
+  run-benches:
+    needs: discover-benches
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        bench: ${{ fromJSON(needs.discover-benches.outputs.bench_dirs) }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_BENCHMARKS=ON
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Run benchmarks
+        run: |
+          bench_dir="build/bench/${{ matrix.bench }}"
+          if [ ! -d "$bench_dir" ]; then
+            echo "Benchmark directory not found: $bench_dir"
+            exit 1
+          fi
+          found=0
+          while IFS= read -r exe; do
+            echo "Running benchmark: $exe"
+            "$exe"
+            found=1
+          done < <(find "$bench_dir" -maxdepth 2 -type f -executable)
+          if [ "$found" -eq 0 ]; then
+            echo "No benchmark executables found in $bench_dir"
+            exit 1
+          fi

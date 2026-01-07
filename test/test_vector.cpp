@@ -56,6 +56,17 @@ TEST(VectorTest, Find) {
     EXPECT_EQ(vec.find(6), -1);
 }
 
+TEST(VectorTest, FindRangeAndRemoveReturn) {
+    int arr[] = {1, 2, 3, 4, 5};
+    Vector<int> vec(arr, 5);
+    EXPECT_EQ(vec.find(4, 0, vec.size()), 3);
+    EXPECT_EQ(vec.find(9, 0, vec.size()), -1);
+
+    int removed = vec.remove(2);
+    EXPECT_EQ(removed, 3);
+    EXPECT_EQ(vec.size(), 4);
+}
+
 // 测试唯一化功能
 TEST(VectorTest, Uniquify) {
     int arr[] = {1, 1, 2, 2, 3, 3};
@@ -95,3 +106,31 @@ TEST(VectorTest, Disordered) {
     EXPECT_EQ(vec2.disordered(), 3);
 }
 
+TEST(VectorTest, IteratorEnd) {
+    Vector<int> vec;
+    vec.insert(1);
+    vec.insert(2);
+    int sum = 0;
+    for (auto it = vec.begin(); it != vec.end(); ++it) {
+        sum += *it;
+    }
+    EXPECT_EQ(sum, 3);
+    EXPECT_TRUE(vec.begin() != vec.end());
+}
+
+TEST(VectorTest, UnsortAndShrink) {
+    Vector<int> vec;
+    for (int i = 0; i < 10; ++i) {
+        vec.insert(i);
+    }
+    vec.unsort();
+    EXPECT_EQ(vec.size(), 10);
+
+    Vector<int> big(4096, 10, 7);
+    int oldCap = big.capacity();
+    big.remove(0, big.size() - 2);
+    EXPECT_LT(big.capacity(), oldCap);
+    EXPECT_EQ(big.size(), 2);
+    EXPECT_EQ(big[0], 7);
+    EXPECT_EQ(big[1], 7);
+}

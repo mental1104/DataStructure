@@ -1,5 +1,13 @@
 #include <gtest/gtest.h>
+#include <vector>
 #include "BinTree.h" // 假设 BinTree 定义在该头文件中
+
+namespace {
+struct IntCollector {
+    std::vector<int>* out;
+    void operator()(int& v) { out->push_back(v); }
+};
+}
 
 // 测试 BinTree 初始化
 TEST(BinTreeTest, Initialization) {
@@ -13,10 +21,11 @@ TEST(BinTreeTest, Initialization) {
 // 测试插入根节点
 TEST(BinTreeTest, InsertRoot) {
     BinTree<int> tree;
-    tree.insertAsRoot(10);
+    BinNode<int>* root = tree.insertAsRoot(10);
 
     // 验证根节点是否插入成功
     ASSERT_NE(tree.root(), nullptr);
+    EXPECT_EQ(root, tree.root());
     EXPECT_EQ(tree.size(), 1);
     EXPECT_EQ(tree.root()->data, 10);
     EXPECT_EQ(tree.root()->parent, nullptr);
@@ -97,4 +106,48 @@ TEST(BinTreeTest, RemoveSubTree) {
     // 验证左子树被删除
     EXPECT_EQ(tree.size(), 2);
     EXPECT_EQ(root->lc, nullptr);
+}
+
+TEST(BinTreeTest, TraversalWrappersAndIterator) {
+    BinTree<int> tree;
+    tree.insertAsRoot(10);
+    BinNode<int>* root = tree.root();
+    tree.insertAsLC(root, 5);
+    tree.insertAsRC(root, 15);
+    tree.insertAsLC(root->lc, 2);
+    tree.insertAsRC(root->lc, 7);
+
+    std::vector<int> pre;
+    IntCollector preVis{&pre};
+    tree.travPre(preVis);
+    EXPECT_EQ(pre, std::vector<int>({10, 5, 2, 7, 15}));
+
+    std::vector<int> in;
+    IntCollector inVis{&in};
+    tree.travIn(inVis);
+    EXPECT_EQ(in, std::vector<int>({2, 5, 7, 10, 15}));
+
+    std::vector<int> post;
+    IntCollector postVis{&post};
+    tree.travPost(postVis);
+    EXPECT_EQ(post, std::vector<int>({2, 7, 5, 15, 10}));
+
+    std::vector<int> level;
+    IntCollector levelVis{&level};
+    tree.travLevel(levelVis);
+    EXPECT_EQ(level, std::vector<int>({10, 5, 15, 2, 7}));
+
+    BinTree<int>::iterator it = tree.begin();
+    EXPECT_TRUE(it != tree.end());
+    EXPECT_EQ(*it, 2);
+    ++it;
+    EXPECT_EQ(*it, 5);
+    ++it;
+    EXPECT_EQ(*it, 7);
+    ++it;
+    EXPECT_EQ(*it, 10);
+    ++it;
+    EXPECT_EQ(*it, 15);
+    ++it;
+    EXPECT_FALSE(it != tree.end());
 }

@@ -114,7 +114,8 @@ int GraphMatrix<Tv, Te>::insert(Tv const& vertex){
         
     this->n++;
     _E.insert(Vector<Edge<Te>*>(this->n, this->n, nullptr));
-    return _V.insert(Vertex<Tv>(this->n-1, vertex));
+    int idx = _V.insert(Vertex<Tv>(this->n-1, vertex));
+    return idx;
 }
 
 template<typename Tv, typename Te>

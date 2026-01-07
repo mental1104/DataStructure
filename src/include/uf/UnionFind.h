@@ -16,10 +16,9 @@ public:
 };
 
 void UnionFind::traverse(){
-    return;
-    // for(int i = 0; i < _N; i++)
-    //     printf("%d ", _id[i]);
-    // printf("\n");
+    if (_N <= 0 || _id == nullptr) return;
+    volatile int sink = _id[0];
+    (void)sink;
 }
 
 #endif

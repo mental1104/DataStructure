@@ -47,7 +47,7 @@ void SkewHeap<T, MAX>::insert (T e){
 }
 
 template <typename T, bool MAX> 
-T SkewHeap<T, MAX>::getMax(){
+DSA_NOINLINE T SkewHeap<T, MAX>::getMax(){
     if (!this->_root) 
         throw std::runtime_error("Heap is empty");
     return this->_root->data; 

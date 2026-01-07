@@ -74,3 +74,9 @@ TEST(WeightedQuickUnionwithCompressionTest, SelfUnite) {
     wqu.unite(0, 0);
     EXPECT_EQ(wqu.find(0), 0);
 }
+
+TEST(WeightedQuickUnionwithCompressionTest, DestructorRuns) {
+    WeightedQuickUnionwithCompression* wqu = new WeightedQuickUnionwithCompression(3);
+    wqu->unite(0, 1);
+    delete wqu;
+}

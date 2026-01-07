@@ -23,6 +23,23 @@ struct Query {
     int r;
 };
 
+template <typename TreeT, typename FoldFn>
+std::pair<double, long long> bench_tree(TreeT& tree,
+                                        const std::vector<Query>& queries,
+                                        FoldFn fold_pair) {
+    auto t0b = std::chrono::steady_clock::now();
+    long long acc = 0;
+    for (size_t i = 0; i < queries.size(); ++i) {
+        const Query& q = queries[i];
+        std::pair<int, long long> lo = std::make_pair(q.l, std::numeric_limits<long long>::min());
+        std::pair<int, long long> hi = std::make_pair(q.r - 1, std::numeric_limits<long long>::max());
+        acc += tree.rangeAggregate(lo, hi, 0LL, fold_pair);
+    }
+    auto t1b = std::chrono::steady_clock::now();
+    double ms = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t1b - t0b).count();
+    return std::make_pair(ms, acc);
+}
+
 int main() {
     const int N = 50000;
     const int Q = 10000;
@@ -109,22 +126,9 @@ int main() {
         bplustree.insert(i, data[i]);
     }
 
-    auto bench_tree = [&](auto& tree) {
-        auto t0b = std::chrono::steady_clock::now();
-        long long acc = 0;
-        for (const auto& q : queries) {
-            std::pair<int, long long> lo = {q.l, std::numeric_limits<long long>::min()};
-            std::pair<int, long long> hi = {q.r - 1, std::numeric_limits<long long>::max()};
-            acc += tree.rangeAggregate(lo, hi, 0LL, fold_pair);
-        }
-        auto t1b = std::chrono::steady_clock::now();
-        double ms = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(t1b - t0b).count();
-        return std::make_pair(ms, acc);
-    };
-
-    auto rb_res = bench_tree(rb);
-    auto avl_res = bench_tree(avl);
-    auto splay_res = bench_tree(splay);
+    auto rb_res = bench_tree(rb, queries, fold_pair);
+    auto avl_res = bench_tree(avl, queries, fold_pair);
+    auto splay_res = bench_tree(splay, queries, fold_pair);
 
     auto skip_res = [&](){
         auto t0c = std::chrono::steady_clock::now();
@@ -137,8 +141,8 @@ int main() {
         return std::make_pair(ms, acc);
     }();
 
-    auto btree_res = bench_tree(btree);
-    auto bstart_res = bench_tree(bstartree);
+    auto btree_res = bench_tree(btree, queries, fold_pair);
+    auto bstart_res = bench_tree(bstartree, queries, fold_pair);
 
     auto bplus_res = [&](){
         auto t0d = std::chrono::steady_clock::now();

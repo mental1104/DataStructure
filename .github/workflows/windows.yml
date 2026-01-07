@@ -1,0 +1,43 @@
+name: Windows
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: msvc-cxx${{ matrix.standard }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        standard: [11, 14, 17, 20, 23] # 26
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: |
+          build_dir="build-msvc-cxx${{ matrix.standard }}"
+          cmake -S . -B "$build_dir" -G "Visual Studio 17 2022" -A x64 \
+            -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
+
+      - name: Build
+        run: cmake --build "build-msvc-cxx${{ matrix.standard }}" --config Release --parallel
+
+      - name: Run tests
+        run: ctest --test-dir "build-msvc-cxx${{ matrix.standard }}" --output-on-failure --build-config Release

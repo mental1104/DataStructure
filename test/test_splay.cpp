@@ -56,6 +56,13 @@ bool removeElement(int arr[], int &count, int value) {
     return false;
 }
 
+class SplayHarness : public Splay<int> {
+public:
+    using Splay<int>::splay;
+    using BinTree<int>::_root;
+    using BinTree<int>::_size;
+};
+
 // ================= 单元测试 =================
 
 /*
@@ -211,4 +218,34 @@ TEST(SplayTest, SearchAfterRemoval) {
     for (int i = 0; i < inCount; i++) {
         EXPECT_NE(inOrder[i], 30) << "中序遍历中不应存在已删除的元素 30。";
     }
+}
+
+TEST(SplayTest, ZagZigSplayPath) {
+    SplayHarness splay;
+    BinNode<int>* g = new BinNode<int>(10);
+    BinNode<int>* p = new BinNode<int>(5, g);
+    BinNode<int>* v = new BinNode<int>(7, p);
+    g->lc = p;
+    p->rc = v;
+    splay._root = g;
+    splay._size = 3;
+
+    splay._root = splay.splay(v);
+    ASSERT_NE(splay.root(), nullptr);
+    EXPECT_EQ(splay.root()->data, 7);
+    EXPECT_EQ(splay.root()->parent, nullptr);
+}
+
+TEST(SplayTest, RemoveRootWithOnlyLeftChild) {
+    SplayHarness splay;
+    BinNode<int>* root = new BinNode<int>(10);
+    BinNode<int>* left = new BinNode<int>(5, root);
+    root->lc = left;
+    splay._root = root;
+    splay._size = 2;
+
+    EXPECT_TRUE(splay.remove(10));
+    ASSERT_NE(splay.root(), nullptr);
+    EXPECT_EQ(splay.root()->data, 5);
+    EXPECT_EQ(splay.root()->parent, nullptr);
 }
