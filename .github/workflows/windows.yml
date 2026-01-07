@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   build-and-test:
+    name: msvc-cxx${{ matrix.standard }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -31,12 +32,12 @@ jobs:
 
       - name: Configure CMake
         run: |
-          build_dir="build-cxx${{ matrix.standard }}"
+          build_dir="build-msvc-cxx${{ matrix.standard }}"
           cmake -S . -B "$build_dir" -G "Visual Studio 17 2022" -A x64 \
             -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
 
       - name: Build
-        run: cmake --build "build-cxx${{ matrix.standard }}" --config Release --parallel
+        run: cmake --build "build-msvc-cxx${{ matrix.standard }}" --config Release --parallel
 
       - name: Run tests
-        run: ctest --test-dir "build-cxx${{ matrix.standard }}" --output-on-failure --build-config Release
+        run: ctest --test-dir "build-msvc-cxx${{ matrix.standard }}" --output-on-failure --build-config Release
