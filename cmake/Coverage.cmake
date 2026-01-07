@@ -75,13 +75,13 @@ if(COVERAGE)
                     --gcov-executable "${GCOVR_GCOV_EXECUTABLE}"
                     -r ${CMAKE_SOURCE_DIR}
                     --object-directory ${CMAKE_BINARY_DIR}
-                    --filter '${CMAKE_SOURCE_DIR}/src/include'
-                    --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/'
-                    --exclude '${CMAKE_SOURCE_DIR}/src/include/print/.*'
-                    --exclude '/usr/include/.*'
-                    --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*'
-                    --exclude-directories '.*/CMakeFiles/.*'
-                    --gcov-exclude '.*CMakeFiles/.*'
+                    --filter "${CMAKE_SOURCE_DIR}/src/include"
+                    --exclude "\\(^\\|.\\*/\\)\\(test\\|bench\\|demo\\|external\\|gtest\\|lib\\|thirdparty\\|overlay\\)/"
+                    --exclude "${CMAKE_SOURCE_DIR}/src/include/print/.\\*"
+                    --exclude "/usr/include/.\\*"
+                    --exclude-directories ".\\*/build-\\(asan\\|tsan\\|ubsan\\|msan\\).\\*"
+                    --exclude-directories ".\\*/CMakeFiles/.\\*"
+                    --gcov-exclude ".\\*CMakeFiles/.\\*"
                     --gcov-ignore-parse-errors
                     --gcov-ignore-errors source_not_found
                     --txt
@@ -98,13 +98,13 @@ if(COVERAGE)
                 COMMAND ${GCOVR_EXEC}
                     -r ${CMAKE_SOURCE_DIR}
                     --object-directory ${CMAKE_BINARY_DIR}
-                    --filter '${CMAKE_SOURCE_DIR}/src/include'
-                    --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/'
-                    --exclude '${CMAKE_SOURCE_DIR}/src/include/print/.*'
-                    --exclude '/usr/include/.*'
-                    --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*'
-                    --exclude-directories '.*/CMakeFiles/.*'
-                    --gcov-exclude '.*CMakeFiles/.*'
+                    --filter "${CMAKE_SOURCE_DIR}/src/include"
+                    --exclude "\\(^\\|.\\*/\\)\\(test\\|bench\\|demo\\|external\\|gtest\\|lib\\|thirdparty\\|overlay\\)/"
+                    --exclude "${CMAKE_SOURCE_DIR}/src/include/print/.\\*"
+                    --exclude "/usr/include/.\\*"
+                    --exclude-directories ".\\*/build-\\(asan\\|tsan\\|ubsan\\|msan\\).\\*"
+                    --exclude-directories ".\\*/CMakeFiles/.\\*"
+                    --gcov-exclude ".\\*CMakeFiles/.\\*"
                     --gcov-ignore-parse-errors
                     --gcov-ignore-errors source_not_found
                     --txt
