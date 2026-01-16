@@ -1,11 +1,10 @@
 name: Linux
 
 on:
+  workflow_call: {}
   push:
-    branches:
+    branches-ignore:
       - main
-      - master
-      - develop
   pull_request:
   workflow_dispatch:
 
@@ -27,6 +26,11 @@ jobs:
             cc: clang
             cxx: clang++
         standard: [11, 14, 17, 20, 23] # 26
+    env:
+      CXX_STD: ${{ matrix.standard }}
+      GCOV: ${{ matrix.compiler.name == 'clang' && 'llvm-cov gcov' || 'gcov' }}
+      COMPILER_KEY: ${{ matrix.compiler.name == 'clang' && 'clangpp' || 'gpp' }}
+      COMPILER_LABEL: ${{ matrix.compiler.name == 'clang' && 'clang++' || 'g++' }}
     defaults:
       run:
         shell: bash
@@ -60,3 +64,74 @@ jobs:
 
       - name: Run coverage
         run: cmake --build "build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}" --config Release --target coverage
+
+      - name: Export coverage.xml (never fail)
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          rm -f coverage.xml
+          build_dir="build-${{ matrix.compiler.name }}-cxx${{ matrix.standard }}"
+
+          if [ -d "$build_dir" ]; then
+            gcovr -r . "$build_dir" \
+              --object-directory "$build_dir" \
+              --gcov-executable "$GCOV" \
+              --xml-pretty -o coverage.xml \
+              --filter '^src/include' \
+              --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/' \
+              --exclude 'src/include/print/.*' \
+              --exclude '/usr/include/.*' \
+              --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*' \
+              --exclude-directories '.*/CMakeFiles/.*' \
+              --gcov-exclude '.*CMakeFiles/.*' \
+              --gcov-ignore-parse-errors \
+              --gcov-ignore-errors source_not_found \
+              --print-summary
+          fi
+
+          if [ ! -f coverage.xml ]; then
+            printf '%s\n' \
+              "<?xml version='1.0' encoding='UTF-8'?>" \
+              "<!DOCTYPE coverage SYSTEM 'http://cobertura.sourceforge.net/xml/coverage-04.dtd'>" \
+              "<coverage line-rate=\"0.0\" branch-rate=\"0.0\" lines-covered=\"0\" lines-valid=\"0\" branches-covered=\"0\" branches-valid=\"0\" complexity=\"0.0\" timestamp=\"0\" version=\"placeholder\">" \
+              "  <sources><source>.</source></sources>" \
+              "  <packages/>" \
+              "</coverage>" \
+              > coverage.xml
+          fi
+
+      - name: Extract cov.json (never fail)
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          python3 tools/ci/extract_coverage_cpp.py \
+            --os linux \
+            --compiler "${COMPILER_LABEL}" \
+            --cxx-std ${{ matrix.standard }} \
+            --out cov.json || true
+
+          if [ ! -f cov.json ]; then
+            python3 -c "import json,os;obj={'os':'linux','compiler':os.getenv('COMPILER_LABEL','unknown'),'cxx_std':int('${{ matrix.standard }}'),'line_pct':0.0,'source':'placeholder','sha':os.getenv('GITHUB_SHA',''),'run_id':os.getenv('GITHUB_RUN_ID',''),'status':'placeholder'};json.dump(obj,open('cov.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)"
+          fi
+
+      - name: Stash coverage files (unique path)
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          key="linux-${COMPILER_KEY}-cxx${{ matrix.standard }}"
+          mkdir -p "_cov/cpp/${key}"
+          cp -f cov.json "_cov/cpp/${key}/cov.json" 2>/dev/null || true
+          cp -f coverage.xml "_cov/cpp/${key}/coverage.xml" 2>/dev/null || true
+
+      - name: Upload coverage artifacts (unique)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-cov-linux-${{ env.COMPILER_KEY }}-cxx${{ matrix.standard }}
+          path: _cov
+          retention-days: 7
+          if-no-files-found: warn

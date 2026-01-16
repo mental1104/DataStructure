@@ -1,11 +1,10 @@
 name: Windows
 
 on:
+  workflow_call: {}
   push:
-    branches:
+    branches-ignore:
       - main
-      - master
-      - develop
   pull_request:
   workflow_dispatch:
 
@@ -20,6 +19,8 @@ jobs:
       fail-fast: false
       matrix:
         standard: [11, 14, 17, 20, 23] # 26
+    env:
+      CXX_STD: ${{ matrix.standard }}
     defaults:
       run:
         shell: bash
@@ -41,3 +42,35 @@ jobs:
 
       - name: Run tests
         run: ctest --test-dir "build-msvc-cxx${{ matrix.standard }}" --output-on-failure --build-config Release
+
+      - name: Extract cov.json (never fail)
+        if: always()
+        continue-on-error: true
+        run: |
+          python tools/ci/extract_coverage_cpp.py \
+            --os windows \
+            --compiler msvc \
+            --cxx-std ${{ matrix.standard }} \
+            --out cov.json || true
+
+          if [ ! -f cov.json ]; then
+            python -c "import json,os;obj={'os':'windows','compiler':'msvc','cxx_std':int('${{ matrix.standard }}'),'line_pct':0.0,'source':'placeholder','sha':os.getenv('GITHUB_SHA',''),'run_id':os.getenv('GITHUB_RUN_ID',''),'status':'placeholder'};json.dump(obj,open('cov.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)"
+          fi
+
+      - name: Stash coverage files (unique path)
+        if: always()
+        continue-on-error: true
+        run: |
+          key="windows-msvc-cxx${{ matrix.standard }}"
+          mkdir -p "_cov/cpp/${key}"
+          cp -f cov.json "_cov/cpp/${key}/cov.json" 2>/dev/null || true
+
+      - name: Upload coverage artifacts (unique)
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-cov-windows-msvc-cxx${{ matrix.standard }}
+          path: _cov
+          retention-days: 7
+          if-no-files-found: warn

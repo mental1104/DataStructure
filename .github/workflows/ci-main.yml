@@ -1,0 +1,30 @@
+name: CI Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  linux:
+    uses: ./.github/workflows/linux.yml
+    secrets: inherit
+
+  macos:
+    uses: ./.github/workflows/macos.yml
+    secrets: inherit
+
+  windows:
+    uses: ./.github/workflows/windows.yml
+    secrets: inherit
+
+  pages:
+    needs: [linux, macos, windows]
+    if: always()
+    uses: ./.github/workflows/pages.yml
+    secrets: inherit
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      actions: read

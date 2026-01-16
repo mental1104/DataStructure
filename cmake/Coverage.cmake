@@ -84,7 +84,7 @@ if(COVERAGE)
                     --gcov-exclude ".\\*CMakeFiles/.\\*"
                     --gcov-ignore-parse-errors
                     --gcov-ignore-errors source_not_found
-                    --txt
+                    --xml-pretty -o "${CMAKE_SOURCE_DIR}/coverage.xml"
                     --print-summary
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                 COMMENT "Coverage summary (gcovr; excludes test/bench/thirdparty/lib/overlay)"
@@ -107,7 +107,7 @@ if(COVERAGE)
                     --gcov-exclude ".\\*CMakeFiles/.\\*"
                     --gcov-ignore-parse-errors
                     --gcov-ignore-errors source_not_found
-                    --txt
+                    --xml-pretty -o "${CMAKE_SOURCE_DIR}/coverage.xml"
                     --print-summary
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
                 COMMENT "Coverage summary (gcovr; excludes test/bench/thirdparty/lib/overlay)"
