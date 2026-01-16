@@ -87,7 +87,7 @@ jobs:
               --gcov-exclude '.*CMakeFiles/.*' \
               --gcov-ignore-parse-errors \
               --gcov-ignore-errors source_not_found \
-              --merge-mode-functions merge \
+              --merge-mode-functions merge-use-line-min \
               --print-summary
           fi
 
