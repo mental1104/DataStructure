@@ -1,3 +1,11 @@
-# dir 不需要提交的目录
-/build
-/.vscode
+# Coverage artifacts
+/coverage.xml
+/coverage.info
+/coverage-lcov.info
+/lcov.info
+/total.info
+/cobertura.xml
+/cobertura-coverage.xml
+/cov.json
+/_cov/
+/build/
