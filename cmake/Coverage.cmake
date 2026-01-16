@@ -84,6 +84,7 @@ if(COVERAGE)
                     --gcov-exclude ".\\*CMakeFiles/.\\*"
                     --gcov-ignore-parse-errors
                     --gcov-ignore-errors source_not_found
+                    --merge-mode-functions merge
                     --xml-pretty -o "${CMAKE_SOURCE_DIR}/coverage.xml"
                     --print-summary
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
@@ -107,6 +108,7 @@ if(COVERAGE)
                     --gcov-exclude ".\\*CMakeFiles/.\\*"
                     --gcov-ignore-parse-errors
                     --gcov-ignore-errors source_not_found
+                    --merge-mode-functions merge
                     --xml-pretty -o "${CMAKE_SOURCE_DIR}/coverage.xml"
                     --print-summary
                 WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
