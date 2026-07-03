@@ -2,6 +2,30 @@
 #define __DSA_REDBLACK
 
 #include "BST.h"  
+#include "../rb/rb_algorithm.hpp"
+
+template<typename T>
+struct RedBlackBinNodeTraits {
+    typedef BinNode<T> node_type;
+
+    static node_type*& parent(node_type* node) { return node->parent; }
+    static node_type*& left(node_type* node) { return node->lc; }
+    static node_type*& right(node_type* node) { return node->rc; }
+
+    static dsa::rb::color get_color(const node_type* node) {
+        return (!node || node->color == RBColor::BLACK)
+            ? dsa::rb::color::black
+            : dsa::rb::color::red;
+    }
+
+    static void set_color(node_type* node, dsa::rb::color color) {
+        if (node) {
+            node->color = (color == dsa::rb::color::black)
+                ? RBColor::BLACK
+                : RBColor::RED;
+        }
+    }
+};
 
 template<typename T>
 class RedBlack : public BST<T> {
@@ -30,6 +54,20 @@ inline bool BlackHeightUpdated(BinNode<T>& x){
 }
 
 template<typename T>
+static int recomputeBlackHeight(BinNode<T>* x) {
+    if (!x) {
+        return -1;
+    }
+    int leftHeight = recomputeBlackHeight(x->lc);
+    int rightHeight = recomputeBlackHeight(x->rc);
+    x->height = leftHeight < rightHeight ? rightHeight : leftHeight;
+    if (IsBlack(x)) {
+        ++x->height;
+    }
+    return x->height;
+}
+
+template<typename T>
 int RedBlack<T>::updateHeight(BinNode<T>* x){
     x->height = max(stature(x->lc), stature(x->rc));
     return IsBlack(x) ? x->height++ : x->height;//黑高度
@@ -48,38 +86,8 @@ BinNode<T>* RedBlack<T>::insert(const T& e){
 
 template<typename T>
 void RedBlack<T>::solveDoubleRed(BinNode<T>* x){
-    if(IsRoot(*x)){//已经是根节点
-        this->_root->color = RBColor::BLACK;
-        this->_root->height++;
-        return;
-    }
-
-    BinNode<T>* p = x->parent;
-    if(IsBlack(p)) return;
-
-    BinNode<T>* g = p->parent;
-    BinNode<T>* u = uncle(x);
-
-    if(IsBlack(u)){// RR-1-u为黑色 (黑节点(含NULL) )
-        if(IsLChild(*x) == IsLChild(*p))//同侧：zig-zig或zag-zag
-            p->color = RBColor::BLACK;// parent转黑;
-        else//异测：zig-zag或zag-zig
-            x->color = RBColor::BLACK;// x转黑;
-        g->color = RBColor::RED;
-
-        BinNode<T>* gg = g->parent;//曾祖父节点
-        BinNode<T>*& fromParent = this->FromParentTo(*g);
-        BinNode<T>* r = this->rotateAt(x);//新根节点
-        fromParent = r;
-        r->parent = gg;
-    } else {// RR-2-u为红色
-        p->color = RBColor::BLACK;//向上传递红色
-        p->height++;//黑高度更新
-        u->color = RBColor::BLACK;//向上传递红色
-        u->height++;//黑高度更新
-        if(!IsRoot(*g)) g->color = RBColor::RED;
-        solveDoubleRed(g);
-    }
+    dsa::rb::insert_fixup<BinNode<T>, RedBlackBinNodeTraits<T>>(this->_root, x);
+    recomputeBlackHeight(this->_root);
 }
 
 template<typename T>
