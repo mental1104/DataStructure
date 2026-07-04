@@ -14,7 +14,7 @@ permissions:
 jobs:
   build-and-test:
     name: msvc-cxx${{ matrix.standard }}
-    runs-on: windows-latest
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
