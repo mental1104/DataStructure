@@ -62,6 +62,11 @@ private:
                 n->color = color;
             }
         }
+
+        static int update_height(node_type*) { return 0; }
+        static void increase_height(node_type*) {}
+        static void decrease_height(node_type*) {}
+        static int recompute_black_height(node_type*) { return 0; }
     };
 
     typedef typename std::allocator_traits<allocator_type>

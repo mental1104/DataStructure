@@ -25,6 +25,47 @@ struct RedBlackBinNodeTraits {
                 : RBColor::RED;
         }
     }
+
+    static int stature(const node_type* node) {
+        return node ? node->height : -1;
+    }
+
+    static int update_height(node_type* node) {
+        if (!node) {
+            return -1;
+        }
+        int left_height = stature(node->lc);
+        int right_height = stature(node->rc);
+        node->height = left_height < right_height ? right_height : left_height;
+        return get_color(node) == dsa::rb::color::black
+            ? node->height++
+            : node->height;
+    }
+
+    static void increase_height(node_type* node) {
+        if (node) {
+            ++node->height;
+        }
+    }
+
+    static void decrease_height(node_type* node) {
+        if (node) {
+            --node->height;
+        }
+    }
+
+    static int recompute_black_height(node_type* node) {
+        if (!node) {
+            return -1;
+        }
+        int left_height = recompute_black_height(node->lc);
+        int right_height = recompute_black_height(node->rc);
+        node->height = left_height < right_height ? right_height : left_height;
+        if (get_color(node) == dsa::rb::color::black) {
+            ++node->height;
+        }
+        return node->height;
+    }
 };
 
 template<typename T>
@@ -54,20 +95,6 @@ inline bool BlackHeightUpdated(BinNode<T>& x){
 }
 
 template<typename T>
-static int recomputeBlackHeight(BinNode<T>* x) {
-    if (!x) {
-        return -1;
-    }
-    int leftHeight = recomputeBlackHeight(x->lc);
-    int rightHeight = recomputeBlackHeight(x->rc);
-    x->height = leftHeight < rightHeight ? rightHeight : leftHeight;
-    if (IsBlack(x)) {
-        ++x->height;
-    }
-    return x->height;
-}
-
-template<typename T>
 int RedBlack<T>::updateHeight(BinNode<T>* x){
     x->height = max(stature(x->lc), stature(x->rc));
     return IsBlack(x) ? x->height++ : x->height;//黑高度
@@ -87,7 +114,6 @@ BinNode<T>* RedBlack<T>::insert(const T& e){
 template<typename T>
 void RedBlack<T>::solveDoubleRed(BinNode<T>* x){
     dsa::rb::insert_fixup<BinNode<T>, RedBlackBinNodeTraits<T>>(this->_root, x);
-    recomputeBlackHeight(this->_root);
 }
 
 template<typename T>
@@ -103,19 +129,24 @@ bool RedBlack<T>::remove(const T& e){
     if(!this->_hot){//如果删除的是根节点，后序还有其他节点
         this->_root->color = RBColor::BLACK;
         this->updateHeight(this->_root);
+        RedBlackBinNodeTraits<T>::recompute_black_height(this->_root);
         return true;
     }
 
-    if(BlackHeightUpdated(*this->_hot))//若仍然黑平衡 
+    if(BlackHeightUpdated(*this->_hot)){//若仍然黑平衡
+        RedBlackBinNodeTraits<T>::recompute_black_height(this->_root);
         return true;//无需调整
+    }
 
     if(IsRed(r)){// (b) 
         r->color = RBColor::BLACK;//只需单纯地将后继变为黑色
         r->height++;//更新黑高度
+        RedBlackBinNodeTraits<T>::recompute_black_height(this->_root);
         return true;
     }
 
     solveDoubleBlack(r);//双黑调整，黑高度冲突
+    RedBlackBinNodeTraits<T>::recompute_black_height(this->_root);
     return true;
 }
 

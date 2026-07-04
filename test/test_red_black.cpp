@@ -90,6 +90,27 @@ bool verifyRedBlackTree(BinNode<int>* root) {
     return valid;
 }
 
+int checkStoredTeachingBlackHeight(BinNode<int>* node, bool& valid) {
+    if (!node)
+        return -1;
+    int leftBH = checkStoredTeachingBlackHeight(node->lc, valid);
+    int rightBH = checkStoredTeachingBlackHeight(node->rc, valid);
+    if (leftBH != rightBH) {
+        valid = false;
+    }
+    int expected = IsBlack(node) ? leftBH + 1 : leftBH;
+    if (node->height != expected) {
+        valid = false;
+    }
+    return expected;
+}
+
+bool verifyStoredTeachingBlackHeight(BinNode<int>* root) {
+    bool valid = true;
+    checkStoredTeachingBlackHeight(root, valid);
+    return valid;
+}
+
 class RedBlackHarness : public RedBlack<int> {
 public:
     using RedBlack<int>::_root;
@@ -162,6 +183,26 @@ TEST(RBTreeTest, InsertTriggersZigZagRotation) {
     ASSERT_TRUE(rb.root() != nullptr);
     EXPECT_EQ(rb.root()->data, 7);
     EXPECT_TRUE(verifyRedBlackTree(rb.root()));
+}
+
+TEST(RBTreeTest, StoredHeightMatchesTeachingBlackHeightAfterMutations) {
+    RedBlack<int> rb;
+    int nums[] = {30, 20, 40, 10, 25, 35, 50, 5, 15, 27, 45, 60};
+    int nCount = sizeof(nums) / sizeof(nums[0]);
+
+    for (int i = 0; i < nCount; ++i) {
+        rb.insert(nums[i]);
+        EXPECT_TRUE(verifyRedBlackTree(rb.root()));
+        EXPECT_TRUE(verifyStoredTeachingBlackHeight(rb.root()));
+    }
+
+    int removes[] = {5, 40, 20, 30, 60};
+    int removeCount = sizeof(removes) / sizeof(removes[0]);
+    for (int i = 0; i < removeCount; ++i) {
+        EXPECT_TRUE(rb.remove(removes[i]));
+        EXPECT_TRUE(verifyRedBlackTree(rb.root()));
+        EXPECT_TRUE(verifyStoredTeachingBlackHeight(rb.root()));
+    }
 }
 
 /*

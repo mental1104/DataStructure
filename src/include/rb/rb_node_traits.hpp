@@ -26,6 +26,11 @@ struct intrusive_node_traits {
             node->color = value;
         }
     }
+
+    static int update_height(node_type*) { return 0; }
+    static void increase_height(node_type*) {}
+    static void decrease_height(node_type*) {}
+    static int recompute_black_height(node_type*) { return 0; }
 };
 
 }  // namespace rb
