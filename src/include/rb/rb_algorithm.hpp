@@ -17,6 +17,25 @@ inline bool is_black(const Node* node) {
 }
 
 template <typename Node, typename Traits>
+inline bool is_root(Node* node) {
+    return node && !Traits::parent(node);
+}
+
+template <typename Node, typename Traits>
+inline bool is_left_child(Node* node) {
+    return node &&
+           Traits::parent(node) &&
+           node == Traits::left(Traits::parent(node));
+}
+
+template <typename Node, typename Traits>
+inline bool is_right_child(Node* node) {
+    return node &&
+           Traits::parent(node) &&
+           node == Traits::right(Traits::parent(node));
+}
+
+template <typename Node, typename Traits>
 inline Node* left_of(Node* node) {
     return node ? Traits::left(node) : 0;
 }
@@ -99,6 +118,8 @@ Node* rotate_left(Node*& root, Node* node) {
 
     Traits::left(pivot) = node;
     Traits::parent(node) = pivot;
+    Traits::update_height(node);
+    Traits::update_height(pivot);
     return pivot;
 }
 
@@ -125,139 +146,189 @@ Node* rotate_right(Node*& root, Node* node) {
 
     Traits::right(pivot) = node;
     Traits::parent(node) = pivot;
+    Traits::update_height(node);
+    Traits::update_height(pivot);
     return pivot;
+}
+
+template <typename Node, typename Traits>
+Node* uncle(Node* node) {
+    Node* parent = node ? Traits::parent(node) : 0;
+    Node* grand = parent ? Traits::parent(parent) : 0;
+    if (!parent || !grand) {
+        return 0;
+    }
+    return parent == Traits::left(grand)
+        ? Traits::right(grand)
+        : Traits::left(grand);
+}
+
+template <typename Node, typename Traits>
+Node* rotate_at(Node*& root, Node* node) {
+    Node* parent = node ? Traits::parent(node) : 0;
+    Node* grand = parent ? Traits::parent(parent) : 0;
+    if (!parent || !grand) {
+        return node;
+    }
+
+    if (is_left_child<Node, Traits>(parent)) {
+        if (is_left_child<Node, Traits>(node)) {
+            return rotate_right<Node, Traits>(root, grand);
+        }
+        rotate_left<Node, Traits>(root, parent);
+        return rotate_right<Node, Traits>(root, grand);
+    }
+
+    if (is_right_child<Node, Traits>(node)) {
+        return rotate_left<Node, Traits>(root, grand);
+    }
+    rotate_right<Node, Traits>(root, parent);
+    return rotate_left<Node, Traits>(root, grand);
+}
+
+template <typename Node, typename Traits>
+void solve_double_red(Node*& root, Node* node) {
+    if (!node) {
+        return;
+    }
+
+    if (node == root || is_root<Node, Traits>(node)) {
+        root = node;
+        Traits::set_color(root, color::black);
+        Traits::increase_height(root);
+        Traits::parent(root) = 0;
+        return;
+    }
+
+    Node* parent = Traits::parent(node);
+    if (is_black<Node, Traits>(parent)) {
+        return;
+    }
+
+    Node* grand = Traits::parent(parent);
+    if (!grand) {
+        Traits::set_color(parent, color::black);
+        root = parent;
+        Traits::parent(root) = 0;
+        return;
+    }
+
+    Node* node_uncle = uncle<Node, Traits>(node);
+    if (is_black<Node, Traits>(node_uncle)) {
+        if (is_left_child<Node, Traits>(node) ==
+            is_left_child<Node, Traits>(parent)) {
+            Traits::set_color(parent, color::black);
+        } else {
+            Traits::set_color(node, color::black);
+        }
+        Traits::set_color(grand, color::red);
+        rotate_at<Node, Traits>(root, node);
+        return;
+    }
+
+    Traits::set_color(parent, color::black);
+    Traits::increase_height(parent);
+    Traits::set_color(node_uncle, color::black);
+    Traits::increase_height(node_uncle);
+    if (!is_root<Node, Traits>(grand)) {
+        Traits::set_color(grand, color::red);
+    }
+    solve_double_red<Node, Traits>(root, grand);
 }
 
 template <typename Node, typename Traits>
 void insert_fixup(Node*& root, Node* node) {
     Traits::set_color(node, color::red);
-
-    while (node != root && is_red<Node, Traits>(Traits::parent(node))) {
-        Node* parent = Traits::parent(node);
-        Node* grand = Traits::parent(parent);
-        if (!grand) {
-            break;
-        }
-
-        if (parent == Traits::left(grand)) {
-            Node* uncle = Traits::right(grand);
-            if (is_red<Node, Traits>(uncle)) {
-                Traits::set_color(parent, color::black);
-                Traits::set_color(uncle, color::black);
-                Traits::set_color(grand, color::red);
-                node = grand;
-            } else {
-                if (node == Traits::right(parent)) {
-                    node = parent;
-                    rotate_left<Node, Traits>(root, node);
-                    parent = Traits::parent(node);
-                    grand = parent ? Traits::parent(parent) : 0;
-                }
-                Traits::set_color(parent, color::black);
-                Traits::set_color(grand, color::red);
-                if (grand) {
-                    rotate_right<Node, Traits>(root, grand);
-                }
-            }
-        } else {
-            Node* uncle = Traits::left(grand);
-            if (is_red<Node, Traits>(uncle)) {
-                Traits::set_color(parent, color::black);
-                Traits::set_color(uncle, color::black);
-                Traits::set_color(grand, color::red);
-                node = grand;
-            } else {
-                if (node == Traits::left(parent)) {
-                    node = parent;
-                    rotate_right<Node, Traits>(root, node);
-                    parent = Traits::parent(node);
-                    grand = parent ? Traits::parent(parent) : 0;
-                }
-                Traits::set_color(parent, color::black);
-                Traits::set_color(grand, color::red);
-                if (grand) {
-                    rotate_left<Node, Traits>(root, grand);
-                }
-            }
-        }
-    }
+    solve_double_red<Node, Traits>(root, node);
 
     if (root) {
         Traits::set_color(root, color::black);
         Traits::parent(root) = 0;
     }
+    Traits::recompute_black_height(root);
+}
+
+template <typename Node, typename Traits>
+void solve_double_black(Node*& root, Node* node, Node* parent) {
+    if (!parent) {
+        return;
+    }
+
+    Node* sibling = (node == Traits::left(parent))
+        ? Traits::right(parent)
+        : Traits::left(parent);
+
+    if (!sibling) {
+        if (is_red<Node, Traits>(parent)) {
+            Traits::set_color(parent, color::black);
+        } else {
+            Traits::decrease_height(parent);
+            solve_double_black<Node, Traits>(root, parent, Traits::parent(parent));
+        }
+        return;
+    }
+
+    if (is_black<Node, Traits>(sibling)) {
+        Node* red_child = 0;
+        if (is_red<Node, Traits>(Traits::right(sibling))) {
+            red_child = Traits::right(sibling);
+        }
+        if (is_red<Node, Traits>(Traits::left(sibling))) {
+            red_child = Traits::left(sibling);
+        }
+
+        if (red_child) {
+            color old_color = Traits::get_color(parent);
+            Node* balanced = rotate_at<Node, Traits>(root, red_child);
+            if (Traits::left(balanced)) {
+                Traits::set_color(Traits::left(balanced), color::black);
+                Traits::update_height(Traits::left(balanced));
+            }
+            if (Traits::right(balanced)) {
+                Traits::set_color(Traits::right(balanced), color::black);
+                Traits::update_height(Traits::right(balanced));
+            }
+            Traits::set_color(balanced, old_color);
+            Traits::update_height(balanced);
+            return;
+        }
+
+        Traits::set_color(sibling, color::red);
+        Traits::decrease_height(sibling);
+        if (is_red<Node, Traits>(parent)) {
+            Traits::set_color(parent, color::black);
+        } else {
+            Traits::decrease_height(parent);
+            solve_double_black<Node, Traits>(root, parent, Traits::parent(parent));
+        }
+        return;
+    }
+
+    Traits::set_color(sibling, color::black);
+    Traits::set_color(parent, color::red);
+    if (sibling == Traits::left(parent)) {
+        rotate_right<Node, Traits>(root, parent);
+    } else {
+        rotate_left<Node, Traits>(root, parent);
+    }
+    solve_double_black<Node, Traits>(root, node, parent);
 }
 
 template <typename Node, typename Traits>
 void erase_fixup(Node*& root, Node* node, Node* parent) {
-    while (node != root && is_black<Node, Traits>(node)) {
-        if (!parent) {
-            break;
-        }
-
-        if (node == Traits::left(parent)) {
-            Node* sibling = Traits::right(parent);
-            if (is_red<Node, Traits>(sibling)) {
-                Traits::set_color(sibling, color::black);
-                Traits::set_color(parent, color::red);
-                rotate_left<Node, Traits>(root, parent);
-                sibling = Traits::right(parent);
-            }
-
-            if (is_black<Node, Traits>(left_of<Node, Traits>(sibling)) &&
-                is_black<Node, Traits>(right_of<Node, Traits>(sibling))) {
-                Traits::set_color(sibling, color::red);
-                node = parent;
-                parent = Traits::parent(node);
-            } else {
-                if (is_black<Node, Traits>(right_of<Node, Traits>(sibling))) {
-                    Traits::set_color(left_of<Node, Traits>(sibling), color::black);
-                    Traits::set_color(sibling, color::red);
-                    rotate_right<Node, Traits>(root, sibling);
-                    sibling = Traits::right(parent);
-                }
-                Traits::set_color(sibling, Traits::get_color(parent));
-                Traits::set_color(parent, color::black);
-                Traits::set_color(right_of<Node, Traits>(sibling), color::black);
-                rotate_left<Node, Traits>(root, parent);
-                node = root;
-                parent = 0;
-            }
-        } else {
-            Node* sibling = Traits::left(parent);
-            if (is_red<Node, Traits>(sibling)) {
-                Traits::set_color(sibling, color::black);
-                Traits::set_color(parent, color::red);
-                rotate_right<Node, Traits>(root, parent);
-                sibling = Traits::left(parent);
-            }
-
-            if (is_black<Node, Traits>(right_of<Node, Traits>(sibling)) &&
-                is_black<Node, Traits>(left_of<Node, Traits>(sibling))) {
-                Traits::set_color(sibling, color::red);
-                node = parent;
-                parent = Traits::parent(node);
-            } else {
-                if (is_black<Node, Traits>(left_of<Node, Traits>(sibling))) {
-                    Traits::set_color(right_of<Node, Traits>(sibling), color::black);
-                    Traits::set_color(sibling, color::red);
-                    rotate_left<Node, Traits>(root, sibling);
-                    sibling = Traits::left(parent);
-                }
-                Traits::set_color(sibling, Traits::get_color(parent));
-                Traits::set_color(parent, color::black);
-                Traits::set_color(left_of<Node, Traits>(sibling), color::black);
-                rotate_right<Node, Traits>(root, parent);
-                node = root;
-                parent = 0;
-            }
+    if (node == root || is_red<Node, Traits>(node)) {
+        Traits::set_color(node, color::black);
+    } else {
+        solve_double_black<Node, Traits>(root, node, parent);
+        if (node) {
+            Traits::set_color(node, color::black);
         }
     }
 
-    Traits::set_color(node, color::black);
     if (root) {
         Traits::parent(root) = 0;
     }
+    Traits::recompute_black_height(root);
 }
 
 }  // namespace rb

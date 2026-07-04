@@ -69,10 +69,10 @@ TEST(RBAlgorithmTest, MinimumMaximumSuccessorPredecessor) {
     link_left(&n15, &n12);
     link_right(&n15, &n20);
 
-    EXPECT_EQ(dsa::rb::minimum<RawNode, RawNodeTraits>(&n10), &n5);
-    EXPECT_EQ(dsa::rb::maximum<RawNode, RawNodeTraits>(&n10), &n20);
-    EXPECT_EQ(dsa::rb::successor<RawNode, RawNodeTraits>(&n10), &n12);
-    EXPECT_EQ(dsa::rb::successor<RawNode, RawNodeTraits>(&n12), &n15);
-    EXPECT_EQ(dsa::rb::predecessor<RawNode, RawNodeTraits>(&n15), &n12);
-    EXPECT_EQ(dsa::rb::predecessor<RawNode, RawNodeTraits>(&n5), nullptr);
+    EXPECT_EQ((dsa::rb::minimum<RawNode, RawNodeTraits>(&n10)), &n5);
+    EXPECT_EQ((dsa::rb::maximum<RawNode, RawNodeTraits>(&n10)), &n20);
+    EXPECT_EQ((dsa::rb::successor<RawNode, RawNodeTraits>(&n10)), &n12);
+    EXPECT_EQ((dsa::rb::successor<RawNode, RawNodeTraits>(&n12)), &n15);
+    EXPECT_EQ((dsa::rb::predecessor<RawNode, RawNodeTraits>(&n15)), &n12);
+    EXPECT_EQ((dsa::rb::predecessor<RawNode, RawNodeTraits>(&n5)), nullptr);
 }
