@@ -2,12 +2,17 @@
 #define __DSA_BINTREE
 
 #include "BinNode.h"
+#include "dsa/core/tree/BinTreeAlgorithm.h"
 
 template<typename T> 
-class BinTree {
+class BinTree : protected dsa::core::BinTreeAlgorithm<BinTree<T>, T, BinNode<T>> {
 protected:
+    using Algorithm = dsa::core::BinTreeAlgorithm<BinTree<T>, T, BinNode<T>>;
+    friend class dsa::core::BinTreeAlgorithm<BinTree<T>, T, BinNode<T>>;
+
     int _size{0}; 
     BinNode<T>* _root{nullptr};
+    BinNode<T>*& rootRef() { return _root; }
     virtual int updateHeight(BinNode<T>* x);
     void updateHeightAbove(BinNode<T>* x);
     BinNode<T>*& FromParentTo(const BinNode<T>& node);
@@ -15,7 +20,7 @@ protected:
     Res rangeAggregateRec(BinNode<T>* x, const T& lo, const T& hi, Res acc, Agg&& agg) const;
 public:
     BinTree(){}
-    ~BinTree() {  if(0 < _size) levelRemove(_root);  }
+    virtual ~BinTree() {  if(0 < _size) levelRemove(_root);  }
     int size() const {  return _size; }
     bool empty() const {    return !_root; }
     BinNode<T>* root() { return _root; }
@@ -62,15 +67,12 @@ static void levelRemove(BinNode<T>* root){
 
 template<typename T>
 int BinTree<T>::updateHeight(BinNode<T>* x){
-    return x->height = 1 + max(stature(x->lc), stature(x->rc));
+    return Algorithm::updateHeightImpl(x);
 }
 
 template<typename T>
 void BinTree<T>::updateHeightAbove(BinNode<T>* x){
-    while(x){
-        updateHeight(x);
-        x = x->parent;
-    }
+    Algorithm::updateHeightAboveImpl(x);
 }
 
 template<typename T>
@@ -152,12 +154,7 @@ static int removeAt(BinNode<T>* x){
 template<typename T>
 BinNode<T>*& 
 BinTree<T>::FromParentTo(const BinNode<T>& node){
-    if(IsRoot(node))
-        return this->_root;
-    else if(IsLChild(node))
-        return node.parent->lc;
-    else 
-        return node.parent->rc;
+    return Algorithm::fromParentToImpl(node);
 }
 
 template<typename T>
@@ -226,17 +223,7 @@ BinTree<T>::end() {
 template<typename T>
 template<typename Res, typename Agg>
 Res BinTree<T>::rangeAggregateRec(BinNode<T>* x, const T& lo, const T& hi, Res acc, Agg&& agg) const {
-    if (!x) return acc;
-    if (x->data < lo) {
-        return rangeAggregateRec(x->rc, lo, hi, acc, agg);
-    }
-    if (hi < x->data) {
-        return rangeAggregateRec(x->lc, lo, hi, acc, agg);
-    }
-    acc = rangeAggregateRec(x->lc, lo, hi, acc, agg);
-    acc = agg(acc, x->data);
-    return rangeAggregateRec(x->rc, lo, hi, acc, agg);
+    return Algorithm::rangeAggregateRecImpl(x, lo, hi, acc, agg);
 }
-
 
 #endif
