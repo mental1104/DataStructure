@@ -408,13 +408,12 @@ int List<T>::disordered() const {
     return static_cast<int>(dsa::algorithm::disorderCount(begin(), end()));
 }
 
-/// 交换两组哨兵所有权和 size，不逐个移动节点。
+/// 使用限定 std::swap 交换哨兵所有权和 size，避免全局 swap 参与 ADL 造成二义性。
 template<typename T>
 void List<T>::swapStorage(List& other) noexcept {
-    using std::swap;
-    swap(_size, other._size);
-    swap(header, other.header);
-    swap(trailer, other.trailer);
+    std::swap(_size, other._size);
+    std::swap(header, other.header);
+    std::swap(trailer, other.trailer);
 }
 
 /// 返回教学版元素数量。
