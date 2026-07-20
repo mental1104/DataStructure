@@ -2,77 +2,147 @@
 #define __DSA_SKEW_HEAP
 
 #include <stdexcept>
+#include <utility>
+
 #include "BinTree.h"
 #include "PQ.h"
 #include "Vector.h"
+#include <dsa/core/heap/HeapAlgorithm.h>
 
-template <typename T, bool MAX = true>
-class SkewHeap : public PQ<T, MAX>, public BinTree<T> { //基于二叉树，以斜堆形式实现的PQ
-   /*DSA*/friend class UniPrint; //演示输出使用，否则不必设置友类
+// 教学斜堆：保留 BinTree 外观，使用共享的非递归右脊 meld 算法。
+template<typename T, bool MAX = true>
+class SkewHeap : public PQ<T, MAX>, public BinTree<T> {
+    friend class UniPrint;
+
 private:
-    BinNode<T>* merge(BinNode<T>* a, BinNode<T>* b);
+    struct TeachingAccess {
+        typedef BinNode<T> node_type;
+
+        static node_type*& parent(node_type* node) { return node->parent; }
+        static node_type*& left(node_type* node) { return node->lc; }
+        static node_type*& right(node_type* node) { return node->rc; }
+        static T& value(node_type* node) { return node->data; }
+        static const T& value(const node_type* node) { return node->data; }
+    };
+
+    typedef Priority<T, MAX> Higher;
+    typedef dsa::core::SkewHeapAlgorithm<TeachingAccess, Higher> Algorithm;
+
+    BinNode<T>* merge(BinNode<T>* first, BinNode<T>* second);
+    void clearOwned() noexcept;
+    void copyValuesFrom(const SkewHeap& other);
+    void swapState(SkewHeap& other) noexcept;
+
 public:
-    SkewHeap() { } //默认构造
-    SkewHeap ( T* E, int n ) //批量构造
-    {  for ( int i = 0; i < n; i++ ) insert ( E[i] );  }
-    SkewHeap(Vector<T>& vec){
-        for (int i = 0; i < vec.size(); i++)
-            insert(vec[i]);
+    SkewHeap() : BinTree<T>() {}
+    SkewHeap(T* values, int count) : BinTree<T>() {
+        for (int index = 0; index < count; ++index)
+            insert(values[index]);
     }
-   
-    void merge(SkewHeap<T, MAX>& right);
-    void insert(T); //按照比较器确定的优先级次序插入元素
-    T getMax(); //取出优先级最高的元素
-    T delMax(); //删除优先级最高的元素
-}; //SkewHeap
+    explicit SkewHeap(Vector<T>& vector) : BinTree<T>() {
+        for (int index = 0; index < vector.size(); ++index)
+            insert(vector[index]);
+    }
+    SkewHeap(const SkewHeap& other) : BinTree<T>() { copyValuesFrom(other); }
+    SkewHeap(SkewHeap&& other) noexcept : BinTree<T>() {
+        this->_root = other._root;
+        this->_size = other._size;
+        other._root = nullptr;
+        other._size = 0;
+    }
+    SkewHeap& operator=(const SkewHeap& other) {
+        if (this != &other) {
+            SkewHeap replacement(other);
+            swapState(replacement);
+        }
+        return *this;
+    }
+    SkewHeap& operator=(SkewHeap&& other) noexcept {
+        if (this != &other) {
+            clearOwned();
+            this->_root = other._root;
+            this->_size = other._size;
+            other._root = nullptr;
+            other._size = 0;
+        }
+        return *this;
+    }
 
-template <typename T, bool MAX> //合并以a和b为根节点的两个斜堆
-BinNode<T>* SkewHeap<T, MAX>::merge(BinNode<T>* a, BinNode<T>* b) {
-    if ( !a ) return b;
-    if ( !b ) return a;
-    if ( Priority<T, MAX>::higher(b->data, a->data) )
-        swap ( a, b ); //一般情况：首先确保a优先
+    void merge(SkewHeap& other);
+    void insert(T value);
+    T getMax();
+    T delMax();
+};
 
-    a->rc = merge(a->rc, b); //将a的右子堆，与b合并
-    if (a->rc) a->rc->parent = a;
-
-    swap (a->lc, a->rc); //斜堆特性：每次合并后交换左右子堆
-    return a; //返回合并后的堆顶
-} //本算法只实现结构上的合并，堆的规模须由上层调用者负责更新
-
-template <typename T, bool MAX> 
-void SkewHeap<T, MAX>::insert (T e){
-   this->_root = merge(this->_root, new BinNode<T>(e, nullptr)); //将e封装为斜堆，与当前斜堆合并
-   this->_size++; //更新规模
-}
-
-template <typename T, bool MAX> 
-DSA_NOINLINE T SkewHeap<T, MAX>::getMax(){
-    if (!this->_root) 
-        throw std::runtime_error("Heap is empty");
-    return this->_root->data; 
-} //按照此处约定，堆顶即优先级最高的词条
-
-template <typename T, bool MAX> 
-T SkewHeap<T, MAX>::delMax() {
-   if (!this->_root) 
-      throw std::runtime_error("Heap is empty");
-   BinNode<T>* lHeap = this->_root->lc; if (lHeap) lHeap->parent = NULL; //左子堆
-   BinNode<T>* rHeap = this->_root->rc; if (rHeap) rHeap->parent = NULL; //右子堆
-   T e = this->_root->data; 
-   delete this->_root; 
-   this->_size--; //删除根节点
-   this->_root = merge ( lHeap, rHeap ); //合并原左、右子堆
-   return e; //返回原根节点的数据项
+template<typename T, bool MAX>
+BinNode<T>* SkewHeap<T, MAX>::merge(BinNode<T>* first, BinNode<T>* second) {
+    return Algorithm::merge(first, second, Higher());
 }
 
 template<typename T, bool MAX>
-void SkewHeap<T, MAX>::merge(SkewHeap<T, MAX>& right){
-    this->_root = merge(this->_root, right._root);
-    right._root = nullptr;
-    this->_size += right._size;
-    right._size = 0;
-    return;
+void SkewHeap<T, MAX>::clearOwned() noexcept {
+    if (this->_root)
+        removeAt(this->_root);
+    this->_root = nullptr;
+    this->_size = 0;
+}
+
+template<typename T, bool MAX>
+void SkewHeap<T, MAX>::copyValuesFrom(const SkewHeap& other) {
+    dsa::core::forEachBinaryHeapNode<TeachingAccess>(
+        const_cast<BinNode<T>*>(other._root),
+        [this](BinNode<T>* node) { insert(node->data); }
+    );
+}
+
+template<typename T, bool MAX>
+void SkewHeap<T, MAX>::swapState(SkewHeap& other) noexcept {
+    std::swap(this->_root, other._root);
+    std::swap(this->_size, other._size);
+}
+
+template<typename T, bool MAX>
+void SkewHeap<T, MAX>::insert(T value) {
+    BinNode<T>* node = new BinNode<T>(value, nullptr);
+    try {
+        this->_root = merge(this->_root, node);
+        ++this->_size;
+    } catch (...) {
+        delete node;
+        throw;
+    }
+}
+
+template<typename T, bool MAX>
+DSA_NOINLINE T SkewHeap<T, MAX>::getMax() {
+    if (!this->_root)
+        throw std::runtime_error("Heap is empty");
+    return this->_root->data;
+}
+
+template<typename T, bool MAX>
+T SkewHeap<T, MAX>::delMax() {
+    if (!this->_root)
+        throw std::runtime_error("Heap is empty");
+    BinNode<T>* removed = this->_root;
+    T result = removed->data;
+    BinNode<T>* merged = merge(removed->lc, removed->rc);
+    removed->lc = nullptr;
+    removed->rc = nullptr;
+    this->_root = merged;
+    delete removed;
+    --this->_size;
+    return result;
+}
+
+template<typename T, bool MAX>
+void SkewHeap<T, MAX>::merge(SkewHeap& other) {
+    if (this == &other || !other._root)
+        return;
+    this->_root = merge(this->_root, other._root);
+    this->_size += other._size;
+    other._root = nullptr;
+    other._size = 0;
 }
 
 #endif

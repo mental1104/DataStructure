@@ -2,102 +2,178 @@
 #define __DSA_PAIRING_HEAP
 
 #include <stdexcept>
+#include <utility>
+
 #include "BinTree.h"
 #include "PQ.h"
 #include "Vector.h"
+#include <dsa/core/heap/HeapAlgorithm.h>
 
-template <typename T, bool MAX = true>
-class PairingHeap : public PQ<T, MAX>, public BinTree<T> { //基于二叉树，以配对堆形式实现的PQ（左孩子-右兄弟）
-   /*DSA*/friend class UniPrint; //演示输出使用，否则不必设置友类
+// 教学配对堆：BinNode::lc 表示最左孩子，rc 表示右兄弟；因此自行管理销毁。
+template<typename T, bool MAX = true>
+class PairingHeap : public PQ<T, MAX>, public BinTree<T> {
+    friend class UniPrint;
+
 private:
-    BinNode<T>* merge(BinNode<T>* a, BinNode<T>* b);          //合并两个堆根
-    BinNode<T>* mergePairs(BinNode<T>* firstSibling);         //配对合并兄弟链
+    struct TeachingAccess {
+        typedef BinNode<T> node_type;
+        typedef std::size_t size_type;
+
+        static node_type*& parent(node_type* node) { return node->parent; }
+        static node_type*& child(node_type* node) { return node->lc; }
+        static node_type*& sibling(node_type* node) { return node->rc; }
+        static T& value(node_type* node) { return node->data; }
+        static const T& value(const node_type* node) { return node->data; }
+        static std::size_t degreeValue(const node_type*) { return 0; }
+        static void incrementDegree(node_type*) {}
+        static void resetDegree(node_type*) {}
+        static void setMarked(node_type*, bool) {}
+    };
+
+    typedef Priority<T, MAX> Higher;
+    typedef dsa::core::PairingHeapAlgorithm<TeachingAccess, Higher> Algorithm;
+
+    BinNode<T>* merge(BinNode<T>* first, BinNode<T>* second);
+    BinNode<T>* mergePairs(BinNode<T>* firstSibling);
+    void clearOwned() noexcept;
+    void copyValuesFrom(const PairingHeap& other);
+    void swapState(PairingHeap& other) noexcept;
+
 public:
-    PairingHeap() {} //默认构造
-    PairingHeap ( T* E, int n ) { for ( int i = 0; i < n; i++ ) insert ( E[i] ); }
-    PairingHeap(Vector<T>& vec){
-        for (int i = 0; i < vec.size(); i++)
-            insert(vec[i]);
+    PairingHeap() : BinTree<T>() {}
+    PairingHeap(T* values, int count) : BinTree<T>() {
+        for (int index = 0; index < count; ++index)
+            insert(values[index]);
+    }
+    explicit PairingHeap(Vector<T>& vector) : BinTree<T>() {
+        for (int index = 0; index < vector.size(); ++index)
+            insert(vector[index]);
     }
 
-    void merge(PairingHeap<T, MAX>& right); //合并另一配对堆
-    void insert(T); //按照比较器确定的优先级次序插入元素
-    T getMax(); //取出优先级最高的元素
-    T delMax(); //删除优先级最高的元素
-}; //PairingHeap
-
-template <typename T, bool MAX> //合并以a和b为根节点的两个配对堆
-BinNode<T>* PairingHeap<T, MAX>::merge(BinNode<T>* a, BinNode<T>* b) {
-    if ( !a ) return b;
-    if ( !b ) return a;
-    if ( Priority<T, MAX>::higher(b->data, a->data) ) { //保持a为优先根
-        BinNode<T>* tmp = a; a = b; b = tmp;
+    // 深拷贝时重新插入值，避免复制 child/sibling 裸指针。
+    PairingHeap(const PairingHeap& other) : BinTree<T>() {
+        try {
+            copyValuesFrom(other);
+        } catch (...) {
+            clearOwned();
+            throw;
+        }
     }
 
-    //将b挂为a的新的最左孩子，使用右兄弟指针串联
-    b->parent = a;
-    b->rc = a->lc;
-    if (b->rc) b->rc->parent = a;
-    a->lc = b;
-    return a;
-} //规模由调用者负责更新
+    PairingHeap(PairingHeap&& other) noexcept : BinTree<T>() {
+        this->_root = other._root;
+        this->_size = other._size;
+        other._root = nullptr;
+        other._size = 0;
+    }
 
-template <typename T, bool MAX> //两两配对合并兄弟链
-BinNode<T>* PairingHeap<T, MAX>::mergePairs(BinNode<T>* firstSibling) {
-    if ( !firstSibling ) return nullptr;
-    if ( !firstSibling->rc ) return firstSibling;
+    ~PairingHeap() { clearOwned(); }
 
-    BinNode<T>* a = firstSibling;
-    BinNode<T>* b = firstSibling->rc;
-    BinNode<T>* rest = b->rc;
-    a->rc = b->rc = nullptr; //断开兄弟指针，避免污染后续结构
+    PairingHeap& operator=(const PairingHeap& other) {
+        if (this != &other) {
+            PairingHeap replacement(other);
+            swapState(replacement);
+        }
+        return *this;
+    }
 
-    BinNode<T>* merged = merge(a, b);
-    return merge(merged, mergePairs(rest));
-}
+    PairingHeap& operator=(PairingHeap&& other) noexcept {
+        if (this != &other) {
+            clearOwned();
+            this->_root = other._root;
+            this->_size = other._size;
+            other._root = nullptr;
+            other._size = 0;
+        }
+        return *this;
+    }
 
-template <typename T, bool MAX> 
-void PairingHeap<T, MAX>::insert (T e){
-   this->_root = merge(this->_root, new BinNode<T>(e, nullptr)); //将e封装为配对堆，与当前配对堆合并
-   this->_size++; //更新规模
-}
+    void merge(PairingHeap& other);
+    void insert(T value);
+    T getMax();
+    T delMax();
+};
 
-template <typename T, bool MAX> 
-DSA_NOINLINE T PairingHeap<T, MAX>::getMax(){
-    if (!this->_root) 
-        throw std::runtime_error("Heap is empty");
-    return this->_root->data; 
-}
-
-template <typename T, bool MAX> 
-T PairingHeap<T, MAX>::delMax() {
-   if (!this->_root) 
-      throw std::runtime_error("Heap is empty");
-
-   //取出子链表
-   BinNode<T>* child = this->_root->lc;
-   T e = this->_root->data; 
-   delete this->_root; 
-   this->_size--; //删除根节点
-
-   //断开孩子与旧父的关系，避免悬挂parent
-   BinNode<T>* iter = child;
-   while (iter) {
-       iter->parent = nullptr;
-       iter = iter->rc;
-   }
-
-   this->_root = mergePairs(child); //配对合并兄弟链
-   return e; //返回原根节点的数据项
+template<typename T, bool MAX>
+BinNode<T>* PairingHeap<T, MAX>::merge(BinNode<T>* first, BinNode<T>* second) {
+    return Algorithm::merge(first, second, Higher());
 }
 
 template<typename T, bool MAX>
-void PairingHeap<T, MAX>::merge(PairingHeap<T, MAX>& right){
-    this->_root = merge(this->_root, right._root);
-    right._root = nullptr;
-    this->_size += right._size;
-    right._size = 0;
-    return;
+BinNode<T>* PairingHeap<T, MAX>::mergePairs(BinNode<T>* firstSibling) {
+    return Algorithm::mergePairs(firstSibling, Higher());
+}
+
+template<typename T, bool MAX>
+void PairingHeap<T, MAX>::clearOwned() noexcept {
+    dsa::core::destroyChildSiblingHeapForest<TeachingAccess>(
+        this->_root,
+        [](BinNode<T>* node) {
+            release(node->data);
+            delete node;
+        }
+    );
+    this->_root = nullptr;
+    this->_size = 0;
+}
+
+template<typename T, bool MAX>
+void PairingHeap<T, MAX>::copyValuesFrom(const PairingHeap& other) {
+    dsa::core::forEachChildSiblingHeapNode<TeachingAccess>(
+        const_cast<BinNode<T>*>(other._root),
+        [this](BinNode<T>* node) { insert(node->data); }
+    );
+}
+
+template<typename T, bool MAX>
+void PairingHeap<T, MAX>::swapState(PairingHeap& other) noexcept {
+    std::swap(this->_root, other._root);
+    std::swap(this->_size, other._size);
+}
+
+template<typename T, bool MAX>
+void PairingHeap<T, MAX>::insert(T value) {
+    BinNode<T>* node = new BinNode<T>(value, nullptr);
+    try {
+        this->_root = merge(this->_root, node);
+        ++this->_size;
+    } catch (...) {
+        delete node;
+        throw;
+    }
+}
+
+template<typename T, bool MAX>
+DSA_NOINLINE T PairingHeap<T, MAX>::getMax() {
+    if (!this->_root)
+        throw std::runtime_error("Heap is empty");
+    return this->_root->data;
+}
+
+template<typename T, bool MAX>
+T PairingHeap<T, MAX>::delMax() {
+    if (!this->_root)
+        throw std::runtime_error("Heap is empty");
+
+    BinNode<T>* removed = this->_root;
+    T result = removed->data;
+    BinNode<T>* merged = mergePairs(removed->lc);
+    removed->lc = nullptr;
+    removed->rc = nullptr;
+    this->_root = merged;
+    delete removed;
+    --this->_size;
+    return result;
+}
+
+template<typename T, bool MAX>
+void PairingHeap<T, MAX>::merge(PairingHeap& other) {
+    if (this == &other || !other._root)
+        return;
+    this->_root = merge(this->_root, other._root);
+    this->_size += other._size;
+    other._root = nullptr;
+    other._size = 0;
 }
 
 #endif
