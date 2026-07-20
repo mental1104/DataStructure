@@ -44,10 +44,10 @@ public:
     QuickFind() = delete;
 
     /// 构造 N 个互不连通的元素。
-    explicit QuickFind(int N);
+    QuickFind(int N);
 
     /// 从文件流读取 N 和连接对，保留原教学构造入口。
-    explicit QuickFind(std::ifstream& input);
+    QuickFind(std::ifstream& input);
 
     /// 复用基类深拷贝语义。
     QuickFind(const QuickFind& other) = default;
