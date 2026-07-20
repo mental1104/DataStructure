@@ -121,9 +121,8 @@ void LeftHeap<T, MAX>::copyValuesFrom(const LeftHeap& other) {
 
 template<typename T, bool MAX>
 void LeftHeap<T, MAX>::swapState(LeftHeap& other) noexcept {
-    using std::swap;
-    swap(this->_root, other._root);
-    swap(this->_size, other._size);
+    std::swap(this->_root, other._root);
+    std::swap(this->_size, other._size);
 }
 
 template<typename T, bool MAX>
