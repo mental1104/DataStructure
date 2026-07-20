@@ -15,6 +15,7 @@
 #include "List.h"
 #include "SortImpl.h"
 #include "../dsa/container/vector/Vector.h"
+#include "../dsa/container/list/List.h"
 
 /// 调用原有 VectorSortImpl 对教学版 Vector 执行指定排序策略。
 template<typename T>
@@ -86,6 +87,45 @@ void insertionSort(RandomIt first, RandomIt last) {
     }
 }
 
+/// 使用前向迭代器执行选择排序，供链式容器复用。
+template<typename ForwardIt>
+void selectionSortForward(ForwardIt first, ForwardIt last) {
+    for (ForwardIt current = first; current != last; ++current) {
+        ForwardIt minimum = current;
+        ForwardIt candidate = current;
+        ++candidate;
+        while (candidate != last) {
+            if (*candidate < *minimum)
+                minimum = candidate;
+            ++candidate;
+        }
+        if (minimum != current)
+            std::iter_swap(current, minimum);
+    }
+}
+
+/// 使用双向迭代器执行插入排序，避免要求随机访问运算。
+template<typename BidirectionalIt>
+void insertionSortBidirectional(BidirectionalIt first, BidirectionalIt last) {
+    if (first == last)
+        return;
+
+    BidirectionalIt current = first;
+    ++current;
+    while (current != last) {
+        BidirectionalIt moving = current;
+        while (moving != first) {
+            BidirectionalIt previous = moving;
+            --previous;
+            if (!(*moving < *previous))
+                break;
+            std::iter_swap(moving, previous);
+            moving = previous;
+        }
+        ++current;
+    }
+}
+
 /// 使用 Knuth 间隔序列实现希尔排序。
 template<typename RandomIt>
 void shellSort(RandomIt first, RandomIt last) {
@@ -150,6 +190,41 @@ void sortRandomAccess(
     }
 }
 
+/// 根据链式容器可支持的迭代器能力选择排序实现。
+template<typename LinkedContainer>
+void sortBidirectionalContainer(
+    LinkedContainer& container,
+    SortStrategy strategy
+) {
+    switch (strategy) {
+    case SortStrategy::BubbleSort:
+        bubbleSort(container.begin(), container.end());
+        break;
+    case SortStrategy::SelectionSort:
+        selectionSortForward(container.begin(), container.end());
+        break;
+    case SortStrategy::InsertionSort:
+        insertionSortBidirectional(container.begin(), container.end());
+        break;
+    case SortStrategy::MergeSort:
+    case SortStrategy::MergeSortB:
+        container.sort();
+        break;
+    case SortStrategy::ShellSort:
+    case SortStrategy::QuickSort:
+    case SortStrategy::Quick3way:
+    case SortStrategy::QuickSortB:
+    case SortStrategy::HeapSort:
+        throw std::invalid_argument(
+            "The selected strategy requires random-access iterators"
+        );
+    case SortStrategy::RadixSort:
+        throw std::invalid_argument(
+            "RadixSort is only available for the teaching List"
+        );
+    }
+}
+
 } // namespace sort_detail
 } // namespace dsa
 
@@ -164,6 +239,15 @@ void Sort(
         container.end(),
         strategy
     );
+}
+
+/// 对工业版 allocator-aware List 执行链式容器可支持的排序策略。
+template<typename T, typename Allocator>
+void Sort(
+    dsa::container::List<T, Allocator>& container,
+    SortStrategy strategy = SortStrategy::MergeSort
+) {
+    dsa::sort_detail::sortBidirectionalContainer(container, strategy);
 }
 
 #endif
