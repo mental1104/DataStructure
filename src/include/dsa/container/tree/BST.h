@@ -20,9 +20,19 @@ struct UnbalancedTreeTag {};
 struct AvlTreeTag {};
 struct RedBlackTreeTag {};
 
-enum class SearchTreeColor { red, black };
+enum class SearchTreeColor {
+    red,
+    black,
+};
 
-template<typename T, typename Compare, typename Allocator, typename BalanceTag>
+// set 风格的 allocator-aware 二叉搜索树实现。
+// BalanceTag 只选择平衡策略；节点所有权、查找、迭代和删除事务由同一实现维护。
+template<
+    typename T,
+    typename Compare,
+    typename Allocator,
+    typename BalanceTag
+>
 class BasicSearchTree {
 public:
     typedef T value_type;
@@ -35,6 +45,7 @@ public:
 
     class Node {
         friend class BasicSearchTree;
+
         value_type value_;
         Node* parent_;
         Node* left_;
@@ -43,12 +54,15 @@ public:
         SearchTreeColor color_;
 
     public:
+        // 仅由容器通过 rebound allocator 构造；公开构造是为了兼容 allocator_traits::construct。
         template<typename... Args>
         explicit Node(Node* parent, Args&&... args)
             : value_(std::forward<Args>(args)...), parent_(parent), left_(nullptr),
               right_(nullptr), height_(0), color_(SearchTreeColor::red) {}
 
+        // 返回只读键值；有序树不允许通过 iterator 或节点接口原地修改键。
         const_reference value() const { return value_; }
+
         const Node* parent() const { return parent_; }
         const Node* left() const { return left_; }
         const Node* right() const { return right_; }
@@ -64,17 +78,22 @@ private:
 
     struct NodeAccess {
         typedef Node node_type;
+
         static Node* left(Node* node) { return node ? node->left_ : nullptr; }
         static const Node* left(const Node* node) { return node ? node->left_ : nullptr; }
         static Node*& leftRef(Node* node) { return node->left_; }
+
         static Node* right(Node* node) { return node ? node->right_ : nullptr; }
         static const Node* right(const Node* node) { return node ? node->right_ : nullptr; }
         static Node*& rightRef(Node* node) { return node->right_; }
+
         static Node* parent(Node* node) { return node ? node->parent_ : nullptr; }
         static const Node* parent(const Node* node) { return node ? node->parent_ : nullptr; }
         static Node*& parentRef(Node* node) { return node->parent_; }
+
         static value_type& value(Node* node) { return node->value_; }
         static const value_type& value(const Node* node) { return node->value_; }
+
         static int height(const Node* node) { return node->height_; }
         static int& heightRef(Node* node) { return node->height_; }
     };
@@ -84,9 +103,12 @@ private:
 public:
     class const_iterator {
         friend class BasicSearchTree;
+
         Node* node_;
         const BasicSearchTree* owner_;
-        const_iterator(Node* node, const BasicSearchTree* owner) : node_(node), owner_(owner) {}
+
+        const_iterator(Node* node, const BasicSearchTree* owner)
+            : node_(node), owner_(owner) {}
 
     public:
         typedef std::bidirectional_iterator_tag iterator_category;
@@ -94,21 +116,46 @@ public:
         typedef std::ptrdiff_t difference_type;
         typedef const T* pointer;
         typedef const T& reference;
+
         const_iterator() : node_(nullptr), owner_(nullptr) {}
+
         reference operator*() const { return node_->value_; }
         pointer operator->() const { return &node_->value_; }
-        const_iterator& operator++() { node_ = algorithm_type::successor(node_); return *this; }
-        const_iterator operator++(int) { const_iterator old(*this); ++(*this); return old; }
-        const_iterator& operator--() {
-            node_ = node_ ? algorithm_type::predecessor(node_)
-                          : (owner_ ? algorithm_type::maximum(owner_->root_) : nullptr);
+
+        const_iterator& operator++() {
+            node_ = algorithm_type::successor(node_);
             return *this;
         }
-        const_iterator operator--(int) { const_iterator old(*this); --(*this); return old; }
+
+        const_iterator operator++(int) {
+            const_iterator previous(*this);
+            ++(*this);
+            return previous;
+        }
+
+        const_iterator& operator--() {
+            if (!node_) {
+                node_ = owner_ ? algorithm_type::maximum(owner_->root_) : nullptr;
+            } else {
+                node_ = algorithm_type::predecessor(node_);
+            }
+            return *this;
+        }
+
+        const_iterator operator--(int) {
+            const_iterator previous(*this);
+            --(*this);
+            return previous;
+        }
+
         bool operator==(const const_iterator& other) const {
             return node_ == other.node_ && owner_ == other.owner_;
         }
-        bool operator!=(const const_iterator& other) const { return !(*this == other); }
+
+        bool operator!=(const const_iterator& other) const {
+            return !(*this == other);
+        }
+
         const Node* node() const { return node_; }
     };
 
@@ -120,14 +167,18 @@ private:
     Node* root_;
     size_type size_;
 
-    node_allocator_type nodeAllocator() const { return node_allocator_type(allocator_); }
+    node_allocator_type nodeAllocator() const {
+        return node_allocator_type(allocator_);
+    }
 
     template<typename... Args>
     Node* createNode(Node* parent, Args&&... args) {
         node_allocator_type allocator(nodeAllocator());
         Node* node = node_allocator_traits::allocate(allocator, 1);
         try {
-            node_allocator_traits::construct(allocator, node, parent, std::forward<Args>(args)...);
+            node_allocator_traits::construct(
+                allocator, node, parent, std::forward<Args>(args)...
+            );
         } catch (...) {
             node_allocator_traits::deallocate(allocator, node, 1);
             throw;
@@ -144,6 +195,7 @@ private:
     void destroySubtree(Node* root) {
         if (!root)
             return;
+
         Node* boundary = root->parent_;
         Node* previous = boundary;
         Node* current = root;
@@ -151,6 +203,7 @@ private:
             Node* next = nullptr;
             const bool descending = previous == current->parent_;
             const bool returning_from_left = previous == current->left_;
+
             if (descending && current->left_) {
                 next = current->left_;
             } else if ((descending || returning_from_left) && current->right_) {
@@ -163,6 +216,7 @@ private:
                 destroyNode(completed);
                 continue;
             }
+
             previous = current;
             current = next;
         }
@@ -171,14 +225,26 @@ private:
     static bool isRed(const Node* node) {
         return node && node->color_ == SearchTreeColor::red;
     }
+
     static bool isBlack(const Node* node) {
         return !node || node->color_ == SearchTreeColor::black;
     }
-    static void setRed(Node* node) { if (node) node->color_ = SearchTreeColor::red; }
-    static void setBlack(Node* node) { if (node) node->color_ = SearchTreeColor::black; }
+
+    static void setRed(Node* node) {
+        if (node)
+            node->color_ = SearchTreeColor::red;
+    }
+
+    static void setBlack(Node* node) {
+        if (node)
+            node->color_ = SearchTreeColor::black;
+    }
+
     static int balanceFactor(const Node* node) {
-        return node ? algorithm_type::nodeHeight(node->left_) -
-                      algorithm_type::nodeHeight(node->right_) : 0;
+        if (!node)
+            return 0;
+        return algorithm_type::nodeHeight(node->left_) -
+               algorithm_type::nodeHeight(node->right_);
     }
 
     Node* rotateLeft(Node* pivot) {
@@ -187,12 +253,14 @@ private:
         algorithm_type::updateHeight(result);
         return result;
     }
+
     Node* rotateRight(Node* pivot) {
         Node* result = algorithm_type::rotateRight(root_, pivot);
         algorithm_type::updateHeight(pivot);
         algorithm_type::updateHeight(result);
         return result;
     }
+
     Node* rebalanceAvlAt(Node* node) {
         if (balanceFactor(node) > 1) {
             if (balanceFactor(node->left_) < 0)
@@ -211,15 +279,21 @@ private:
         algorithm_type::updateHeightAbove(node->parent_);
         node->color_ = SearchTreeColor::black;
     }
+
     void afterInsert(Node* node, AvlTreeTag) {
         node->color_ = SearchTreeColor::black;
         Node* current = node->parent_;
         while (current) {
             algorithm_type::updateHeight(current);
-            current = std::abs(balanceFactor(current)) > 1
-                ? rebalanceAvlAt(current)->parent_ : current->parent_;
+            if (std::abs(balanceFactor(current)) > 1) {
+                Node* subtree_root = rebalanceAvlAt(current);
+                current = subtree_root->parent_;
+            } else {
+                current = current->parent_;
+            }
         }
     }
+
     void afterInsert(Node* node, RedBlackTreeTag) {
         Node* current = node;
         while (current != root_ && isRed(current->parent_)) {
@@ -228,7 +302,10 @@ private:
             if (parent == grand->left_) {
                 Node* uncle = grand->right_;
                 if (isRed(uncle)) {
-                    setBlack(parent); setBlack(uncle); setRed(grand); current = grand;
+                    setBlack(parent);
+                    setBlack(uncle);
+                    setRed(grand);
+                    current = grand;
                 } else {
                     if (current == parent->right_) {
                         current = parent;
@@ -236,12 +313,17 @@ private:
                         parent = current->parent_;
                         grand = parent->parent_;
                     }
-                    setBlack(parent); setRed(grand); rotateRight(grand);
+                    setBlack(parent);
+                    setRed(grand);
+                    rotateRight(grand);
                 }
             } else {
                 Node* uncle = grand->left_;
                 if (isRed(uncle)) {
-                    setBlack(parent); setBlack(uncle); setRed(grand); current = grand;
+                    setBlack(parent);
+                    setBlack(uncle);
+                    setRed(grand);
+                    current = grand;
                 } else {
                     if (current == parent->left_) {
                         current = parent;
@@ -249,7 +331,9 @@ private:
                         parent = current->parent_;
                         grand = parent->parent_;
                     }
-                    setBlack(parent); setRed(grand); rotateLeft(grand);
+                    setBlack(parent);
+                    setRed(grand);
+                    rotateLeft(grand);
                 }
             }
         }
@@ -257,19 +341,30 @@ private:
         algorithm_type::updateHeightAbove(node);
     }
 
-    void afterErase(const typename algorithm_type::EraseResult& result,
-                    UnbalancedTreeTag, SearchTreeColor) {
+    void afterErase(
+        const typename algorithm_type::EraseResult& result,
+        UnbalancedTreeTag,
+        SearchTreeColor
+    ) {
         if (result.moved_node)
             algorithm_type::updateHeight(result.moved_node);
         algorithm_type::updateHeightAbove(result.rebalance_from);
     }
-    void afterErase(const typename algorithm_type::EraseResult& result,
-                    AvlTreeTag, SearchTreeColor) {
+
+    void afterErase(
+        const typename algorithm_type::EraseResult& result,
+        AvlTreeTag,
+        SearchTreeColor
+    ) {
         Node* current = result.rebalance_from;
         while (current) {
             algorithm_type::updateHeight(current);
-            current = std::abs(balanceFactor(current)) > 1
-                ? rebalanceAvlAt(current)->parent_ : current->parent_;
+            if (std::abs(balanceFactor(current)) > 1) {
+                Node* subtree_root = rebalanceAvlAt(current);
+                current = subtree_root->parent_;
+            } else {
+                current = current->parent_;
+            }
         }
     }
 
@@ -277,59 +372,91 @@ private:
         while (node != root_ && isBlack(node)) {
             if (!parent)
                 break;
+
             if (node == parent->left_) {
                 Node* sibling = parent->right_;
                 if (isRed(sibling)) {
-                    setBlack(sibling); setRed(parent); rotateLeft(parent);
+                    setBlack(sibling);
+                    setRed(parent);
+                    rotateLeft(parent);
                     sibling = parent->right_;
                 }
+
                 if (!sibling) {
-                    node = parent; parent = node->parent_; continue;
+                    node = parent;
+                    parent = node->parent_;
+                    continue;
                 }
+
                 if (isBlack(sibling->left_) && isBlack(sibling->right_)) {
-                    setRed(sibling); node = parent; parent = node->parent_;
+                    setRed(sibling);
+                    node = parent;
+                    parent = node->parent_;
                 } else {
                     if (isBlack(sibling->right_)) {
-                        setBlack(sibling->left_); setRed(sibling); rotateRight(sibling);
+                        setBlack(sibling->left_);
+                        setRed(sibling);
+                        rotateRight(sibling);
                         sibling = parent->right_;
                     }
                     sibling->color_ = parent->color_;
-                    setBlack(parent); setBlack(sibling->right_); rotateLeft(parent);
-                    node = root_; parent = nullptr;
+                    setBlack(parent);
+                    setBlack(sibling->right_);
+                    rotateLeft(parent);
+                    node = root_;
+                    parent = nullptr;
                 }
             } else {
                 Node* sibling = parent->left_;
                 if (isRed(sibling)) {
-                    setBlack(sibling); setRed(parent); rotateRight(parent);
+                    setBlack(sibling);
+                    setRed(parent);
+                    rotateRight(parent);
                     sibling = parent->left_;
                 }
+
                 if (!sibling) {
-                    node = parent; parent = node->parent_; continue;
+                    node = parent;
+                    parent = node->parent_;
+                    continue;
                 }
+
                 if (isBlack(sibling->left_) && isBlack(sibling->right_)) {
-                    setRed(sibling); node = parent; parent = node->parent_;
+                    setRed(sibling);
+                    node = parent;
+                    parent = node->parent_;
                 } else {
                     if (isBlack(sibling->left_)) {
-                        setBlack(sibling->right_); setRed(sibling); rotateLeft(sibling);
+                        setBlack(sibling->right_);
+                        setRed(sibling);
+                        rotateLeft(sibling);
                         sibling = parent->left_;
                     }
                     sibling->color_ = parent->color_;
-                    setBlack(parent); setBlack(sibling->left_); rotateRight(parent);
-                    node = root_; parent = nullptr;
+                    setBlack(parent);
+                    setBlack(sibling->left_);
+                    rotateRight(parent);
+                    node = root_;
+                    parent = nullptr;
                 }
             }
         }
         setBlack(node);
     }
 
-    void afterErase(const typename algorithm_type::EraseResult& result,
-                    RedBlackTreeTag, SearchTreeColor removed_color) {
+    void afterErase(
+        const typename algorithm_type::EraseResult& result,
+        RedBlackTreeTag,
+        SearchTreeColor removed_color
+    ) {
         if (removed_color == SearchTreeColor::black)
             fixDoubleBlack(result.fix_node, result.fix_parent);
         setBlack(root_);
         if (result.moved_node)
             algorithm_type::updateHeight(result.moved_node);
-        algorithm_type::updateHeightAbove(result.fix_node ? result.fix_node : result.fix_parent);
+        algorithm_type::updateHeightAbove(
+            result.fix_node ? result.fix_node : result.fix_parent
+        );
     }
 
     template<typename U>
@@ -338,6 +465,7 @@ private:
         Node*& slot = algorithm_type::searchSlot(root_, hot, value, compare_);
         if (slot)
             return std::make_pair(iterator(slot, this), false);
+
         Node* created = createNode(hot, std::forward<U>(value));
         slot = created;
         ++size_;
@@ -346,41 +474,66 @@ private:
     }
 
     void copyFrom(const BasicSearchTree& other) {
-        for (const_iterator current = other.begin(); current != other.end(); ++current)
-            insert(*current);
+        for (const_iterator iterator_value = other.begin(); iterator_value != other.end(); ++iterator_value)
+            insert(*iterator_value);
     }
+
     void stealFrom(BasicSearchTree& other) {
-        root_ = other.root_; size_ = other.size_;
-        other.root_ = nullptr; other.size_ = 0;
+        root_ = other.root_;
+        size_ = other.size_;
+        other.root_ = nullptr;
+        other.size_ = 0;
     }
+
     void swapRoots(BasicSearchTree& other) {
         using std::swap;
-        swap(root_, other.root_); swap(size_, other.size_); swap(compare_, other.compare_);
+        swap(root_, other.root_);
+        swap(size_, other.size_);
+        swap(compare_, other.compare_);
     }
+
     void copyAssign(const BasicSearchTree& other, std::true_type) {
         BasicSearchTree temporary(other, other.allocator_);
         clear();
         allocator_ = other.allocator_;
         compare_ = std::move(temporary.compare_);
-        root_ = temporary.root_; size_ = temporary.size_;
-        temporary.root_ = nullptr; temporary.size_ = 0;
+        root_ = temporary.root_;
+        size_ = temporary.size_;
+        temporary.root_ = nullptr;
+        temporary.size_ = 0;
     }
+
     void copyAssign(const BasicSearchTree& other, std::false_type) {
-        BasicSearchTree temporary(other, allocator_); swapRoots(temporary);
+        BasicSearchTree temporary(other, allocator_);
+        swapRoots(temporary);
     }
+
     void moveAssign(BasicSearchTree& other, std::true_type) {
-        clear(); allocator_ = std::move(other.allocator_);
-        compare_ = std::move(other.compare_); stealFrom(other);
+        clear();
+        allocator_ = std::move(other.allocator_);
+        compare_ = std::move(other.compare_);
+        stealFrom(other);
     }
+
     void moveAssign(BasicSearchTree& other, std::false_type) {
         if (allocator_ == other.allocator_) {
-            clear(); compare_ = std::move(other.compare_); stealFrom(other); return;
+            clear();
+            compare_ = std::move(other.compare_);
+            stealFrom(other);
+            return;
         }
-        BasicSearchTree temporary(other, allocator_); other.clear(); swapRoots(temporary);
+
+        BasicSearchTree temporary(other, allocator_);
+        other.clear();
+        swapRoots(temporary);
     }
+
     void swapImpl(BasicSearchTree& other, std::true_type) {
-        using std::swap; swap(allocator_, other.allocator_); swapRoots(other);
+        using std::swap;
+        swap(allocator_, other.allocator_);
+        swapRoots(other);
     }
+
     void swapImpl(BasicSearchTree& other, std::false_type) {
         if (!(allocator_ == other.allocator_))
             throw std::logic_error("cannot swap search trees with unequal allocators");
@@ -388,85 +541,146 @@ private:
     }
 
     struct ValidationResult {
-        bool valid; size_type count; int height; int black_height;
-        ValidationResult(bool state = true, size_type nodes = 0,
-                         int tree_height = -1, int black = 1)
-            : valid(state), count(nodes), height(tree_height), black_height(black) {}
+        bool valid;
+        size_type count;
+        int height;
+        int black_height;
+
+        ValidationResult(bool value = true, size_type nodes = 0, int tree_height = -1, int black = 1)
+            : valid(value), count(nodes), height(tree_height), black_height(black) {}
     };
 
-    ValidationResult validateNode(const Node* node, const value_type* lower,
-                                  const value_type* upper, const Node* parent) const {
+    ValidationResult validateNode(
+        const Node* node,
+        const value_type* lower,
+        const value_type* upper,
+        const Node* expected_parent
+    ) const {
         if (!node)
             return ValidationResult(true, 0, -1, 1);
-        if (node->parent_ != parent || (lower && !compare_(*lower, node->value_)) ||
-            (upper && !compare_(node->value_, *upper)))
+
+        if (node->parent_ != expected_parent)
             return ValidationResult(false);
+        if (lower && !compare_(*lower, node->value_))
+            return ValidationResult(false);
+        if (upper && !compare_(node->value_, *upper))
+            return ValidationResult(false);
+
         ValidationResult left = validateNode(node->left_, lower, &node->value_, node);
         ValidationResult right = validateNode(node->right_, &node->value_, upper, node);
         if (!left.valid || !right.valid)
             return ValidationResult(false);
+
         const int expected_height = 1 + (left.height > right.height ? left.height : right.height);
         if (node->height_ != expected_height)
             return ValidationResult(false);
+
         if (std::is_same<BalanceTag, AvlTreeTag>::value &&
             std::abs(left.height - right.height) > 1)
             return ValidationResult(false);
+
         if (std::is_same<BalanceTag, RedBlackTreeTag>::value) {
             if (isRed(node) && (isRed(node->left_) || isRed(node->right_)))
                 return ValidationResult(false);
             if (left.black_height != right.black_height)
                 return ValidationResult(false);
         }
+
         const int black_height = left.black_height +
             ((std::is_same<BalanceTag, RedBlackTreeTag>::value && isBlack(node)) ? 1 : 0);
-        return ValidationResult(true, left.count + right.count + 1,
-                                expected_height, black_height);
+        return ValidationResult(
+            true,
+            left.count + right.count + 1,
+            expected_height,
+            black_height
+        );
     }
 
 public:
-    BasicSearchTree() : allocator_(), compare_(), root_(nullptr), size_(0) {}
-    explicit BasicSearchTree(const value_compare& compare,
-                             const allocator_type& allocator = allocator_type())
-        : allocator_(allocator), compare_(compare), root_(nullptr), size_(0) {}
+    BasicSearchTree()
+        : allocator_(), compare_(), root_(nullptr), size_(0) {}
+
+    explicit BasicSearchTree(
+        const value_compare& compare,
+        const allocator_type& allocator = allocator_type()
+    ) : allocator_(allocator), compare_(compare), root_(nullptr), size_(0) {}
+
     explicit BasicSearchTree(const allocator_type& allocator)
         : allocator_(allocator), compare_(), root_(nullptr), size_(0) {}
 
     template<typename InputIterator>
-    BasicSearchTree(InputIterator first, InputIterator last,
-                    const value_compare& compare = value_compare(),
-                    const allocator_type& allocator = allocator_type())
-        : allocator_(allocator), compare_(compare), root_(nullptr), size_(0) {
-        try { insert(first, last); } catch (...) { clear(); throw; }
+    BasicSearchTree(
+        InputIterator first,
+        InputIterator last,
+        const value_compare& compare = value_compare(),
+        const allocator_type& allocator = allocator_type()
+    ) : allocator_(allocator), compare_(compare), root_(nullptr), size_(0) {
+        try {
+            insert(first, last);
+        } catch (...) {
+            clear();
+            throw;
+        }
     }
+
     BasicSearchTree(const BasicSearchTree& other)
         : allocator_(allocator_traits_type::select_on_container_copy_construction(other.allocator_)),
           compare_(other.compare_), root_(nullptr), size_(0) {
-        try { copyFrom(other); } catch (...) { clear(); throw; }
+        try {
+            copyFrom(other);
+        } catch (...) {
+            clear();
+            throw;
+        }
     }
+
     BasicSearchTree(const BasicSearchTree& other, const allocator_type& allocator)
         : allocator_(allocator), compare_(other.compare_), root_(nullptr), size_(0) {
-        try { copyFrom(other); } catch (...) { clear(); throw; }
+        try {
+            copyFrom(other);
+        } catch (...) {
+            clear();
+            throw;
+        }
     }
+
     BasicSearchTree(BasicSearchTree&& other)
         noexcept(std::is_nothrow_move_constructible<allocator_type>::value &&
                  std::is_nothrow_move_constructible<value_compare>::value)
         : allocator_(std::move(other.allocator_)), compare_(std::move(other.compare_)),
-          root_(nullptr), size_(0) { stealFrom(other); }
+          root_(nullptr), size_(0) {
+        stealFrom(other);
+    }
+
     BasicSearchTree(BasicSearchTree&& other, const allocator_type& allocator)
         : allocator_(allocator), compare_(std::move(other.compare_)), root_(nullptr), size_(0) {
-        if (allocator_ == other.allocator_) stealFrom(other);
-        else { copyFrom(other); other.clear(); }
+        if (allocator_ == other.allocator_) {
+            stealFrom(other);
+        } else {
+            copyFrom(other);
+            other.clear();
+        }
     }
+
     ~BasicSearchTree() { clear(); }
 
     BasicSearchTree& operator=(const BasicSearchTree& other) {
-        if (this != &other)
-            copyAssign(other, typename allocator_traits_type::propagate_on_container_copy_assignment());
+        if (this != &other) {
+            copyAssign(
+                other,
+                typename allocator_traits_type::propagate_on_container_copy_assignment()
+            );
+        }
         return *this;
     }
+
     BasicSearchTree& operator=(BasicSearchTree&& other) {
-        if (this != &other)
-            moveAssign(other, typename allocator_traits_type::propagate_on_container_move_assignment());
+        if (this != &other) {
+            moveAssign(
+                other,
+                typename allocator_traits_type::propagate_on_container_move_assignment()
+            );
+        }
         return *this;
     }
 
@@ -476,41 +690,60 @@ public:
     size_type size() const { return size_; }
     int height() const { return root_ ? root_->height_ : -1; }
     const Node* root() const { return root_; }
+
     iterator begin() const { return iterator(algorithm_type::minimum(root_), this); }
     iterator cbegin() const { return begin(); }
     iterator end() const { return iterator(nullptr, this); }
     iterator cend() const { return end(); }
 
-    std::pair<iterator, bool> insert(const value_type& value) { return insertValue(value); }
-    std::pair<iterator, bool> insert(value_type&& value) { return insertValue(std::move(value)); }
+    std::pair<iterator, bool> insert(const value_type& value) {
+        return insertValue(value);
+    }
+
+    std::pair<iterator, bool> insert(value_type&& value) {
+        return insertValue(std::move(value));
+    }
+
     template<typename InputIterator>
     void insert(InputIterator first, InputIterator last) {
-        for (; first != last; ++first) insert(*first);
+        for (; first != last; ++first)
+            insert(*first);
     }
+
     template<typename... Args>
     std::pair<iterator, bool> emplace(Args&&... args) {
-        value_type value(std::forward<Args>(args)...); return insert(std::move(value));
+        value_type value(std::forward<Args>(args)...);
+        return insert(std::move(value));
     }
+
     iterator find(const value_type& value) const {
         return iterator(algorithm_type::find(root_, value, compare_), this);
     }
+
     bool contains(const value_type& value) const {
         return algorithm_type::find(root_, value, compare_) != nullptr;
     }
+
     iterator lower_bound(const value_type& value) const {
         return iterator(algorithm_type::lowerBound(root_, value, compare_), this);
     }
+
     iterator upper_bound(const value_type& value) const {
         return iterator(algorithm_type::upperBound(root_, value, compare_), this);
     }
+
     size_type erase(const value_type& value) {
         Node* target = algorithm_type::find(root_, value, compare_);
-        if (!target) return 0;
-        erase(iterator(target, this)); return 1;
+        if (!target)
+            return 0;
+        erase(iterator(target, this));
+        return 1;
     }
+
     iterator erase(iterator position) {
         if (position.owner_ != this || !position.node_)
             throw std::invalid_argument("erase requires an iterator owned by this tree");
+
         Node* target = position.node_;
         Node* next = algorithm_type::successor(target);
         Node* structural_removed = target;
@@ -519,27 +752,42 @@ public:
         const SearchTreeColor removed_color = structural_removed->color_;
         const SearchTreeColor target_color = target->color_;
         const int target_height = target->height_;
+
         typename algorithm_type::EraseResult result = algorithm_type::detach(root_, target);
         if (result.moved_node) {
             result.moved_node->color_ = target_color;
             result.moved_node->height_ = target_height;
         }
+
         destroyNode(result.removed);
         --size_;
         afterErase(result, BalanceTag(), removed_color);
         return iterator(next, this);
     }
-    void clear() { destroySubtree(root_); root_ = nullptr; size_ = 0; }
+
+    void clear() {
+        destroySubtree(root_);
+        root_ = nullptr;
+        size_ = 0;
+    }
 
     template<typename Result, typename Aggregate>
-    Result range_aggregate(const value_type& lower, const value_type& upper,
-                           Result identity, Aggregate aggregate) const {
+    Result range_aggregate(
+        const value_type& lower,
+        const value_type& upper,
+        Result identity,
+        Aggregate aggregate
+    ) const {
         Result result = identity;
-        for (iterator current = lower_bound(lower);
-             current != end() && !compare_(upper, *current); ++current)
+        iterator current = lower_bound(lower);
+        while (current != end() && !compare_(upper, *current)) {
             result = aggregate(result, *current);
+            ++current;
+        }
         return result;
     }
+
+    // 验证顺序、父子链接、size、高度及所选平衡策略的不变量。
     bool validate() const {
         if (root_ && root_->parent_)
             return false;
@@ -548,6 +796,7 @@ public:
         ValidationResult result = validateNode(root_, nullptr, nullptr, nullptr);
         return result.valid && result.count == size_;
     }
+
     void swap(BasicSearchTree& other) {
         swapImpl(other, typename allocator_traits_type::propagate_on_container_swap());
     }
@@ -555,12 +804,18 @@ public:
 
 } // namespace detail
 
-template<typename T, typename Compare = std::less<T>, typename Allocator = std::allocator<T> >
+template<
+    typename T,
+    typename Compare = std::less<T>,
+    typename Allocator = std::allocator<T>
+>
 using BST = detail::BasicSearchTree<T, Compare, Allocator, detail::UnbalancedTreeTag>;
 
 template<typename T, typename Compare, typename Allocator, typename BalanceTag>
-void swap(detail::BasicSearchTree<T, Compare, Allocator, BalanceTag>& left,
-          detail::BasicSearchTree<T, Compare, Allocator, BalanceTag>& right) {
+void swap(
+    detail::BasicSearchTree<T, Compare, Allocator, BalanceTag>& left,
+    detail::BasicSearchTree<T, Compare, Allocator, BalanceTag>& right
+) {
     left.swap(right);
 }
 
