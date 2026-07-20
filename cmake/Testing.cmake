@@ -11,7 +11,8 @@ if(EXISTS "${GTEST_DIR}" AND IS_DIRECTORY "${GTEST_DIR}")
 
         set(TEST_DIR "${CMAKE_SOURCE_DIR}/test")
         if(EXISTS "${TEST_DIR}")
-            file(GLOB_RECURSE TEST_SOURCES "${TEST_DIR}/*.cpp")
+            # 测试文件新增或删除时自动触发 CMake 重新配置，避免 build 目录残留失效 target。
+            file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "${TEST_DIR}/*.cpp")
             if(TEST_SOURCES)
                 message(STATUS "Found test files in ${TEST_DIR}")
                 foreach(TEST_FILE ${TEST_SOURCES})
