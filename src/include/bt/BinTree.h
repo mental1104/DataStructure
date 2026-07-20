@@ -3,113 +3,190 @@
 
 #include "BinNode.h"
 #include "dsa/core/tree/BinTreeAlgorithm.h"
+#include "release.h"
 
-template<typename T> 
-class BinTree : protected dsa::core::BinTreeAlgorithm<BinTree<T>, T, BinNode<T>> {
+template<typename T>
+class BinTree
+    : protected dsa::core::BinTreeAlgorithm<BinTree<T>, T, BinNode<T>> {
+
 protected:
-    using Algorithm = dsa::core::BinTreeAlgorithm<BinTree<T>, T, BinNode<T>>;
-    friend class dsa::core::BinTreeAlgorithm<BinTree<T>, T, BinNode<T>>;
+    using Node = BinNode<T>;
+    using Algorithm = dsa::core::BinTreeAlgorithm<BinTree<T>, T, Node>;
 
-    int _size{0}; 
-    BinNode<T>* _root{nullptr};
-    BinNode<T>*& rootRef() { return _root; }
-    virtual int updateHeight(BinNode<T>* x);
-    void updateHeightAbove(BinNode<T>* x);
-    BinNode<T>*& FromParentTo(const BinNode<T>& node);
+    friend class dsa::core::BinTreeAlgorithm<BinTree<T>, T, Node>;
+
+    int _size{0};
+    Node* _root{nullptr};
+
+    Node*& rootRef() {
+        return _root;
+    }
+
+    virtual int updateHeight(Node* x);
+    void updateHeightAbove(Node* x);
+    Node*& FromParentTo(const Node& node);
+
     template<typename Res, typename Agg>
-    Res rangeAggregateRec(BinNode<T>* x, const T& lo, const T& hi, Res acc, Agg&& agg) const;
+    Res rangeAggregateRec(
+        Node* x,
+        const T& lo,
+        const T& hi,
+        Res acc,
+        Agg&& agg
+    ) const;
+
+    int destroySubtree(Node* root);
+
 public:
-    BinTree(){}
-    virtual ~BinTree() {  if(0 < _size) levelRemove(_root);  }
-    int size() const {  return _size; }
-    bool empty() const {    return !_root; }
-    BinNode<T>* root() { return _root; }
-    BinNode<T>* insertAsRoot(T const& e);
-    BinNode<T>* insertAsLC(BinNode<T>* x, T const& e);
-    BinNode<T>* insertAsRC(BinNode<T>* x, T const& e);
-    BinNode<T>* attachAsLC(BinNode<T>* x, BinTree<T>*& S);
-    BinNode<T>* attachAsRC(BinNode<T>* x, BinTree<T>*& S);
-    int remove(BinNode<T>* x);
-    BinTree<T>* secede(BinNode<T>* x);
+    BinTree() {}
+
+    virtual ~BinTree() {
+        destroySubtree(_root);
+    }
+
+    int size() const {
+        return _size;
+    }
+
+    bool empty() const {
+        return !_root;
+    }
+
+    Node* root() {
+        return _root;
+    }
+
+    const Node* root() const {
+        return _root;
+    }
+
+    Node* insertAsRoot(T const& e);
+    Node* insertAsLC(Node* x, T const& e);
+    Node* insertAsRC(Node* x, T const& e);
+    Node* attachAsLC(Node* x, BinTree<T>*& S);
+    Node* attachAsRC(Node* x, BinTree<T>*& S);
+    int remove(Node* x);
+    BinTree<T>* secede(Node* x);
 
     struct iterator;
     iterator begin();
     iterator end();
-    const iterator begin() const { return const_cast<BinTree<T>*>(this)->begin(); }
-    const iterator end() const { return const_cast<BinTree<T>*>(this)->end(); }
+
+    const iterator begin() const {
+        return const_cast<BinTree<T>*>(this)->begin();
+    }
+
+    const iterator end() const {
+        return const_cast<BinTree<T>*>(this)->end();
+    }
 
     template<typename Res, typename Agg>
-    Res rangeAggregate(const T& lo, const T& hi, Res identity, Agg&& agg) const {
+    Res rangeAggregate(
+        const T& lo,
+        const T& hi,
+        Res identity,
+        Agg&& agg
+    ) const {
         return rangeAggregateRec(_root, lo, hi, identity, agg);
     }
-    template<typename VST> void travLevel(VST&& visit){  if(_root) _root->travLevel(visit); }
-    template<typename VST> void travPre(VST&& visit){  if(_root) _root->travPre(visit); }
-    template<typename VST> void travIn(VST&& visit){  if(_root) _root->travIn(visit); }
-    template<typename VST> void travPost(VST&& visit){  if(_root) _root->travPost(visit); }
-    bool operator< (const BinTree<T> &t){   return _root && t._root && ((*_root) < (*t._root));   }
-    bool operator> (const BinTree<T> &t){   return _root && t._root && ((*_root) > (*t._root));   }
-    bool operator== (const BinTree<T> &t){   return _root && t._root && (_root == t._root);   }
-    bool operator!= (const BinTree<T> &t){   return !(*this==t);    }
+
+    template<typename VST>
+    void travLevel(VST&& visit) {
+        Algorithm::traverseLevelImpl(_root, visit);
+    }
+
+    template<typename VST>
+    void travPre(VST&& visit) {
+        Algorithm::traversePreImpl(_root, visit);
+    }
+
+    template<typename VST>
+    void travIn(VST&& visit) {
+        Algorithm::traverseInImpl(_root, visit);
+    }
+
+    template<typename VST>
+    void travPost(VST&& visit) {
+        Algorithm::traversePostImpl(_root, visit);
+    }
+
+    bool operator<(const BinTree<T>& tree) {
+        return _root && tree._root && (*_root < *tree._root);
+    }
+
+    bool operator>(const BinTree<T>& tree) {
+        return _root && tree._root && (*_root > *tree._root);
+    }
+
+    bool operator==(const BinTree<T>& tree) {
+        return _root && tree._root && (_root == tree._root);
+    }
+
+    bool operator!=(const BinTree<T>& tree) {
+        return !(*this == tree);
+    }
 };
 
 template<typename T>
-static void levelRemove(BinNode<T>* root){
-    Queue<BinNode<T>*> Q;
-    Q.enqueue(root);
-    while(!Q.empty()){
-        BinNode<T>* node = Q.dequeue();
-        if(HasLChild(*node)) Q.enqueue(node->lc);
-        if(HasRChild(*node)) Q.enqueue(node->rc);
+int BinTree<T>::destroySubtree(Node* root) {
+    if (!root)
+        return 0;
+
+    auto destroyNode = [](Node* node) {
         release(node->data);
         release(node);
-    }
+    };
+
+    return Algorithm::destroySubtreeImpl(root, destroyNode);
 }
 
 template<typename T>
-int BinTree<T>::updateHeight(BinNode<T>* x){
+int BinTree<T>::updateHeight(Node* x) {
     return Algorithm::updateHeightImpl(x);
 }
 
 template<typename T>
-void BinTree<T>::updateHeightAbove(BinNode<T>* x){
+void BinTree<T>::updateHeightAbove(Node* x) {
     Algorithm::updateHeightAboveImpl(x);
 }
 
 template<typename T>
-BinNode<T>*
-BinTree<T>::insertAsRoot(T const& e){
+typename BinTree<T>::Node*
+BinTree<T>::insertAsRoot(T const& e) {
+    destroySubtree(_root);
     _size = 1;
-    return _root = new BinNode<T>(e);
+    return _root = new Node(e);
 }
 
 template<typename T>
-BinNode<T>* 
-BinTree<T>::insertAsRC(BinNode<T>* x, T const& e){
-    _size++;
-    x->insertAsRC(e);
+typename BinTree<T>::Node*
+BinTree<T>::insertAsRC(Node* x, T const& e) {
+    _size -= destroySubtree(x->rc);
+    x->rc = new Node(e, x);
+    ++_size;
     updateHeightAbove(x);
     return x->rc;
 }
 
 template<typename T>
-BinNode<T>*
-BinTree<T>::insertAsLC(BinNode<T>* x, T const& e){
-    _size++;
-    x->insertAsLC(e);
+typename BinTree<T>::Node*
+BinTree<T>::insertAsLC(Node* x, T const& e) {
+    _size -= destroySubtree(x->lc);
+    x->lc = new Node(e, x);
+    ++_size;
     updateHeightAbove(x);
     return x->lc;
 }
 
 template<typename T>
-BinNode<T>*
-BinTree<T>::attachAsRC(BinNode<T>* x, BinTree<T>*& S){
+typename BinTree<T>::Node*
+BinTree<T>::attachAsRC(Node* x, BinTree<T>*& S) {
     BinTree<T>* temp = secede(x->rc);
 
-    if((x->rc = S->_root)) {
+    if ((x->rc = S->_root))
         x->rc->parent = x;
-    }
 
-    if(temp)
+    if (temp)
         release(temp);
 
     _size += S->_size;
@@ -122,15 +199,14 @@ BinTree<T>::attachAsRC(BinNode<T>* x, BinTree<T>*& S){
 }
 
 template<typename T>
-BinNode<T>*
-BinTree<T>::attachAsLC(BinNode<T>* x, BinTree<T>*& S){
+typename BinTree<T>::Node*
+BinTree<T>::attachAsLC(Node* x, BinTree<T>*& S) {
     BinTree<T>* temp = secede(x->rc);
 
-    if((x->lc = S->_root)) {
+    if ((x->lc = S->_root))
         x->lc->parent = x;
-    }
 
-    if(temp)
+    if (temp)
         release(temp);
 
     _size += S->_size;
@@ -143,62 +219,54 @@ BinTree<T>::attachAsLC(BinNode<T>* x, BinTree<T>*& S){
 }
 
 template<typename T>
-static int removeAt(BinNode<T>* x){
-    if(!x) return 0;
-    int n = 1 + removeAt(x->lc) + removeAt(x->rc);
-    release(x->data);
-    release(x);
-    return n;
-}
-
-template<typename T>
-BinNode<T>*& 
-BinTree<T>::FromParentTo(const BinNode<T>& node){
+typename BinTree<T>::Node*&
+BinTree<T>::FromParentTo(const Node& node) {
     return Algorithm::fromParentToImpl(node);
 }
 
 template<typename T>
-int BinTree<T>::remove(BinNode<T>* x){
-    this->FromParentTo(*x) = nullptr;
+int BinTree<T>::remove(Node* x) {
+    FromParentTo(*x) = nullptr;
     updateHeightAbove(x->parent);
-    int n = removeAt(x);
-    _size -= n;
-    return n;
+
+    const int removed = destroySubtree(x);
+    _size -= removed;
+    return removed;
 }
 
 template<typename T>
-BinTree<T>* 
-BinTree<T>::secede(BinNode<T>* x){
-    if(x == nullptr)
+BinTree<T>* BinTree<T>::secede(Node* x) {
+    if (!x)
         return nullptr;
-    this->FromParentTo(*x) = nullptr;
+
+    FromParentTo(*x) = nullptr;
     updateHeightAbove(x->parent);
-    BinTree<T>* S = new BinTree<T>();
-    S->_root = x;
+
+    BinTree<T>* subtree = new BinTree<T>();
+    subtree->_root = x;
     x->parent = nullptr;
-    S->_size = x->size();
-    _size -= S->_size;
-    return S;
+    subtree->_size = Algorithm::subtreeSizeImpl(x);
+    _size -= subtree->_size;
+    return subtree;
 }
 
 template<typename T>
 struct BinTree<T>::iterator {
-    BinNode<T>* cur;
+    Node* cur;
 
-    explicit iterator(BinNode<T>* rhs)
-        : cur{rhs} {}
-    
-    bool operator!=(const iterator& other){
+    explicit iterator(Node* rhs)
+        : cur(rhs) {}
+
+    bool operator!=(const iterator& other) {
         return cur != other.cur;
     }
 
-    T& operator*() { 
-        return cur->data; 
+    T& operator*() {
+        return cur->data;
     }
 
-    iterator& operator++()
-    {
-        cur = cur->succ();
+    iterator& operator++() {
+        cur = Node::Algorithm::successor(cur);
         return *this;
     }
 };
@@ -206,23 +274,30 @@ struct BinTree<T>::iterator {
 template<typename T>
 typename BinTree<T>::iterator
 BinTree<T>::begin() {
-    BinNode<T>* n = _root;
+    Node* node = _root;
 
-    if (n) 
-        while(n->lc)
-            n = n->lc;
-    return iterator{n};
+    if (node)
+        while (node->lc)
+            node = node->lc;
+
+    return iterator(node);
 }
 
 template<typename T>
 typename BinTree<T>::iterator
 BinTree<T>::end() {
-    return iterator{nullptr};
+    return iterator(nullptr);
 }
 
 template<typename T>
 template<typename Res, typename Agg>
-Res BinTree<T>::rangeAggregateRec(BinNode<T>* x, const T& lo, const T& hi, Res acc, Agg&& agg) const {
+Res BinTree<T>::rangeAggregateRec(
+    Node* x,
+    const T& lo,
+    const T& hi,
+    Res acc,
+    Agg&& agg
+) const {
     return Algorithm::rangeAggregateRecImpl(x, lo, hi, acc, agg);
 }
 
