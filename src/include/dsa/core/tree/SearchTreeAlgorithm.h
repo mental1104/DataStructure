@@ -27,8 +27,8 @@ public:
     };
 
     // 使用比较器判断两个键是否等价，避免要求 value_type 提供 operator==。
-    template<typename L, typename R, typename Compare>
-    static bool equivalent(const L& left, const R& right, const Compare& compare) {
+    template<typename Left, typename Right, typename Compare>
+    static bool equivalent(const Left& left, const Right& right, const Compare& compare) {
         return !compare(left, right) && !compare(right, left);
     }
 
