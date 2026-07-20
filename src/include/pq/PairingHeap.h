@@ -52,26 +52,38 @@ public:
 
     // 深拷贝时重新插入值，避免复制 child/sibling 裸指针。
     PairingHeap(const PairingHeap& other) : BinTree<T>() {
-        try { copyValuesFrom(other); }
-        catch (...) { clearOwned(); throw; }
+        try {
+            copyValuesFrom(other);
+        } catch (...) {
+            clearOwned();
+            throw;
+        }
     }
 
     PairingHeap(PairingHeap&& other) noexcept : BinTree<T>() {
-        this->_root = other._root; this->_size = other._size;
-        other._root = nullptr; other._size = 0;
+        this->_root = other._root;
+        this->_size = other._size;
+        other._root = nullptr;
+        other._size = 0;
     }
 
     ~PairingHeap() { clearOwned(); }
 
     PairingHeap& operator=(const PairingHeap& other) {
-        if (this != &other) { PairingHeap replacement(other); swapState(replacement); }
+        if (this != &other) {
+            PairingHeap replacement(other);
+            swapState(replacement);
+        }
         return *this;
     }
 
     PairingHeap& operator=(PairingHeap&& other) noexcept {
         if (this != &other) {
-            clearOwned(); this->_root = other._root; this->_size = other._size;
-            other._root = nullptr; other._size = 0;
+            clearOwned();
+            this->_root = other._root;
+            this->_size = other._size;
+            other._root = nullptr;
+            other._size = 0;
         }
         return *this;
     }
@@ -101,7 +113,8 @@ void PairingHeap<T, MAX>::clearOwned() noexcept {
             delete node;
         }
     );
-    this->_root = nullptr; this->_size = 0;
+    this->_root = nullptr;
+    this->_size = 0;
 }
 
 template<typename T, bool MAX>
@@ -114,15 +127,20 @@ void PairingHeap<T, MAX>::copyValuesFrom(const PairingHeap& other) {
 
 template<typename T, bool MAX>
 void PairingHeap<T, MAX>::swapState(PairingHeap& other) noexcept {
-    using std::swap;
-    swap(this->_root, other._root); swap(this->_size, other._size);
+    std::swap(this->_root, other._root);
+    std::swap(this->_size, other._size);
 }
 
 template<typename T, bool MAX>
 void PairingHeap<T, MAX>::insert(T value) {
     BinNode<T>* node = new BinNode<T>(value, nullptr);
-    try { this->_root = merge(this->_root, node); ++this->_size; }
-    catch (...) { delete node; throw; }
+    try {
+        this->_root = merge(this->_root, node);
+        ++this->_size;
+    } catch (...) {
+        delete node;
+        throw;
+    }
 }
 
 template<typename T, bool MAX>
@@ -154,7 +172,8 @@ void PairingHeap<T, MAX>::merge(PairingHeap& other) {
         return;
     this->_root = merge(this->_root, other._root);
     this->_size += other._size;
-    other._root = nullptr; other._size = 0;
+    other._root = nullptr;
+    other._size = 0;
 }
 
 #endif
