@@ -2,80 +2,173 @@
 #define __DSA_LEFT_HEAP
 
 #include <stdexcept>
+#include <utility>
 
 #include "BinTree.h"
 #include "PQ.h"
 #include "Vector.h"
+#include <dsa/core/heap/HeapAlgorithm.h>
 
-template <typename T, bool MAX = true>
-class LeftHeap : public PQ<T, MAX>, public BinTree<T> { //基于二叉树，以左式堆形式实现的PQ
-   /*DSA*/friend class UniPrint; //演示输出使用，否则不必设置友类
+// 教学左式堆：保留 BinNode/BinTree 可视结构，meld 流程由共享算法统一实现。
+template<typename T, bool MAX = true>
+class LeftHeap : public PQ<T, MAX>, public BinTree<T> {
+    friend class UniPrint;
+
 private:
-    BinNode<T>* merge(BinNode<T>* a, BinNode<T>* b);
+    struct TeachingAccess {
+        typedef BinNode<T> node_type;
+
+        static node_type*& parent(node_type* node) { return node->parent; }
+        static node_type*& left(node_type* node) { return node->lc; }
+        static node_type*& right(node_type* node) { return node->rc; }
+        static T& value(node_type* node) { return node->data; }
+        static const T& value(const node_type* node) { return node->data; }
+        static int nplValue(const node_type* node) { return node ? node->npl : 0; }
+        static int& nplRef(node_type* node) { return node->npl; }
+    };
+
+    typedef Priority<T, MAX> Higher;
+    typedef dsa::core::LeftistHeapAlgorithm<TeachingAccess, Higher> Algorithm;
+
+    BinNode<T>* merge(BinNode<T>* first, BinNode<T>* second);
+    void clearOwned() noexcept;
+    void copyValuesFrom(const LeftHeap& other);
+    void swapState(LeftHeap& other) noexcept;
+
 public:
-    LeftHeap() { } //默认构造
-    LeftHeap ( T* E, int n ) //批量构造：可改进为Floyd建堆算法
-    {  for ( int i = 0; i < n; i++ ) insert ( E[i] );  }
-    LeftHeap(Vector<T>& vec){
-        for (int i = 0; i < vec.size(); i++)
-            insert(vec[i]);
+    // 构造空左式堆。
+    LeftHeap() : BinTree<T>() {}
+
+    // 从数组逐项插入构造。
+    LeftHeap(T* values, int count) : BinTree<T>() {
+        for (int index = 0; index < count; ++index)
+            insert(values[index]);
     }
-   
-    void merge(LeftHeap<T, MAX>& right);
-    void insert(T); //按照比较器确定的优先级次序插入元素
-    T getMax(); //取出优先级最高的元素
-    T delMax(); //删除优先级最高的元素
-}; //LeftHeap
 
-template <typename T, bool MAX> //根据相对优先级确定适宜的方式，合并以a和b为根节点的两个左式堆
-BinNode<T>* LeftHeap<T, MAX>::merge(BinNode<T>* a, BinNode<T>* b) {
-    if ( ! a ) return b; //退化情况
-    if ( ! b ) return a; //退化情况
-    if ( Priority<T, MAX>::higher(b->data, a->data) ) 
-        swap ( a, b ); //一般情况：首先确保a优先级更高
+    // 从教学 Vector 逐项插入构造。
+    explicit LeftHeap(Vector<T>& vector) : BinTree<T>() {
+        for (int index = 0; index < vector.size(); ++index)
+            insert(vector[index]);
+    }
 
-    a->rc = merge(a->rc, b); //将a的右子堆，与b合并
-    a->rc->parent = a;
+    // 深拷贝另一个教学左式堆，避免继承层默认浅拷贝根指针。
+    LeftHeap(const LeftHeap& other) : BinTree<T>() {
+        copyValuesFrom(other);
+    }
 
-    if ( !a->lc || a->lc->npl < a->rc->npl ) //若有必要
-        swap (a->lc, a->rc); //交换a的左、右子堆，以确保右子堆的npl不大
-    a->npl = a->rc ? a->rc->npl + 1 : 1; //更新a的npl
-    return a; //返回合并后的堆顶
-} //本算法只实现结构上的合并，堆的规模须由上层调用者负责更新
+    // 移动构造并转移节点所有权。
+    LeftHeap(LeftHeap&& other) noexcept : BinTree<T>() {
+        this->_root = other._root;
+        this->_size = other._size;
+        other._root = nullptr;
+        other._size = 0;
+    }
 
-template <typename T, bool MAX> 
-void LeftHeap<T, MAX>::insert (T e){
-   this->_root = merge(this->_root, new BinNode<T>(e, nullptr)); //将e封装为左式堆，与当前左式堆合并
-   this->_size++; //更新规模
-}
+    // 使用 copy-and-swap 提供深拷贝赋值。
+    LeftHeap& operator=(const LeftHeap& other) {
+        if (this != &other) {
+            LeftHeap replacement(other);
+            swapState(replacement);
+        }
+        return *this;
+    }
 
-template <typename T, bool MAX> 
-DSA_NOINLINE T LeftHeap<T, MAX>::getMax(){
-    if (!this->_root) 
-        throw std::runtime_error("Heap is empty");
-    return this->_root->data; 
-}
+    // 释放原节点后接管来源节点。
+    LeftHeap& operator=(LeftHeap&& other) noexcept {
+        if (this != &other) {
+            clearOwned();
+            this->_root = other._root;
+            this->_size = other._size;
+            other._root = nullptr;
+            other._size = 0;
+        }
+        return *this;
+    }
 
-template <typename T, bool MAX> 
-T LeftHeap<T, MAX>::delMax() {
-   if (!this->_root) 
-      throw std::runtime_error("Heap is empty");
-   BinNode<T>* lHeap = this->_root->lc; if (lHeap) lHeap->parent = NULL; //左子堆
-   BinNode<T>* rHeap = this->_root->rc; if (rHeap) rHeap->parent = NULL; //右子堆
-   T e = this->_root->data; 
-   delete this->_root; 
-   this->_size--; //删除根节点
-   this->_root = merge ( lHeap, rHeap ); //合并原左、右子堆
-   return e; //返回原根节点的数据项
+    // 破坏性合并另一个左式堆，成功后来源为空。
+    void merge(LeftHeap& other);
+
+    // 插入一个元素。
+    void insert(T value);
+
+    // 返回优先级最高元素；空堆抛出 runtime_error。
+    T getMax();
+
+    // 删除并返回优先级最高元素；空堆抛出 runtime_error。
+    T delMax();
+};
+
+template<typename T, bool MAX>
+BinNode<T>* LeftHeap<T, MAX>::merge(BinNode<T>* first, BinNode<T>* second) {
+    return Algorithm::merge(first, second, Higher());
 }
 
 template<typename T, bool MAX>
-void LeftHeap<T, MAX>::merge(LeftHeap<T, MAX>& right){
-    this->_root = merge(this->_root, right._root);
-    right._root = nullptr;
-    this->_size += right._size;
-    right._size = 0;
-    return;
+void LeftHeap<T, MAX>::clearOwned() noexcept {
+    if (this->_root)
+        removeAt(this->_root);
+    this->_root = nullptr;
+    this->_size = 0;
+}
+
+template<typename T, bool MAX>
+void LeftHeap<T, MAX>::copyValuesFrom(const LeftHeap& other) {
+    dsa::core::forEachBinaryHeapNode<TeachingAccess>(
+        const_cast<BinNode<T>*>(other._root),
+        [this](BinNode<T>* node) { insert(node->data); }
+    );
+}
+
+template<typename T, bool MAX>
+void LeftHeap<T, MAX>::swapState(LeftHeap& other) noexcept {
+    std::swap(this->_root, other._root);
+    std::swap(this->_size, other._size);
+}
+
+template<typename T, bool MAX>
+void LeftHeap<T, MAX>::insert(T value) {
+    BinNode<T>* node = new BinNode<T>(value, nullptr);
+    try {
+        this->_root = merge(this->_root, node);
+        ++this->_size;
+    } catch (...) {
+        delete node;
+        throw;
+    }
+}
+
+template<typename T, bool MAX>
+DSA_NOINLINE T LeftHeap<T, MAX>::getMax() {
+    if (!this->_root)
+        throw std::runtime_error("Heap is empty");
+    return this->_root->data;
+}
+
+template<typename T, bool MAX>
+T LeftHeap<T, MAX>::delMax() {
+    if (!this->_root)
+        throw std::runtime_error("Heap is empty");
+
+    BinNode<T>* removed = this->_root;
+    T result = removed->data;
+    BinNode<T>* merged = merge(removed->lc, removed->rc);
+    removed->lc = nullptr;
+    removed->rc = nullptr;
+    this->_root = merged;
+    delete removed;
+    --this->_size;
+    return result;
+}
+
+template<typename T, bool MAX>
+void LeftHeap<T, MAX>::merge(LeftHeap& other) {
+    if (this == &other || !other._root)
+        return;
+    BinNode<T>* merged = merge(this->_root, other._root);
+    this->_root = merged;
+    this->_size += other._size;
+    other._root = nullptr;
+    other._size = 0;
 }
 
 #endif
