@@ -9,12 +9,12 @@
 template <typename T, bool MAX = true>
 class FibonacciHeap : public PQ<T, MAX>, public BinTree<T> { //基于二叉树与兄弟链表实现的斐波那契堆（双顶可选）
    /*DSA*/friend class UniPrint; //演示输出使用，否则不必设置友类
- private:
+private:
     BinNode<T>* _bestRoot{nullptr}; //当前根表中的最优根
 
     BinNode<T>* mergeTrees(BinNode<T>* a, BinNode<T>* b); //按度相同合并两棵树，保留较大者为根
     void consolidate(); //根表合并，保持各度唯一
- public:
+public:
     FibonacciHeap() {} //默认构造
     FibonacciHeap ( T* E, int n ) { for ( int i = 0; i < n; i++ ) insert ( E[i] ); }
     FibonacciHeap(Vector<T>& vec){
