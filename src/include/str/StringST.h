@@ -10,7 +10,7 @@ public:
     virtual ~StringST() = default;
 
     bool empty() const noexcept { return size_ == 0; }
-    size_type size() const noexcept { return size_; }
+    int size() const noexcept { return static_cast<int>(size_); }
 
 protected:
     size_type size_{0};
