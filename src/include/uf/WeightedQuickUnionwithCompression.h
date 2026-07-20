@@ -11,10 +11,10 @@ public:
     WeightedQuickUnionwithCompression() = delete;
 
     /// 构造 N 棵单节点树。
-    explicit WeightedQuickUnionwithCompression(int N);
+    WeightedQuickUnionwithCompression(int N);
 
     /// 从文件流读取 N 和连接对，保留原教学构造入口。
-    explicit WeightedQuickUnionwithCompression(std::ifstream& input);
+    WeightedQuickUnionwithCompression(std::ifstream& input);
 
     /// 复用父类深拷贝语义。
     WeightedQuickUnionwithCompression(
