@@ -56,10 +56,10 @@ public:
     WeightedQuickUnion() = delete;
 
     /// 构造 N 棵带大小元数据的单节点树。
-    explicit WeightedQuickUnion(int N);
+    WeightedQuickUnion(int N);
 
     /// 从文件流读取 N 和连接对，保留原教学构造入口。
-    explicit WeightedQuickUnion(std::ifstream& input);
+    WeightedQuickUnion(std::ifstream& input);
 
     /// 深拷贝父指针和树大小数组。
     WeightedQuickUnion(const WeightedQuickUnion& other);
