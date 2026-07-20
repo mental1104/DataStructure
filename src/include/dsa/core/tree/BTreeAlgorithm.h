@@ -7,6 +7,10 @@
 namespace dsa {
 namespace core {
 
+// 多路搜索树共享算法：只负责节点内定位、沿孩子下降和结构遍历。
+// Access contract:
+//   node_type, key_type
+//   keyCount(node), key(node, index), childCount(node), child(node, index), parent(node)
 template<typename Access>
 class BTreeAlgorithm {
 public:
@@ -22,6 +26,7 @@ public:
             : node(value), index(position), found(hit) {}
     };
 
+    // 返回第一个不小于 value 的节点内位置。
     template<typename NodePointer, typename Value, typename Compare>
     static std::size_t lowerBound(NodePointer node, const Value& value, const Compare& compare) {
         std::size_t first = 0;
@@ -44,6 +49,7 @@ public:
         return !compare(left, right) && !compare(right, left);
     }
 
+    // 沿多路搜索树下降。未命中时返回最终叶节点及其插入位置。
     template<typename Value, typename Compare>
     static SearchResult search(node_type* root, const Value& value, const Compare& compare) {
         node_type* current = root;
@@ -76,6 +82,7 @@ public:
         return node;
     }
 
+    // 返回 child 在 parent 孩子数组中的位置；未找到返回 childCount(parent)。
     static std::size_t childIndex(const node_type* parent, const node_type* child) {
         const std::size_t count = Access::childCount(parent);
         for (std::size_t index = 0; index < count; ++index) {
@@ -85,6 +92,7 @@ public:
         return count;
     }
 
+    // 以后序遍历释放整棵多路树；Destroy 负责实际析构和释放。
     template<typename Destroy>
     static std::size_t destroySubtree(node_type* root, Destroy&& destroy) {
         if (!root)
@@ -108,6 +116,7 @@ public:
                     stack.push_back(Frame(child, 0));
                 continue;
             }
+
             node_type* completed = frame.node;
             stack.pop_back();
             destroy(completed);
