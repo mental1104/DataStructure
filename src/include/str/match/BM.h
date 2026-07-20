@@ -1,108 +1,155 @@
 #pragma once
 
 #include <algorithm>
-#include <cstdio>
-#include <cstring>
+#include <array>
+#include <cstddef>
+#include <vector>
+
 #include "MatchObserver.h"
 #include "dsa_string.h"
+#include "../../dsa/algorithm/SubstringSearch.h"
 
-enum class BMStrategy { BadCharacter, Full };
+/// 旧教学 API 的 Boyer-Moore 策略枚举。
+enum class BMStrategy {
+    BadCharacter,
+    Full
+};
 
-inline int* buildBC(const String& P, MatchObserver* obs = nullptr) { // Bad Character table
-    NoopMatchObserver noop;
-    MatchObserver& observer = obs ? *obs : noop;
-    int* bc = new int[256];
-    std::fill(bc, bc + 256, -1);
-    int m = (int)P.size();
-    const char* pc = P.c_str();
-    for (int j = 0; j < m; j++) bc[(unsigned char)pc[j]] = j;
-    observer.onBCTable(bc, 256);
-    return bc;
-}
+namespace dsa_string_match_detail {
 
-inline int* buildSS(const String& P, int m) { // suffix size table
-    const char* pc = P.c_str();
-    int* ss = new int[m];
-    ss[m - 1] = m;
-    for (int lo = m - 1, hi = m - 1, j = lo - 1; j >= 0; j--) {
-        if ((lo < j) && (ss[m - hi + j - 1] < j - lo))
-            ss[j] = ss[m - hi + j - 1];
-        else {
-            hi = j; lo = std::min(lo, hi);
-            while ((0 <= lo) && (pc[lo] == pc[m - hi + lo - 1])) lo--;
-            ss[j] = hi - lo;
-        }
-    }
-    return ss;
-}
-
-inline int* buildGS(const String& P, int m, MatchObserver* obs = nullptr) { // Good Suffix table
-    NoopMatchObserver noop;
-    MatchObserver& observer = obs ? *obs : noop;
-    int* ss = buildSS(P, m);
-    int* gs = new int[m];
-    for (int j = 0; j < m; j++) gs[j] = m;
-    for (int i = 0, j = m - 1; j >= 0; j--)
-        if (j + 1 == ss[j])
-            while (i < m - j - 1) gs[i++] = m - j - 1;
-    for (int j = 0; j < m - 1; j++) gs[m - ss[j] - 1] = m - j - 1;
-    observer.onGSTable(gs, m, P);
-    delete[] ss;
-    return gs;
-}
-
-inline int matchBM(const String& P, const String& T, BMStrategy strategy = BMStrategy::BadCharacter, MatchObserver* obs = nullptr) {
-    NoopMatchObserver noop;
-    MatchObserver& observer = obs ? *obs : noop;
-    int m = (int)P.size();
-    int n = (int)T.size();
-    if (m <= 0 || n <= 0) return 0;
-
-    int* bc = buildBC(P, &observer);
-    if (strategy == BMStrategy::BadCharacter) {
-        int i = 0, j = 0;
-        for (i = 0; i + m <= n; i += std::max(1, j - bc[(unsigned char)T[i + j]])) {
-            for (j = m - 1; (0 <= j) && (P[j] == T[i + j]); j--);
-            observer.onProgress(T, P, i, j, bc, 256);
-            observer.onPause();
-            if (j < 0) break;
-        }
-        delete[] bc;
-        return i;
+/// 将通用 Boyer-Moore 事件适配到原 MatchObserver。
+class LegacyBmObserver {
+public:
+    LegacyBmObserver(
+        const String& pattern,
+        const String& text,
+        MatchObserver& observer
+    ) : pattern_(pattern), text_(text), observer_(observer) {
     }
 
-    int* gs = buildGS(P, m, &observer);
-    int i = 0;
-    while (i + m <= n) {
-        int j = m - 1;
-        while (P[static_cast<size_type>(j)] == T[static_cast<size_type>(i + j)]) {
-            observer.onProgress(T, P, i, j, gs, m);
-            observer.onPause();
-            if (0 > --j) break;
-        }
-        if (0 > j) {
-            observer.onProgress(T, P, i, j, gs, m);
-            observer.onPause();
-            break;
-        }
-        observer.onProgress(T, P, i, j, gs, m);
-        observer.onPause();
-        i += std::max(gs[j], j - bc[(unsigned char)T[static_cast<size_type>(i + j)]]);
+    void onBadCharacterTable(const int* table, std::size_t length) {
+        observer_.onBCTable(table, static_cast<int>(length));
     }
-    delete[] gs;
-    delete[] bc;
-    return i;
+
+    void onGoodSuffixTable(const int* table, std::size_t length) {
+        observer_.onGSTable(
+            table,
+            static_cast<int>(length),
+            pattern_
+        );
+    }
+
+    void onProgress(
+        std::ptrdiff_t alignment,
+        std::ptrdiff_t patternIndex,
+        const int* auxiliary,
+        std::size_t length
+    ) {
+        observer_.onProgress(
+            text_,
+            pattern_,
+            static_cast<int>(alignment),
+            static_cast<int>(patternIndex),
+            auxiliary,
+            static_cast<int>(length)
+        );
+    }
+
+    void onPause() {
+        observer_.onPause();
+    }
+
+private:
+    const String& pattern_;
+    const String& text_;
+    MatchObserver& observer_;
+};
+
+} // namespace dsa_string_match_detail
+
+/// 构造旧 API 所需的 256 项坏字符数组，由调用方 delete[]。
+inline int* buildBC(const String& pattern, MatchObserver* observer = nullptr) {
+    const std::array<int, 256> table =
+        dsa::algorithm::buildBadCharacterTable(pattern);
+    int* result = new int[table.size()];
+    std::copy(table.begin(), table.end(), result);
+    if (observer != nullptr)
+        observer->onBCTable(result, static_cast<int>(table.size()));
+    return result;
 }
 
-inline int matchBMBadCharacter(const String& P, const String& T) {
-    return matchBM(P, T, BMStrategy::BadCharacter, nullptr);
+/// 构造旧 API 所需的 suffix size 数组，由调用方 delete[]。
+inline int* buildSS(const String& pattern, int length) {
+    const std::vector<int> table =
+        dsa::algorithm::buildBoyerMooreSuffixes(pattern);
+    const int selected = std::min(length, static_cast<int>(table.size()));
+    int* result = new int[length > 0 ? static_cast<std::size_t>(length) : 0];
+    for (int index = 0; index < selected; ++index)
+        result[index] = table[static_cast<std::size_t>(index)];
+    for (int index = selected; index < length; ++index)
+        result[index] = 0;
+    return result;
 }
 
-inline int matchBMFull(const String& P, const String& T) {
-    return matchBM(P, T, BMStrategy::Full, nullptr);
+/// 构造旧 API 所需的好后缀数组，由调用方 delete[]。
+inline int* buildGS(
+    const String& pattern,
+    int length,
+    MatchObserver* observer = nullptr
+) {
+    const std::vector<int> table = dsa::algorithm::buildGoodSuffixTable(pattern);
+    const int selected = std::min(length, static_cast<int>(table.size()));
+    int* result = new int[length > 0 ? static_cast<std::size_t>(length) : 0];
+    for (int index = 0; index < selected; ++index)
+        result[index] = table[static_cast<std::size_t>(index)];
+    for (int index = selected; index < length; ++index)
+        result[index] = length;
+    if (observer != nullptr)
+        observer->onGSTable(result, length, pattern);
+    return result;
 }
 
-inline int matchBMVerbose(const String& P, const String& T, BMStrategy strategy = BMStrategy::BadCharacter) {
-    StdoutMatchObserver obs;
-    return matchBM(P, T, strategy, &obs);
+/// 旧 String 专用入口仅作为 facade，核心匹配由泛型算法完成。
+inline int matchBM(
+    const String& pattern,
+    const String& text,
+    BMStrategy strategy = BMStrategy::BadCharacter,
+    MatchObserver* observer = nullptr
+) {
+    NoopMatchObserver noop;
+    MatchObserver& selected = observer == nullptr ? static_cast<MatchObserver&>(noop)
+                                                 : *observer;
+    dsa_string_match_detail::LegacyBmObserver adapter(
+        pattern,
+        text,
+        selected
+    );
+    const std::size_t result = dsa::algorithm::boyerMooreSearch(
+        pattern,
+        text,
+        strategy == BMStrategy::Full
+            ? dsa::algorithm::BoyerMooreStrategy::Full
+            : dsa::algorithm::BoyerMooreStrategy::BadCharacter,
+        adapter
+    );
+    return result == dsa::algorithm::stringNpos
+        ? static_cast<int>(text.size())
+        : static_cast<int>(result);
+}
+
+inline int matchBMBadCharacter(const String& pattern, const String& text) {
+    return matchBM(pattern, text, BMStrategy::BadCharacter, nullptr);
+}
+
+inline int matchBMFull(const String& pattern, const String& text) {
+    return matchBM(pattern, text, BMStrategy::Full, nullptr);
+}
+
+inline int matchBMVerbose(
+    const String& pattern,
+    const String& text,
+    BMStrategy strategy = BMStrategy::BadCharacter
+) {
+    StdoutMatchObserver observer;
+    return matchBM(pattern, text, strategy, &observer);
 }
