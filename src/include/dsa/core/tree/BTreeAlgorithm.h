@@ -44,8 +44,8 @@ public:
         return first;
     }
 
-    template<typename L, typename R, typename Compare>
-    static bool equivalent(const L& left, const R& right, const Compare& compare) {
+    template<typename Left, typename Right, typename Compare>
+    static bool equivalent(const Left& left, const Right& right, const Compare& compare) {
         return !compare(left, right) && !compare(right, left);
     }
 
