@@ -63,31 +63,45 @@ public:
 
     FibonacciHeap(const FibonacciHeap& other)
         : BinTree<T>(), _bestRoot(nullptr), _rootTail(nullptr) {
-        try { copyValuesFrom(other); }
-        catch (...) { clearOwned(); throw; }
+        try {
+            copyValuesFrom(other);
+        } catch (...) {
+            clearOwned();
+            throw;
+        }
     }
 
     FibonacciHeap(FibonacciHeap&& other) noexcept
         : BinTree<T>(), _bestRoot(other._bestRoot), _rootTail(other._rootTail) {
-        this->_root = other._root; this->_size = other._size;
-        other._root = nullptr; other._size = 0;
-        other._bestRoot = nullptr; other._rootTail = nullptr;
+        this->_root = other._root;
+        this->_size = other._size;
+        other._root = nullptr;
+        other._size = 0;
+        other._bestRoot = nullptr;
+        other._rootTail = nullptr;
     }
 
     ~FibonacciHeap() { clearOwned(); }
 
     FibonacciHeap& operator=(const FibonacciHeap& other) {
-        if (this != &other) { FibonacciHeap replacement(other); swapState(replacement); }
+        if (this != &other) {
+            FibonacciHeap replacement(other);
+            swapState(replacement);
+        }
         return *this;
     }
 
     FibonacciHeap& operator=(FibonacciHeap&& other) noexcept {
         if (this != &other) {
             clearOwned();
-            this->_root = other._root; this->_size = other._size;
-            _bestRoot = other._bestRoot; _rootTail = other._rootTail;
-            other._root = nullptr; other._size = 0;
-            other._bestRoot = nullptr; other._rootTail = nullptr;
+            this->_root = other._root;
+            this->_size = other._size;
+            _bestRoot = other._bestRoot;
+            _rootTail = other._rootTail;
+            other._root = nullptr;
+            other._size = 0;
+            other._bestRoot = nullptr;
+            other._rootTail = nullptr;
         }
         return *this;
     }
@@ -117,8 +131,10 @@ void FibonacciHeap<T, MAX>::clearOwned() noexcept {
             delete node;
         }
     );
-    this->_root = nullptr; this->_size = 0;
-    _bestRoot = nullptr; _rootTail = nullptr;
+    this->_root = nullptr;
+    this->_size = 0;
+    _bestRoot = nullptr;
+    _rootTail = nullptr;
 }
 
 template<typename T, bool MAX>
@@ -131,9 +147,10 @@ void FibonacciHeap<T, MAX>::copyValuesFrom(const FibonacciHeap& other) {
 
 template<typename T, bool MAX>
 void FibonacciHeap<T, MAX>::swapState(FibonacciHeap& other) noexcept {
-    using std::swap;
-    swap(this->_root, other._root); swap(this->_size, other._size);
-    swap(_bestRoot, other._bestRoot); swap(_rootTail, other._rootTail);
+    std::swap(this->_root, other._root);
+    std::swap(this->_size, other._size);
+    std::swap(_bestRoot, other._bestRoot);
+    std::swap(_rootTail, other._rootTail);
 }
 
 template<typename T, bool MAX>
@@ -221,8 +238,10 @@ void FibonacciHeap<T, MAX>::merge(FibonacciHeap& other) {
         _bestRoot = other._bestRoot;
 
     this->_size += other._size;
-    other._root = nullptr; other._size = 0;
-    other._bestRoot = nullptr; other._rootTail = nullptr;
+    other._root = nullptr;
+    other._size = 0;
+    other._bestRoot = nullptr;
+    other._rootTail = nullptr;
 }
 
 #endif
