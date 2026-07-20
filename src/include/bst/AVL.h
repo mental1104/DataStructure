@@ -1,48 +1,63 @@
 #ifndef __DSA_AVL
 #define __DSA_AVL
 
-#include "BST.h" 
+#include "BST.h"
 
+#include <cmath>
+
+// 教学版 AVL：沿用 BST 的公开契约，仅把平衡策略保留在派生类。
 template<typename T>
-class AVL: public BST<T> {
+class AVL : public BST<T> {
 public:
     BinNode<T>* insert(const T& e);
     bool remove(const T& e);
 };
 
 template<typename T>
-BinNode<T>* 
-AVL<T>::insert(const T& e){
-    BinNode<T>*& x = this->search(e);
-    if(x) return x;
-    BinNode<T>* xx = x = new BinNode<T>(e, this->_hot);
-    this->_size++;
-    for(BinNode<T>* g = this->_hot; g; g = g->parent){
-        if(!AvlBalanced(*g)){
-            BinNode<T>*& parentLink = this->FromParentTo(*g); // C++14 下赋值号两边求值顺序未定义，先拿到父链接再旋转以避免未定义行为
-            g = parentLink = this->rotateAt(tallerChild(tallerChild(g)));
+BinNode<T>* AVL<T>::insert(const T& e) {
+    BinNode<T>*& slot = this->search(e);
+    if (slot)
+        return slot;
+
+    BinNode<T>* inserted = new BinNode<T>(e, this->_hot);
+    slot = inserted;
+    ++this->_size;
+
+    BinNode<T>* current = this->_hot;
+    while (current) {
+        this->updateHeight(current);
+        if (!AvlBalanced(*current)) {
+            BinNode<T>* subtree_root = this->rotateAt(tallerChild(tallerChild(current)));
+            current = subtree_root ? subtree_root->parent : nullptr;
+        } else {
+            current = current->parent;
         }
-        this->updateHeight(g);
     }
-    return xx;
+    return inserted;
 }
 
 template<typename T>
-bool AVL<T>::remove(const T& e){
-    BinNode<T>*& x = this->search(e);
-    if(!x)
+bool AVL<T>::remove(const T& e) {
+    BinNode<T>*& slot = this->search(e);
+    if (!slot)
         return false;
-    removeAt(x, this->_hot);
-    this->_size--;
-    for(BinNode<T>* g = this->_hot; g; g = g->parent){
-        if(!AvlBalanced(*g)) {
-            BinNode<T>*& parentLink = this->FromParentTo(*g); // 同上：先抓父链接，再旋转，避免未定义的求值顺序污染树结构
-            g = parentLink = this->rotateAt(tallerChild(tallerChild(g)));
+
+    typename BST<T>::EraseResult result = this->detachAt(slot);
+    this->_hot = result.fix_parent;
+    this->destroyDetached(result.removed);
+    --this->_size;
+
+    BinNode<T>* current = result.rebalance_from;
+    while (current) {
+        this->updateHeight(current);
+        if (!AvlBalanced(*current)) {
+            BinNode<T>* subtree_root = this->rotateAt(tallerChild(tallerChild(current)));
+            current = subtree_root ? subtree_root->parent : nullptr;
+        } else {
+            current = current->parent;
         }
-        this->updateHeight(g);
     }
     return true;
 }
-
 
 #endif

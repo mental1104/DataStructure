@@ -3,7 +3,7 @@
 
 #include <functional>
 #include <utility>
-#include "BST.h"
+
 #include "Vector.h"
 
 template<typename Key, typename Value>
@@ -15,13 +15,16 @@ struct BPTNode {
     Vector<BPTNode<Key, Value>*> child;
     BPTNode<Key, Value>* next{nullptr};
     BPTNode<Key, Value>* prev{nullptr};
-    explicit BPTNode(bool isLeaf):leaf(isLeaf){}
+
+    explicit BPTNode(bool isLeaf) : leaf(isLeaf) {}
 };
 
-template<typename Key, typename Value, typename Compare = std::less<Key>>
-class BPlusTree: public BST<Key> {
+// 教学版 B+ Tree：独立维护多路节点和叶链，不再伪继承二叉 BST。
+template<typename Key, typename Value, typename Compare = std::less<Key> >
+class BPlusTree {
 private:
-    using Node = BPTNode<Key, Value>;
+    typedef BPTNode<Key, Value> Node;
+
     Node* _root{nullptr};
     int _order;
     int _size{0};
@@ -31,140 +34,180 @@ private:
     int minLeafKeys() const { return _order / 2; }
     int minInternalKeys() const { return (_order + 1) / 2 - 1; }
 
-    bool equal(const Key& ls, const Key& rs) const { return !_cmp(ls, rs) && !_cmp(rs, ls); }
-
-    int lowerBound(const Vector<Key>& keys, const Key& k) const {
-        int lo = 0, hi = keys.size();
-        while (lo < hi) {
-            int mid = (lo + hi) >> 1;
-            if (_cmp(keys[mid], k)) lo = mid + 1;
-            else hi = mid;
-        }
-        return lo;
+    bool equal(const Key& left, const Key& right) const {
+        return !_cmp(left, right) && !_cmp(right, left);
     }
 
-    int upperBound(const Vector<Key>& keys, const Key& k) const {
-        int lo = 0, hi = keys.size();
-        while (lo < hi) {
-            int mid = (lo + hi) >> 1;
-            if (_cmp(k, keys[mid])) hi = mid;
-            else lo = mid + 1;
+    int lowerBound(const Vector<Key>& keys, const Key& key) const {
+        int first = 0;
+        int count = keys.size();
+        while (count > 0) {
+            const int step = count / 2;
+            const int middle = first + step;
+            if (_cmp(keys[middle], key)) {
+                first = middle + 1;
+                count -= step + 1;
+            } else {
+                count = step;
+            }
         }
-        return lo;
+        return first;
     }
 
-    Node* findLeaf(const Key& k) const {
-        Node* x = _root;
-        while (x && !x->leaf) {
-            int idx = upperBound(x->key, k);
-            x = x->child[idx];
+    int upperBound(const Vector<Key>& keys, const Key& key) const {
+        int first = 0;
+        int count = keys.size();
+        while (count > 0) {
+            const int step = count / 2;
+            const int middle = first + step;
+            if (!_cmp(key, keys[middle])) {
+                first = middle + 1;
+                count -= step + 1;
+            } else {
+                count = step;
+            }
         }
-        return x;
+        return first;
+    }
+
+    Node* findLeaf(const Key& key) const {
+        Node* node = _root;
+        while (node && !node->leaf)
+            node = node->child[upperBound(node->key, key)];
+        return node;
+    }
+
+    Node* firstLeaf() const {
+        Node* node = _root;
+        while (node && !node->leaf)
+            node = node->child[0];
+        return node;
     }
 
     int childIndex(Node* parent, Node* child) const {
-        for (int i = 0; i < parent->child.size(); i++)
-            if (parent->child[i] == child)
-                return i;
+        for (int index = 0; index < parent->child.size(); ++index) {
+            if (parent->child[index] == child)
+                return index;
+        }
         return -1;
     }
 
     Node* splitLeaf(Node* leaf) {
-        int mid = leaf->key.size() / 2;
-        Node* neo = new Node(true);
-        neo->parent = leaf->parent;
-        while (leaf->key.size() > mid) {
-            neo->key.insert(neo->key.size(), leaf->key.remove(mid));
-            neo->value.insert(neo->value.size(), leaf->value.remove(mid));
+        const int middle = leaf->key.size() / 2;
+        Node* right = new Node(true);
+        right->parent = leaf->parent;
+        while (leaf->key.size() > middle) {
+            right->key.insert(right->key.size(), leaf->key.remove(middle));
+            right->value.insert(right->value.size(), leaf->value.remove(middle));
         }
-        neo->next = leaf->next;
-        if (neo->next) neo->next->prev = neo;
-        leaf->next = neo;
-        neo->prev = leaf;
-        return neo;
+
+        right->next = leaf->next;
+        if (right->next)
+            right->next->prev = right;
+        leaf->next = right;
+        right->prev = leaf;
+        return right;
     }
 
     std::pair<Node*, Key> splitInternal(Node* node) {
-        int mid = node->key.size() / 2;
-        Key up = node->key[mid];
-        Node* neo = new Node(false);
-        neo->parent = node->parent;
+        const int middle = node->key.size() / 2;
+        Key promoted = node->key[middle];
+        Node* right = new Node(false);
+        right->parent = node->parent;
 
-        // move keys
-        for (int i = mid + 1; i < node->key.size();) {
-            neo->key.insert(neo->key.size(), node->key.remove(mid + 1));
+        while (node->key.size() > middle + 1)
+            right->key.insert(right->key.size(), node->key.remove(middle + 1));
+        while (node->child.size() > middle + 1) {
+            Node* child = node->child.remove(middle + 1);
+            right->child.insert(right->child.size(), child);
+            if (child)
+                child->parent = right;
         }
-        // move children
-        for (int i = mid + 1; i < node->child.size();) {
-            Node* c = node->child.remove(mid + 1);
-            neo->child.insert(neo->child.size(), c);
-            if (c) c->parent = neo;
-        }
-        node->key.remove(mid);
-        return {neo, up};
+        node->key.remove(middle);
+        return std::make_pair(right, promoted);
     }
 
-    void insertIntoParent(Node* left, const Key& k, Node* right) {
+    void insertIntoParent(Node* left, const Key& key, Node* right) {
         if (!left->parent) {
             Node* root = new Node(false);
-            root->key.insert(0, k);
+            root->key.insert(0, key);
             root->child.insert(0, left);
             root->child.insert(1, right);
-            left->parent = right->parent = root;
+            left->parent = root;
+            right->parent = root;
             _root = root;
             return;
         }
+
         Node* parent = left->parent;
-        int idx = childIndex(parent, left);
-        parent->key.insert(idx, k);
-        parent->child.insert(idx + 1, right);
+        const int index = childIndex(parent, left);
+        parent->key.insert(index, key);
+        parent->child.insert(index + 1, right);
         right->parent = parent;
         if (parent->key.size() > maxKeys()) {
-            auto res = splitInternal(parent);
-            insertIntoParent(parent, res.second, res.first);
+            std::pair<Node*, Key> split = splitInternal(parent);
+            insertIntoParent(parent, split.second, split.first);
         }
     }
 
-    void borrowFromLeftLeaf(Node* node, Node* left, int idxInParent) {
+    void updateAncestorMinimum(Node* node) {
+        while (node && node->parent) {
+            Node* parent = node->parent;
+            const int index = childIndex(parent, node);
+            if (index > 0) {
+                if (!node->key.empty())
+                    parent->key[index - 1] = node->key[0];
+                return;
+            }
+            node = parent;
+        }
+    }
+
+    void borrowFromLeftLeaf(Node* node, Node* left, int indexInParent) {
         node->key.insert(0, left->key.remove(left->key.size() - 1));
         node->value.insert(0, left->value.remove(left->value.size() - 1));
-        node->parent->key[idxInParent - 1] = node->key[0];
+        node->parent->key[indexInParent - 1] = node->key[0];
     }
 
-    void borrowFromRightLeaf(Node* node, Node* right, int idxInParent) {
+    void borrowFromRightLeaf(Node* node, Node* right, int indexInParent) {
         node->key.insert(node->key.size(), right->key.remove(0));
         node->value.insert(node->value.size(), right->value.remove(0));
-        node->parent->key[idxInParent] = right->key[0];
+        node->parent->key[indexInParent] = right->key[0];
     }
 
-    void borrowFromLeftInternal(Node* node, Node* left, int idxInParent) {
-        node->key.insert(0, node->parent->key[idxInParent - 1]);
+    void borrowFromLeftInternal(Node* node, Node* left, int indexInParent) {
+        node->key.insert(0, node->parent->key[indexInParent - 1]);
         Node* child = left->child.remove(left->child.size() - 1);
         node->child.insert(0, child);
-        if (child) child->parent = node;
-        node->parent->key[idxInParent - 1] = left->key.remove(left->key.size() - 1);
+        if (child)
+            child->parent = node;
+        node->parent->key[indexInParent - 1] = left->key.remove(left->key.size() - 1);
     }
 
-    void borrowFromRightInternal(Node* node, Node* right, int idxInParent) {
-        node->key.insert(node->key.size(), node->parent->key[idxInParent]);
+    void borrowFromRightInternal(Node* node, Node* right, int indexInParent) {
+        node->key.insert(node->key.size(), node->parent->key[indexInParent]);
         Node* child = right->child.remove(0);
         node->child.insert(node->child.size(), child);
-        if (child) child->parent = node;
-        node->parent->key[idxInParent] = right->key.remove(0);
+        if (child)
+            child->parent = node;
+        node->parent->key[indexInParent] = right->key.remove(0);
     }
 
-    void mergeLeaves(Node* left, Node* right, int idxInParent) {
-        for (int i = 0; i < right->key.size(); i++) {
-            left->key.insert(left->key.size(), right->key[i]);
-            left->value.insert(left->value.size(), right->value[i]);
+    void mergeLeaves(Node* left, Node* right, int indexInParent) {
+        while (!right->key.empty()) {
+            left->key.insert(left->key.size(), right->key.remove(0));
+            left->value.insert(left->value.size(), right->value.remove(0));
         }
         left->next = right->next;
-        if (right->next) right->next->prev = left;
+        if (left->next)
+            left->next->prev = left;
+
         Node* parent = left->parent;
-        parent->key.remove(idxInParent);
-        parent->child.remove(idxInParent + 1);
+        parent->key.remove(indexInParent);
+        parent->child.remove(indexInParent + 1);
         delete right;
-        if (parent == _root && parent->key.size() == 0) {
+
+        if (parent == _root && parent->key.empty()) {
             _root = left;
             left->parent = nullptr;
             delete parent;
@@ -173,19 +216,21 @@ private:
         }
     }
 
-    void mergeInternal(Node* left, Node* right, int idxInParent) {
-        left->key.insert(left->key.size(), left->parent->key.remove(idxInParent));
-        for (int i = 0; i < right->key.size(); i++)
-            left->key.insert(left->key.size(), right->key[i]);
-        for (int i = 0; i < right->child.size(); i++) {
-            Node* c = right->child[i];
-            left->child.insert(left->child.size(), c);
-            if (c) c->parent = left;
-        }
-        left->parent->child.remove(idxInParent + 1);
-        delete right;
+    void mergeInternal(Node* left, Node* right, int indexInParent) {
         Node* parent = left->parent;
-        if (parent == _root && parent->key.size() == 0) {
+        left->key.insert(left->key.size(), parent->key.remove(indexInParent));
+        while (!right->key.empty())
+            left->key.insert(left->key.size(), right->key.remove(0));
+        while (!right->child.empty()) {
+            Node* child = right->child.remove(0);
+            left->child.insert(left->child.size(), child);
+            if (child)
+                child->parent = left;
+        }
+        parent->child.remove(indexInParent + 1);
+        delete right;
+
+        if (parent == _root && parent->key.empty()) {
             _root = left;
             left->parent = nullptr;
             delete parent;
@@ -196,144 +241,218 @@ private:
 
     void handleUnderflow(Node* node) {
         Node* parent = node->parent;
-        if (!parent) return;
-        int idx = childIndex(parent, node);
-        Node* left = (idx > 0) ? parent->child[idx - 1] : nullptr;
-        Node* right = (idx + 1 < parent->child.size()) ? parent->child[idx + 1] : nullptr;
+        if (!parent)
+            return;
+
+        const int index = childIndex(parent, node);
+        Node* left = index > 0 ? parent->child[index - 1] : nullptr;
+        Node* right = index + 1 < parent->child.size() ? parent->child[index + 1] : nullptr;
 
         if (node->leaf) {
             if (left && left->key.size() > minLeafKeys()) {
-                borrowFromLeftLeaf(node, left, idx);
+                borrowFromLeftLeaf(node, left, index);
                 return;
             }
             if (right && right->key.size() > minLeafKeys()) {
-                borrowFromRightLeaf(node, right, idx);
+                borrowFromRightLeaf(node, right, index);
+                updateAncestorMinimum(node);
                 return;
             }
-            if (left) mergeLeaves(left, node, idx - 1);
-            else if (right) mergeLeaves(node, right, idx);
-        } else {
-            if (left && left->key.size() > minInternalKeys()) {
-                borrowFromLeftInternal(node, left, idx);
-                return;
-            }
-            if (right && right->key.size() > minInternalKeys()) {
-                borrowFromRightInternal(node, right, idx);
-                return;
-            }
-            if (left) mergeInternal(left, node, idx - 1);
-            else if (right) mergeInternal(node, right, idx);
+            if (left)
+                mergeLeaves(left, node, index - 1);
+            else if (right)
+                mergeLeaves(node, right, index);
+            return;
         }
+
+        if (left && left->key.size() > minInternalKeys()) {
+            borrowFromLeftInternal(node, left, index);
+            return;
+        }
+        if (right && right->key.size() > minInternalKeys()) {
+            borrowFromRightInternal(node, right, index);
+            return;
+        }
+        if (left)
+            mergeInternal(left, node, index - 1);
+        else if (right)
+            mergeInternal(node, right, index);
     }
 
     void clear(Node* node) {
-        if (!node) return;
+        if (!node)
+            return;
         if (!node->leaf) {
-            for (int i = 0; i < node->child.size(); i++)
-                clear(node->child[i]);
+            while (!node->child.empty()) {
+                Node* child = node->child.remove(node->child.size() - 1);
+                clear(child);
+            }
         }
         delete node;
     }
 
-public:
-    using BST<Key>::search;
-    using BST<Key>::insert;
+    const Key* refreshSeparators(Node* node) {
+        if (!node)
+            return nullptr;
+        if (node->leaf)
+            return node->key.empty() ? nullptr : &node->key[0];
 
-    explicit BPlusTree(int order = 4, Compare cmp = Compare()):_order(order < 3 ? 3 : order), _cmp(cmp){ }
-    ~BPlusTree(){
-        clear(_root);
-        this->_root = nullptr;
-        this->_size = 0;
+        const Key* minimum = nullptr;
+        for (int index = 0; index < node->child.size(); ++index) {
+            const Key* child_minimum = refreshSeparators(node->child[index]);
+            if (index == 0)
+                minimum = child_minimum;
+            else if (child_minimum)
+                node->key[index - 1] = *child_minimum;
+        }
+        return minimum;
+    }
+
+    void copyFrom(const BPlusTree& other) {
+        for (Node* leaf = other.firstLeaf(); leaf; leaf = leaf->next) {
+            for (int index = 0; index < leaf->key.size(); ++index)
+                insert(leaf->key[index], leaf->value[index]);
+        }
+    }
+
+public:
+    explicit BPlusTree(int order = 4, Compare compare = Compare())
+        : _order(order < 3 ? 3 : order), _cmp(compare) {}
+
+    BPlusTree(const BPlusTree& other)
+        : _order(other._order), _cmp(other._cmp) {
+        copyFrom(other);
+    }
+
+    BPlusTree(BPlusTree&& other) noexcept
+        : _root(other._root), _order(other._order), _size(other._size), _cmp(std::move(other._cmp)) {
+        other._root = nullptr;
+        other._size = 0;
+    }
+
+    BPlusTree& operator=(BPlusTree other) {
+        swap(other);
+        return *this;
+    }
+
+    ~BPlusTree() { clear(_root); }
+
+    void swap(BPlusTree& other) {
+        using std::swap;
+        swap(_root, other._root);
+        swap(_order, other._order);
+        swap(_size, other._size);
+        swap(_cmp, other._cmp);
     }
 
     int size() const { return _size; }
     bool empty() const { return _size == 0; }
 
-    const Value* search(const Key& k) const {
-        Node* leaf = findLeaf(k);
-        if (!leaf) return nullptr;
-        int idx = lowerBound(leaf->key, k);
-        if (idx < leaf->key.size() && equal(leaf->key[idx], k))
-            return &(leaf->value[idx]);
+    const Value* search(const Key& key) const {
+        Node* leaf = findLeaf(key);
+        if (!leaf)
+            return nullptr;
+        const int index = lowerBound(leaf->key, key);
+        if (index < leaf->key.size() && equal(leaf->key[index], key))
+            return &leaf->value[index];
         return nullptr;
     }
 
-    template<typename R, typename Agg>
-    R rangeAggregate(const Key& low, const Key& high, R identity, Agg&& agg) const {
-        if (!_root) return identity;
-        Node* leaf = findLeaf(low);
-        if (!leaf) return identity;
-        int idx = lowerBound(leaf->key, low);
-        R acc = identity;
-        for (Node* cur = leaf; cur; cur = cur->next) {
-            for (int i = idx; i < cur->key.size(); i++) {
-                if (_cmp(high, cur->key[i])) return acc;
-                acc = agg(acc, cur->value[i]);
-            }
-            idx = 0;
-        }
-        return acc;
-    }
-
-    bool insert(const Key& k, const Value& v) {
+    bool insert(const Key& key, const Value& value) {
         if (!_root) {
             _root = new Node(true);
-            _root->key.insert(0, k);
-            _root->value.insert(0, v);
+            _root->key.insert(0, key);
+            _root->value.insert(0, value);
             _size = 1;
+            refreshSeparators(_root);
             return true;
         }
-        Node* leaf = findLeaf(k);
-        int idx = lowerBound(leaf->key, k);
-        if (idx < leaf->key.size() && equal(leaf->key[idx], k))
+
+        Node* leaf = findLeaf(key);
+        const int index = lowerBound(leaf->key, key);
+        if (index < leaf->key.size() && equal(leaf->key[index], key))
             return false;
-        leaf->key.insert(idx, k);
-        leaf->value.insert(idx, v);
-        _size++;
+
+        leaf->key.insert(index, key);
+        leaf->value.insert(index, value);
+        ++_size;
+        if (index == 0)
+            updateAncestorMinimum(leaf);
         if (leaf->key.size() > maxKeys()) {
-            Node* neo = splitLeaf(leaf);
-            insertIntoParent(leaf, neo->key[0], neo);
+            Node* right = splitLeaf(leaf);
+            insertIntoParent(leaf, right->key[0], right);
         }
+        refreshSeparators(_root);
         return true;
     }
 
-    bool remove(const Key& k) override {
-        if (!_root) return false;
-        Node* leaf = findLeaf(k);
-        if (!leaf) return false;
-        int idx = lowerBound(leaf->key, k);
-        if (!(idx < leaf->key.size() && equal(leaf->key[idx], k)))
+    bool remove(const Key& key) {
+        Node* leaf = findLeaf(key);
+        if (!leaf)
             return false;
-        leaf->key.remove(idx);
-        leaf->value.remove(idx);
-        _size--;
+        const int index = lowerBound(leaf->key, key);
+        if (index >= leaf->key.size() || !equal(leaf->key[index], key))
+            return false;
+
+        leaf->key.remove(index);
+        leaf->value.remove(index);
+        --_size;
 
         if (leaf == _root) {
-            if (leaf->key.size() == 0) {
+            if (leaf->key.empty()) {
                 delete leaf;
                 _root = nullptr;
             }
+            refreshSeparators(_root);
             return true;
         }
+
+        if (index == 0 && !leaf->key.empty())
+            updateAncestorMinimum(leaf);
         if (leaf->key.size() < minLeafKeys())
             handleUnderflow(leaf);
+        refreshSeparators(_root);
         return true;
     }
 
-    Vector<Value> rangeQuery(const Key& low, const Key& high) const {
-        Vector<Value> res;
-        if (!_root) return res;
+    template<typename Result, typename Aggregate>
+    Result rangeAggregate(
+        const Key& low,
+        const Key& high,
+        Result identity,
+        Aggregate&& aggregate
+    ) const {
         Node* leaf = findLeaf(low);
-        if (!leaf) return res;
-        int idx = lowerBound(leaf->key, low);
-        for (Node* cur = leaf; cur; cur = cur->next) {
-            for (int i = idx; i < cur->key.size(); i++) {
-                if (_cmp(high, cur->key[i])) return res;
-                res.insert(res.size(), cur->value[i]);
+        if (!leaf)
+            return identity;
+        int index = lowerBound(leaf->key, low);
+        Result result = identity;
+        for (Node* current = leaf; current; current = current->next) {
+            for (; index < current->key.size(); ++index) {
+                if (_cmp(high, current->key[index]))
+                    return result;
+                result = aggregate(result, current->value[index]);
             }
-            idx = 0;
+            index = 0;
         }
-        return res;
+        return result;
+    }
+
+    Vector<Value> rangeQuery(const Key& low, const Key& high) const {
+        Vector<Value> result;
+        Node* leaf = findLeaf(low);
+        if (!leaf)
+            return result;
+        int index = lowerBound(leaf->key, low);
+        for (Node* current = leaf; current; current = current->next) {
+            for (; index < current->key.size(); ++index) {
+                if (_cmp(high, current->key[index]))
+                    return result;
+                result.insert(result.size(), current->value[index]);
+            }
+            index = 0;
+        }
+        return result;
     }
 };
 
