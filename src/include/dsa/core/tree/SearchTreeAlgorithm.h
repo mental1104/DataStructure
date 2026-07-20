@@ -7,6 +7,8 @@
 namespace dsa {
 namespace core {
 
+// 二叉搜索树共享结构算法：只依赖 Access 暴露的父子链接和值语义。
+// 节点申请、析构、size 提交、平衡元数据与异常回滚均由容器负责。
 template<typename Access>
 class SearchTreeAlgorithm {
 public:
@@ -24,24 +26,28 @@ public:
               rebalance_from(nullptr), moved_node(nullptr) {}
     };
 
+    // 使用比较器判断两个键是否等价，避免要求 value_type 提供 operator==。
     template<typename L, typename R, typename Compare>
     static bool equivalent(const L& left, const R& right, const Compare& compare) {
         return !compare(left, right) && !compare(right, left);
     }
 
+    // 返回命中节点；未命中返回 nullptr。复杂度为 O(height)。
     template<typename NodePointer, typename Value, typename Compare>
     static NodePointer find(NodePointer root, const Value& value, const Compare& compare) {
         while (root) {
-            if (compare(value, Access::value(root)))
+            if (compare(value, Access::value(root))) {
                 root = Access::left(root);
-            else if (compare(Access::value(root), value))
+            } else if (compare(Access::value(root), value)) {
                 root = Access::right(root);
-            else
+            } else {
                 return root;
+            }
         }
         return NodePointer();
     }
 
+    // 返回命中节点链接或待插入空链接，并通过 hot 返回最后访问节点。
     template<typename Value, typename Compare>
     static node_type*& searchSlot(
         node_type*& root,
@@ -136,34 +142,40 @@ public:
         return candidate;
     }
 
+    // 将 parent 的左孩子替换为 child，并同步 child 的 parent 链接。
     static void setLeft(node_type* parent, node_type* child) {
         Access::leftRef(parent) = child;
         if (child)
             Access::parentRef(child) = parent;
     }
 
+    // 将 parent 的右孩子替换为 child，并同步 child 的 parent 链接。
     static void setRight(node_type* parent, node_type* child) {
         Access::rightRef(parent) = child;
         if (child)
             Access::parentRef(child) = parent;
     }
 
+    // 用 replacement 替换 current 在父节点或根链接中的位置。
     static void replace(node_type*& root, node_type* current, node_type* replacement) {
         node_type* parent = Access::parent(current);
-        if (!parent)
+        if (!parent) {
             root = replacement;
-        else if (Access::left(parent) == current)
+        } else if (Access::left(parent) == current) {
             Access::leftRef(parent) = replacement;
-        else
+        } else {
             Access::rightRef(parent) = replacement;
+        }
         if (replacement)
             Access::parentRef(replacement) = parent;
     }
 
+    // 围绕 pivot 左旋，返回旋转后的子树根。节点所有权不变。
     static node_type* rotateLeft(node_type*& root, node_type* pivot) {
         node_type* child = Access::right(pivot);
         if (!child)
             return pivot;
+
         node_type* middle = Access::left(child);
         replace(root, pivot, child);
         setRight(pivot, middle);
@@ -171,10 +183,12 @@ public:
         return child;
     }
 
+    // 围绕 pivot 右旋，返回旋转后的子树根。节点所有权不变。
     static node_type* rotateRight(node_type*& root, node_type* pivot) {
         node_type* child = Access::left(pivot);
         if (!child)
             return pivot;
+
         node_type* middle = Access::right(child);
         replace(root, pivot, child);
         setLeft(pivot, middle);
@@ -182,6 +196,7 @@ public:
         return child;
     }
 
+    // 对 v、parent(v)、grandparent(v) 执行 AVL/RB 共用的四类三节点重构。
     static node_type* restructure(node_type*& root, node_type* value_node) {
         if (!value_node || !Access::parent(value_node) ||
             !Access::parent(Access::parent(value_node)))
@@ -190,17 +205,22 @@ public:
         node_type* parent = Access::parent(value_node);
         node_type* grand = Access::parent(parent);
         if (parent == Access::left(grand)) {
-            if (value_node == Access::left(parent))
+            if (value_node == Access::left(parent)) {
                 return rotateRight(root, grand);
+            }
             rotateLeft(root, parent);
             return rotateRight(root, grand);
         }
-        if (value_node == Access::right(parent))
+
+        if (value_node == Access::right(parent)) {
             return rotateLeft(root, grand);
+        }
         rotateRight(root, parent);
         return rotateLeft(root, grand);
     }
 
+    // 从已知父链接 slot 物理摘除 target。slot 必须正好引用 target 所在的根/孩子链接。
+    // 该版本适合保留“search 返回 Node*&”契约的教学实现。
     static EraseResult detachFromSlot(node_type*& slot, node_type* target) {
         EraseResult result;
         result.removed = target;
@@ -224,6 +244,7 @@ public:
             node_type* successor_node = minimum(Access::right(target));
             result.moved_node = successor_node;
             result.fix_node = Access::right(successor_node);
+
             if (Access::parent(successor_node) != target) {
                 node_type* old_parent = Access::parent(successor_node);
                 result.fix_parent = old_parent;
@@ -238,6 +259,7 @@ public:
                 if (result.fix_node)
                     Access::parentRef(result.fix_node) = successor_node;
             }
+
             slot = successor_node;
             Access::parentRef(successor_node) = Access::parent(target);
             setLeft(successor_node, Access::left(target));
@@ -249,6 +271,8 @@ public:
         return result;
     }
 
+    // 物理摘除 target，不交换或赋值键值，因而支持不可赋值键和稳定节点身份。
+    // 调用方必须在成功提交 size 后析构 result.removed。
     static EraseResult detach(node_type*& root, node_type* target) {
         EraseResult result;
         result.removed = target;
@@ -269,6 +293,7 @@ public:
             node_type* successor_node = minimum(Access::right(target));
             result.moved_node = successor_node;
             result.fix_node = Access::right(successor_node);
+
             if (Access::parent(successor_node) != target) {
                 node_type* old_parent = Access::parent(successor_node);
                 result.fix_parent = old_parent;
@@ -281,6 +306,7 @@ public:
                 if (result.fix_node)
                     Access::parentRef(result.fix_node) = successor_node;
             }
+
             replace(root, target, successor_node);
             setLeft(successor_node, Access::left(target));
         }
@@ -295,6 +321,7 @@ public:
         return node ? Access::height(node) : -1;
     }
 
+    // 按结构高度刷新节点；红黑树的颜色不参与该字段含义。
     static int updateHeight(node_type* node) {
         if (!node)
             return -1;
