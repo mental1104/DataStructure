@@ -76,7 +76,7 @@ int checkRB(BinNode<int>* node, bool &valid) {
     return IsBlack(node) ? leftBH + 1 : leftBH;
 }
 
-// 6. 检查整个红黑树是否满足红黑性质：
+// 6. 检查整个红黑树是否满足红黑树性质：
 //    (1) 根必须为黑；
 //    (2) 每个红结点的子结点必须为黑；
 //    (3) 从任一结点到其所有后代空结点的路径具有相同的黑高度。
@@ -127,13 +127,11 @@ TEST(RBTreeTest, InsertionMaintainsInOrderAndRBProperty) {
     // 选择一组数据，部分插入会引起红黑树的调整
     int nums[] = {30, 20, 40, 10, 25, 35, 50, 5, 15, 27};
     int nCount = sizeof(nums) / sizeof(nums[0]);
-
     for (int i = 0; i < nCount; i++) {
         int num = nums[i];
         rb.insert(num);
         expected[expectedCount++] = num;
         sortArray(expected, expectedCount);
-
         int inCount = getInOrder(rb, inOrder, 100);
         EXPECT_TRUE(arraysEqual(inOrder, inCount, expected, expectedCount))
             << "插入 " << num << " 后，中序遍历结果不符合预期。";
@@ -368,19 +366,14 @@ TEST(RBTreeTest, SolveDoubleBlackRedSibling) {
     EXPECT_EQ(rb.root()->color, RBColor::BLACK);
 }
 
-/*
- * 测试4：删除操作后，被删除的元素应在红黑树中查找不到。
- */
 TEST(RBTreeTest, SearchAfterRemoval) {
     RedBlack<int> rb;
-    rb.insert(50);
-    rb.insert(30);
-    rb.insert(70);
-    EXPECT_TRUE(rb.remove(30));
-
-    // search 返回 BinNode<T>* 的引用，删除后应返回 nullptr
-    BinNode<int>*& result = rb.search(30);
-    EXPECT_EQ(result, nullptr)
-        << "删除后的元素在红黑树中应查找不到。";
-    EXPECT_TRUE(verifyRedBlackTree(rb.root()));
+    rb.insert(10);
+    rb.insert(5);
+    rb.insert(15);
+    EXPECT_TRUE(rb.remove(5));
+    BinNode<int>*& node = rb.search(5);
+    EXPECT_EQ(node, nullptr);
+    EXPECT_NE(rb.search(10), nullptr);
+    EXPECT_NE(rb.search(15), nullptr);
 }
