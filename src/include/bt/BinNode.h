@@ -1,259 +1,235 @@
 #ifndef __DSA_BINNODE
 #define __DSA_BINNODE
 
-#include "Stack.h"
-#include "Queue.h"
+#include "dsa/core/tree/BinNodeAlgorithm.h"
+#include "release.h"
 
 enum class RBColor{
     RED,
     BLACK,
 };
 
-template<typename T> 
-struct BinNode{
+template<typename T>
+struct BinNode {
+    using Node = BinNode<T>;
+    using Algorithm = dsa::core::BinNodeAlgorithm<Node>;
+
     T data;
-    BinNode<T>* parent;
-    BinNode<T>* lc;
-    BinNode<T>* rc;
+    Node* parent;
+    Node* lc;
+    Node* rc;
     int height;
-    int npl;//Null Path Length
+    int npl; // Null Path Length
     RBColor color;
 
-    BinNode():parent(nullptr),lc(nullptr),rc(nullptr),height(0),npl(1),color(RBColor::RED){}
-    BinNode(T e, BinNode<T>* p = nullptr, BinNode<T>* lc = nullptr, BinNode<T>* rc = nullptr, 
-            int h = 0, int l = 1, RBColor c = RBColor::RED):
-            data(e), parent(p), lc(lc), rc(rc), height(h), npl(l), color(c){}
-    
+    BinNode()
+        : parent(nullptr), lc(nullptr), rc(nullptr),
+          height(0), npl(1), color(RBColor::RED) {}
+
+    BinNode(
+        T e,
+        Node* p = nullptr,
+        Node* left = nullptr,
+        Node* right = nullptr,
+        int h = 0,
+        int l = 1,
+        RBColor c = RBColor::RED
+    )
+        : data(e), parent(p), lc(left), rc(right),
+          height(h), npl(l), color(c) {}
+
     int size();
-    BinNode<T>* insertAsLC(T const&);
-    BinNode<T>* insertAsRC(T const&);
-    BinNode<T>* succ();
+    Node* insertAsLC(T const&);
+    Node* insertAsRC(T const&);
+    Node* succ();
 
-    template <typename VST> void travLevel(BinNode<T>* x, VST&);
-    template <typename VST> void travLevel(VST& visit){ travLevel(this, visit); }
+    template<typename VST>
+    void travLevel(Node* x, VST& visit);
 
-    template <typename VST>  void travPre(BinNode<T>* x, VST&);
-    template <typename VST> void travPre(VST& visit){ travPre(this, visit); }
-    
-    template <typename VST> void travIn(BinNode<T>* x, VST&);
-    template <typename VST> void travIn(VST& visit) { travIn(this, visit); }
-    
-    template <typename VST> void travPost(BinNode<T>* x, VST&);
-    template <typename VST> void travPost(VST& visit){ travPost(this, visit); }
-    
+    template<typename VST>
+    void travLevel(VST& visit) {
+        travLevel(this, visit);
+    }
 
-    bool operator< (BinNode const& bn)  { return data < bn.data; }
-    bool operator> (BinNode const& bn)  { return data > bn.data; }
-    bool operator== (BinNode const& bn) { return data == bn.data; }
-    bool operator!= (BinNode const& bn) { return data != bn.data; }
+    template<typename VST>
+    void travPre(Node* x, VST& visit);
+
+    template<typename VST>
+    void travPre(VST& visit) {
+        travPre(this, visit);
+    }
+
+    template<typename VST>
+    void travIn(Node* x, VST& visit);
+
+    template<typename VST>
+    void travIn(VST& visit) {
+        travIn(this, visit);
+    }
+
+    template<typename VST>
+    void travPost(Node* x, VST& visit);
+
+    template<typename VST>
+    void travPost(VST& visit) {
+        travPost(this, visit);
+    }
+
+    bool operator<(BinNode const& node) {
+        return data < node.data;
+    }
+
+    bool operator>(BinNode const& node) {
+        return data > node.data;
+    }
+
+    bool operator==(BinNode const& node) {
+        return data == node.data;
+    }
+
+    bool operator!=(BinNode const& node) {
+        return data != node.data;
+    }
 };
 
 template<typename T>
-inline int stature(BinNode<T>* p){
-    return p?p->height:-1;
+inline int stature(BinNode<T>* node) {
+    return BinNode<T>::Algorithm::stature(node);
 }
 
 template<typename T>
-inline bool IsRoot(const BinNode<T>& x){
-    return !x.parent;
+inline bool IsRoot(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::isRoot(node);
 }
 
 template<typename T>
-inline bool IsLChild(const BinNode<T>& x){
-    return !IsRoot(x) && (&x == x.parent->lc);
+inline bool IsLChild(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::isLeftChild(node);
 }
 
 template<typename T>
-inline bool IsRChild(const BinNode<T>& x){
-    return !IsRoot(x) && (&x == x.parent->rc);
+inline bool IsRChild(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::isRightChild(node);
 }
 
 template<typename T>
-inline bool HasParent(const BinNode<T>& x){
-    return !IsRoot(x);
+inline bool HasParent(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::hasParent(node);
 }
 
 template<typename T>
-inline BinNode<T>* HasLChild(const BinNode<T>& x){
-    return x.lc;
+inline BinNode<T>* HasLChild(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::leftChild(node);
 }
 
 template<typename T>
-inline BinNode<T>* HasRChild(const BinNode<T>& x){
-    return x.rc;
+inline BinNode<T>* HasRChild(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::rightChild(node);
 }
 
 template<typename T>
-inline bool HasChild(const BinNode<T>& x){
-    return HasLChild(x) || HasRChild(x);
+inline bool HasChild(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::hasChild(node);
 }
 
 template<typename T>
-inline bool HasBothChild(const BinNode<T>& x){
-    return HasLChild(x) && HasRChild(x);
+inline bool HasBothChild(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::hasBothChildren(node);
 }
 
 template<typename T>
-inline bool IsLeaf(const BinNode<T>& x){
-    return !HasChild(x);
-}
-
-//AVL
-template<typename T>
-inline bool Balanced(const BinNode<T>& x){
-    return stature(x.lc) == stature(x.rc);
+inline bool IsLeaf(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::isLeaf(node);
 }
 
 template<typename T>
-inline int BalFac(const BinNode<T>& x){
-    return stature(x.lc) - stature(x.rc);
+inline bool Balanced(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::balanced(node);
 }
 
 template<typename T>
-inline bool AvlBalanced(const BinNode<T>& x){
-    return -2 < BalFac(x) && BalFac(x) < 2;
-}
-
-//rebalance
-template<typename T>
-inline BinNode<T>* tallerChild(const BinNode<T>* x){
-    return stature(x->lc) > stature(x->rc)?x->lc:
-           stature(x->lc) < stature(x->rc)?x->rc:
-           IsLChild(*x)?x->lc:x->rc;
-}
-//Operations
-template<typename T>
-inline BinNode<T>* sibling(const BinNode<T>*& x){
-    return IsLChild(*x)?(x->parent->rc):(x->parent->lc);
+inline int BalFac(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::balanceFactor(node);
 }
 
 template<typename T>
-inline BinNode<T>* uncle(BinNode<T>* x){
-    return IsLChild(*(x->parent))?x->parent->parent->rc:x->parent->parent->lc;
+inline bool AvlBalanced(const BinNode<T>& node) {
+    return BinNode<T>::Algorithm::avlBalanced(node);
 }
 
 template<typename T>
-BinNode<T>* 
-BinNode<T>::insertAsLC(T const& e){
-    if(lc){
-        removeAt(lc);
+inline BinNode<T>* tallerChild(const BinNode<T>* node) {
+    return BinNode<T>::Algorithm::tallerChild(node);
+}
+
+template<typename T>
+inline BinNode<T>* sibling(const BinNode<T>*& node) {
+    return BinNode<T>::Algorithm::sibling(node);
+}
+
+template<typename T>
+inline BinNode<T>* uncle(BinNode<T>* node) {
+    return BinNode<T>::Algorithm::uncle(node);
+}
+
+template<typename T>
+BinNode<T>* BinNode<T>::insertAsLC(T const& value) {
+    if (lc) {
+        auto destroyNode = [](Node* node) {
+            release(node->data);
+            release(node);
+        };
+        Algorithm::destroySubtree(lc, destroyNode);
     }
-    return lc = new BinNode(e, this);
+
+    return lc = new Node(value, this);
 }
 
 template<typename T>
-BinNode<T>*
-BinNode<T>::insertAsRC(T const& e){
-    if(rc){
-        removeAt(rc);
+BinNode<T>* BinNode<T>::insertAsRC(T const& value) {
+    if (rc) {
+        auto destroyNode = [](Node* node) {
+            release(node->data);
+            release(node);
+        };
+        Algorithm::destroySubtree(rc, destroyNode);
     }
-    return rc = new BinNode(e, this);
-}
 
-template <typename T> 
-int BinNode<T>::size() { 
-   int s = 1; 
-   if ( lc ) s += lc->size(); 
-   if ( rc ) s += rc->size(); 
-   return s;
+    return rc = new Node(value, this);
 }
 
 template<typename T>
-BinNode<T>* 
-BinNode<T>::succ(){
-    BinNode<T>* s = this;
-    if(rc){
-        s = rc;
-        while(HasLChild(*s)) s = s->lc;
-    } else {
-        while(IsRChild(*s)) s = s->parent;
-        s = s->parent;
-    }
-    return s;
+int BinNode<T>::size() {
+    return Algorithm::subtreeSize(this);
 }
 
-template<typename T , typename VST>
-static void visitAlongLeftBranch(BinNode<T>* x, VST& visit, Stack<BinNode<T>*>& S){
-    while(x){
-        visit(x->data);
-        S.push(x->rc);
-        x = x->lc;
-    }
+template<typename T>
+BinNode<T>* BinNode<T>::succ() {
+    return Algorithm::successor(this);
 }
 
 template<typename T>
 template<typename VST>
-void BinNode<T>::travPre(BinNode<T>* x, VST& visit){
-    Stack<BinNode<T>*> S;
-    while(true){
-        visitAlongLeftBranch(x, visit, S);
-        if(S.empty()) break;
-        x = S.pop();
-    }
-}
-
-template<typename T>
-static void goAlongLeftBranch(BinNode<T>* x, Stack<BinNode<T>*>& S){
-    while(x) {  
-        S.push(x); 
-        x = x->lc; 
-    }
-}
-
-
-template<typename T>
-template<typename VST>
-void BinNode<T>::travIn(BinNode<T>* x, VST& visit){
-    Stack<BinNode*> S;
-    while(true){
-        goAlongLeftBranch(x, S);
-        if(S.empty()) break;
-        x = S.pop();
-        visit(x->data);
-        x = x->rc;
-    }
-}
-
-template<typename T>
-static void gotoHLVFL(Stack<BinNode<T>*>& S){
-    while(BinNode<T>* x = S.top())
-        if(HasLChild(*x)){
-            if(HasRChild(*x)) 
-                S.push(x->rc);
-            S.push(x->lc);
-        } else {
-            S.push(x->rc);
-        }
-    S.pop();
+void BinNode<T>::travPre(Node* node, VST& visit) {
+    Algorithm::traversePre(node, visit);
 }
 
 template<typename T>
 template<typename VST>
-void 
-BinNode<T>::travPost(BinNode<T>* x, VST& visit){
-    Stack<BinNode*> S;
-    if(x) S.push(x);
-    while(!S.empty()){
-        if(S.top()!=x->parent)
-            gotoHLVFL(S);
-        x = S.pop();
-        visit(x->data);
-    }
+void BinNode<T>::travIn(Node* node, VST& visit) {
+    Algorithm::traverseIn(node, visit);
 }
-
 
 template<typename T>
 template<typename VST>
-void BinNode<T>::travLevel(BinNode<T>* x, VST& visit){
-    Queue<BinNode<T>*> Q;
-    Q.enqueue(x);
-    while(!Q.empty()){
-        BinNode<T>* node = Q.dequeue();
-        visit(node->data);
-        if(HasLChild(*node)) Q.enqueue(node->lc);
-        if(HasRChild(*node)) Q.enqueue(node->rc);
-    }
+void BinNode<T>::travPost(Node* node, VST& visit) {
+    Algorithm::traversePost(node, visit);
 }
 
+template<typename T>
+template<typename VST>
+void BinNode<T>::travLevel(Node* node, VST& visit) {
+    Algorithm::traverseLevel(node, visit);
+}
 
 #endif
