@@ -1,0 +1,208 @@
+name: Tutorial layout migration
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [refactor-container]
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-and-verify:
+    if: github.head_ref == 'agent/consolidate-tutorial-implementations'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Consolidate tutorial implementations
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import shutil
+
+          include_root = Path("src/include")
+          tutorial_root = Path("src/tutorials")
+          tutorial_root.mkdir(parents=True, exist_ok=True)
+
+          moved_roots = []
+          for child in sorted(include_root.iterdir()):
+              if not child.is_dir() or child.name == "dsa":
+                  continue
+              target = tutorial_root / child.name
+              if target.exists():
+                  raise RuntimeError(f"tutorial target already exists: {target}")
+              shutil.move(str(child), str(target))
+              moved_roots.append(child.name)
+
+          header_suffixes = {".h", ".hh", ".hpp", ".hxx"}
+          wrapper_count = 0
+          for tutorial_header in sorted(tutorial_root.rglob("*")):
+              if not tutorial_header.is_file() or tutorial_header.suffix.lower() not in header_suffixes:
+                  continue
+              relative = tutorial_header.relative_to(tutorial_root)
+              compatibility_header = include_root / relative
+              compatibility_header.parent.mkdir(parents=True, exist_ok=True)
+              guard = "DSA_TUTORIAL_COMPAT_" + re.sub(
+                  r"[^A-Za-z0-9]", "_", relative.as_posix()
+              ).upper()
+              compatibility_header.write_text(
+                  f"#ifndef {guard}\n"
+                  f"#define {guard}\n\n"
+                  f"// 兼容旧教学版 include 路径；真实实现已迁移到 src/tutorials。\n"
+                  f"#include <tutorials/{relative.as_posix()}>\n\n"
+                  f"#endif\n",
+                  encoding="utf-8",
+              )
+              wrapper_count += 1
+
+          Path("cmake/IncludePaths.cmake").write_text(
+              "set(SRC_ROOT ${CMAKE_SOURCE_DIR}/src)\n"
+              "set(INCLUDE_ROOT ${SRC_ROOT}/include)\n"
+              "set(TUTORIAL_ROOT ${SRC_ROOT}/tutorials)\n\n"
+              "# 工业版使用 <dsa/...>，教学版真实实现使用 <tutorials/...>。\n"
+              "include_directories(\"${INCLUDE_ROOT}\")\n"
+              "include_directories(\"${SRC_ROOT}\")\n\n"
+              "# 保留旧教学代码依赖的短 include（如 <Vector.h>、<List.h>）。\n"
+              "file(GLOB HEADER_DIRS RELATIVE ${INCLUDE_ROOT} \"${INCLUDE_ROOT}/*\")\n"
+              "foreach(DIR ${HEADER_DIRS})\n"
+              "    if(IS_DIRECTORY \"${INCLUDE_ROOT}/${DIR}\")\n"
+              "        include_directories(\"${INCLUDE_ROOT}/${DIR}\")\n"
+              "    endif()\n"
+              "endforeach()\n",
+              encoding="utf-8",
+          )
+
+          Path("cmake/InstallHeaders.cmake").write_text(
+              "install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/include/\n"
+              "        DESTINATION include/DSA\n"
+              "        FILES_MATCHING PATTERN \"*.h\" PATTERN \"*.hpp\")\n\n"
+              "install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/tutorials/\n"
+              "        DESTINATION include/DSA/tutorials\n"
+              "        FILES_MATCHING PATTERN \"*.h\" PATTERN \"*.hpp\")\n",
+              encoding="utf-8",
+          )
+
+          coverage_path = Path("cmake/Coverage.cmake")
+          coverage = coverage_path.read_text(encoding="utf-8")
+          coverage = coverage.replace(
+              '                    --filter "${CMAKE_SOURCE_DIR}/src/include"\n',
+              '                    --filter "${CMAKE_SOURCE_DIR}/src/include"\n'
+              '                    --filter "${CMAKE_SOURCE_DIR}/src/tutorials"\n',
+          )
+          coverage = coverage.replace(
+              '                    --exclude "${CMAKE_SOURCE_DIR}/src/include/print/.\\*"\n',
+              '                    --exclude "${CMAKE_SOURCE_DIR}/src/include/print/.\\*"\n'
+              '                    --exclude "${CMAKE_SOURCE_DIR}/src/tutorials/print/.\\*"\n',
+          )
+          coverage_path.write_text(coverage, encoding="utf-8")
+
+          for workflow in Path(".github/workflows").glob("*.yml"):
+              if workflow.name == "tutorial-layout-migration.yml":
+                  continue
+              text = workflow.read_text(encoding="utf-8")
+              text = text.replace(
+                  "              --filter '^src/include' \\\n",
+                  "              --filter '^src/include' \\\n"
+                  "              --filter '^src/tutorials' \\\n",
+              )
+              text = text.replace(
+                  "              --exclude 'src/include/print/.*' \\\n",
+                  "              --exclude 'src/include/print/.*' \\\n"
+                  "              --exclude 'src/tutorials/print/.*' \\\n",
+              )
+              workflow.write_text(text, encoding="utf-8")
+
+          Path("docs/tutorial-layout.md").write_text(
+              "# 教学版源码布局\n\n"
+              "教学实现统一存放在 `src/tutorials/**`，工业实现继续存放在 "
+              "`src/include/dsa/**`。\n\n"
+              "## 兼容策略\n\n"
+              "- 原 `src/include/<family>/**` 路径保留为轻量转发头；\n"
+              "- 旧代码无需立即修改 include；\n"
+              "- 新教学代码应显式使用 `#include <tutorials/<family>/...>`；\n"
+              "- 安装时同时发布兼容头与 `tutorials/**` 真实实现。\n\n"
+              f"本次迁移目录：{', '.join(f'`{name}`' for name in moved_roots)}。\n\n"
+              f"共生成 {wrapper_count} 个兼容转发头。\n",
+              encoding="utf-8",
+          )
+
+          Path("docs/refactor-status.md").write_text(
+              "# 数据结构与算法重构状态\n\n"
+              "> 审计基线：`refactor-container@56fdd50`。本表按仓库中是否存在 "
+              "`src/include/dsa/**` 工业实现与共享算法层判断。\n\n"
+              "## 已完成主要家族\n\n"
+              "- 容器：Vector、List、Stack、Queue、Bitmap、HashTable、GraphMatrix / "
+              "GraphList、BinTree / BST / AVL / RedBlack / BTree、String、Trie / TST、"
+              "UnionFind、完全二叉堆及节点堆家族。\n"
+              "- 算法：Search、Sequence、字符串基础算法、LSD / MSD / Quick3String、"
+              "KMP / BM / KR，以及上述容器的共享 mutation / traversal 算法。\n\n"
+              "## 尚未完成生命周期重构\n\n"
+              "### 数据结构\n\n"
+              "- Splay Tree：`src/tutorials/bst/Splay.h`；缺少 "
+              "`dsa/container/tree/Splay.h`。\n"
+              "- B+ Tree：`src/tutorials/btree/BPlusTree.h`。\n"
+              "- B* Tree：`src/tutorials/btree/BStarTree.h`。\n"
+              "- Skiplist / Quadlist：`src/tutorials/ht/Skiplist.h`、"
+              "`Quadlist.h`、`QuadlistNode.h`。\n"
+              "- Segment Tree：`src/tutorials/segment/SegmentTree.h`。\n"
+              "- 独立 HashMap / 链式哈希 API：`src/tutorials/ht/HashMap.h`、"
+              "`HashtableChain.h`；现有工业 `HashTable` 尚未覆盖这些旧门面的完整兼容契约。\n"
+              "- StringST / Dictionary 抽象门面尚未形成统一工业符号表接口。\n\n"
+              "### 算法\n\n"
+              "- 通用排序家族：`src/tutorials/sort/**`；尚无 "
+              "`src/include/dsa/algorithm/Sort.h` 的 iterator-first 收口。\n"
+              "- Suffix Array：`src/tutorials/str/suffix_array.h`。\n"
+              "- Fibonacci 动态规划示例：`src/tutorials/dp/Fib.h`。\n"
+              "- Eratosthenes 筛法与 primeNLT 辅助算法尚未进入通用算法层。\n\n"
+              "## 不计入待重构清单\n\n"
+              "`demo/**` 中的皇后、迷宫、表达式求值、括号匹配等属于示例程序；"
+              "除非后续要求抽成库算法，否则不作为容器生命周期重构欠账。\n",
+              encoding="utf-8",
+          )
+
+          if not moved_roots:
+              raise RuntimeError("no tutorial implementation directories were migrated")
+          print(f"moved roots: {len(moved_roots)}")
+          print(f"compatibility headers: {wrapper_count}")
+          PY
+
+      - name: Check migration diff
+        run: |
+          git diff --check
+          test -f src/tutorials/vector/Vector.h
+          test -f src/tutorials/bst/Splay.h
+          test -f src/include/vector/Vector.h
+          grep -q '#include <tutorials/vector/Vector.h>' src/include/vector/Vector.h
+
+      - name: Configure, build and test C++11/C++20
+        shell: bash
+        run: |
+          set -euo pipefail
+          for standard in 11 20; do
+            build_dir="build-migration-cxx${standard}"
+            cmake -S . -B "${build_dir}" -G "Unix Makefiles" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_STANDARD="${standard}" \
+              -DCOVERAGE=OFF \
+              -DENABLE_COVERAGE=OFF
+            cmake --build "${build_dir}" --parallel 2
+            ctest --test-dir "${build_dir}" --output-on-failure -LE bench
+          done
+
+      - name: Commit verified migration
+        shell: bash
+        run: |
+          rm .github/workflows/tutorial-layout-migration.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor: 收敛教学实现目录"
+          git push origin "HEAD:${{ github.event.pull_request.head.ref }}"
