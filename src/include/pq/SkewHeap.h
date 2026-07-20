@@ -45,17 +45,25 @@ public:
     }
     SkewHeap(const SkewHeap& other) : BinTree<T>() { copyValuesFrom(other); }
     SkewHeap(SkewHeap&& other) noexcept : BinTree<T>() {
-        this->_root = other._root; this->_size = other._size;
-        other._root = nullptr; other._size = 0;
+        this->_root = other._root;
+        this->_size = other._size;
+        other._root = nullptr;
+        other._size = 0;
     }
     SkewHeap& operator=(const SkewHeap& other) {
-        if (this != &other) { SkewHeap replacement(other); swapState(replacement); }
+        if (this != &other) {
+            SkewHeap replacement(other);
+            swapState(replacement);
+        }
         return *this;
     }
     SkewHeap& operator=(SkewHeap&& other) noexcept {
         if (this != &other) {
-            clearOwned(); this->_root = other._root; this->_size = other._size;
-            other._root = nullptr; other._size = 0;
+            clearOwned();
+            this->_root = other._root;
+            this->_size = other._size;
+            other._root = nullptr;
+            other._size = 0;
         }
         return *this;
     }
@@ -75,7 +83,8 @@ template<typename T, bool MAX>
 void SkewHeap<T, MAX>::clearOwned() noexcept {
     if (this->_root)
         removeAt(this->_root);
-    this->_root = nullptr; this->_size = 0;
+    this->_root = nullptr;
+    this->_size = 0;
 }
 
 template<typename T, bool MAX>
@@ -88,15 +97,20 @@ void SkewHeap<T, MAX>::copyValuesFrom(const SkewHeap& other) {
 
 template<typename T, bool MAX>
 void SkewHeap<T, MAX>::swapState(SkewHeap& other) noexcept {
-    using std::swap;
-    swap(this->_root, other._root); swap(this->_size, other._size);
+    std::swap(this->_root, other._root);
+    std::swap(this->_size, other._size);
 }
 
 template<typename T, bool MAX>
 void SkewHeap<T, MAX>::insert(T value) {
     BinNode<T>* node = new BinNode<T>(value, nullptr);
-    try { this->_root = merge(this->_root, node); ++this->_size; }
-    catch (...) { delete node; throw; }
+    try {
+        this->_root = merge(this->_root, node);
+        ++this->_size;
+    } catch (...) {
+        delete node;
+        throw;
+    }
 }
 
 template<typename T, bool MAX>
@@ -113,9 +127,11 @@ T SkewHeap<T, MAX>::delMax() {
     BinNode<T>* removed = this->_root;
     T result = removed->data;
     BinNode<T>* merged = merge(removed->lc, removed->rc);
-    removed->lc = nullptr; removed->rc = nullptr;
+    removed->lc = nullptr;
+    removed->rc = nullptr;
     this->_root = merged;
-    delete removed; --this->_size;
+    delete removed;
+    --this->_size;
     return result;
 }
 
@@ -125,7 +141,8 @@ void SkewHeap<T, MAX>::merge(SkewHeap& other) {
         return;
     this->_root = merge(this->_root, other._root);
     this->_size += other._size;
-    other._root = nullptr; other._size = 0;
+    other._root = nullptr;
+    other._size = 0;
 }
 
 #endif
