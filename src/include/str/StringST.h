@@ -3,26 +3,42 @@
 
 #include "dsa_string.h"
 #include "Vector.h"
-#define R 128
 
+static const size_type R = 256;
+
+/// 教学字符串符号表接口；保留原有虚函数签名和 T() 未命中哨兵。
 template<typename T>
 class StringST {
 public:
-    int s{0};
-    virtual void put(const String& key, T val) = 0;
+    StringST() : s(0) {}
+    virtual ~StringST() {}
+
+    virtual void put(const String& key, T value) = 0;
     virtual T get(String& key) = 0;
     virtual void remove(const String& key) = 0;
 
-    bool contains(String key) { return get(key); }
-    bool empty() {  return !size(); };
-    int size() {    return s; }
+    bool contains(String key) {
+        return !(get(key) == T());
+    }
 
-    void keys() { keysWithPrefix(""); };
+    bool empty() {
+        return s == 0;
+    }
 
-    virtual String longestPrefixOf(String s) = 0;
-    virtual Vector<String> keysWithPrefix(String s) = 0;
-    virtual Vector<String> keysThatMatch(String s) = 0;
-    
+    int size() {
+        return s;
+    }
+
+    /// 保留旧 void API；调用方若需要结果应使用 keysWithPrefix("")。
+    void keys() {
+        (void)keysWithPrefix(String());
+    }
+
+    virtual String longestPrefixOf(String input) = 0;
+    virtual Vector<String> keysWithPrefix(String prefix) = 0;
+    virtual Vector<String> keysThatMatch(String pattern) = 0;
+
+    int s;
 };
 
 #endif
