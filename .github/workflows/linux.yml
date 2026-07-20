@@ -2,10 +2,8 @@ name: Linux
 
 on:
   workflow_call: {}
-  push:
-    branches-ignore:
-      - main
   pull_request:
+    types: [ready_for_review, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -13,6 +11,7 @@ permissions:
 
 jobs:
   build-and-test:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: ${{ matrix.compiler.name }}-cxx${{ matrix.standard }}
     runs-on: ubuntu-latest
     strategy:
