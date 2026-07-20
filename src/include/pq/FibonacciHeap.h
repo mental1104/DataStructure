@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include "BinTree.h"
 #include "PQ.h"
+#include "Vector.h"
 
 template <typename T, bool MAX = true>
 class FibonacciHeap : public PQ<T, MAX>, public BinTree<T> { //基于二叉树与兄弟链表实现的斐波那契堆（双顶可选）
