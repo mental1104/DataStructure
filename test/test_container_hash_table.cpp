@@ -300,8 +300,9 @@ TEST(ContainerHashTableTest, MatchesStdUnorderedMapForCommonOperations) {
             dsa::container::HashTable<int, int>::iterator actual = table.find(key);
             std::unordered_map<int, int>::iterator expected = reference.find(key);
             ASSERT_EQ(actual == table.end(), expected == reference.end());
-            if (actual != table.end())
+            if (actual != table.end()) {
                 EXPECT_EQ(actual->second, expected->second);
+            }
         }
     }
 
