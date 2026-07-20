@@ -36,9 +36,11 @@ void expectPriorityQueueEquivalent() {
             actual.pop();
             expected.pop();
         }
+
         ASSERT_EQ(expected.size(), actual.size());
-        if (!expected.empty())
+        if (!expected.empty()) {
             ASSERT_EQ(expected.top(), actual.top());
+        }
     }
 
     while (!expected.empty()) {
@@ -97,29 +99,26 @@ public:
     AllocationCounts* counts;
     int identity;
 
-    // 构造无统计目标的默认 allocator。
     CountingAllocator() : counts(NULL), identity(0) {}
 
-    // 绑定统计对象和 allocator 身份。
     CountingAllocator(AllocationCounts* valueCounts, int valueIdentity)
         : counts(valueCounts), identity(valueIdentity) {}
 
-    // 从其他 value_type 的 rebound allocator 复制状态。
     template<typename U>
     CountingAllocator(const CountingAllocator<U>& other)
         : counts(other.counts), identity(other.identity) {}
 
-    // 分配 n 个对象并累计统计。
     T* allocate(std::size_t count) {
-        if (counts)
+        if (counts) {
             counts->allocations += count;
+        }
         return std::allocator<T>().allocate(count);
     }
 
-    // 释放 n 个对象并累计统计。
     void deallocate(T* pointer, std::size_t count) {
-        if (counts)
+        if (counts) {
             counts->deallocations += count;
+        }
         std::allocator<T>().deallocate(pointer, count);
     }
 
@@ -129,13 +128,11 @@ public:
     };
 };
 
-// 判断两个 CountingAllocator 是否拥有相同资源身份。
 template<typename T, typename U>
 bool operator==(const CountingAllocator<T>& first, const CountingAllocator<U>& second) {
     return first.counts == second.counts && first.identity == second.identity;
 }
 
-// 判断两个 CountingAllocator 是否不兼容。
 template<typename T, typename U>
 bool operator!=(const CountingAllocator<T>& first, const CountingAllocator<U>& second) {
     return !(first == second);
@@ -146,17 +143,21 @@ template<typename HeapType>
 void expectAllocatorLifecycleClosed() {
     AllocationCounts counts;
     typedef CountingAllocator<int> Allocator;
+
     {
         HeapType heap(typename HeapType::value_compare(), Allocator(&counts, 1));
-        for (int value = 0; value < 200; ++value)
+        for (int value = 0; value < 200; ++value) {
             heap.push(value);
+        }
 
         HeapType copied(heap);
         HeapType moved(std::move(copied), Allocator(&counts, 1));
-        while (!moved.empty())
+        while (!moved.empty()) {
             moved.pop();
+        }
         heap.clear();
     }
+
     EXPECT_EQ(counts.allocations, counts.deallocations);
 }
 
@@ -170,12 +171,13 @@ struct ThrowState {
 class ThrowingLess {
 public:
     ThrowingLess() : state_(new ThrowState(1000000)) {}
+
     explicit ThrowingLess(const std::shared_ptr<ThrowState>& state) : state_(state) {}
 
-    // 比较前递减预算，预算为零时抛出 runtime_error。
     bool operator()(int first, int second) const {
-        if (state_->remaining-- == 0)
+        if (state_->remaining-- == 0) {
             throw std::runtime_error("comparison failure");
+        }
         return first < second;
     }
 
@@ -189,14 +191,18 @@ void expectMeldRollbackOnComparisonFailure() {
     std::shared_ptr<ThrowState> state(new ThrowState(1000));
     HeapType first{ThrowingLess(state)};
     HeapType second{ThrowingLess(state)};
-    for (int value : std::vector<int>{9, 7, 5})
+
+    for (int value : std::vector<int>{9, 7, 5}) {
         first.push(value);
-    for (int value : std::vector<int>{8, 6, 4})
+    }
+    for (int value : std::vector<int>{8, 6, 4}) {
         second.push(value);
+    }
 
     const std::size_t firstSize = first.size();
     const std::size_t secondSize = second.size();
     state->remaining = 0;
+
     EXPECT_THROW(first.meld(second), std::runtime_error);
     EXPECT_EQ(firstSize, first.size());
     EXPECT_EQ(secondSize, second.size());
@@ -208,7 +214,9 @@ void expectMeldRollbackOnComparisonFailure() {
 class MoveOnlyValue {
 public:
     explicit MoveOnlyValue(int value) : value_(value) {}
+
     MoveOnlyValue(MoveOnlyValue&& other) noexcept : value_(other.value_) {}
+
     MoveOnlyValue& operator=(MoveOnlyValue&& other) noexcept {
         value_ = other.value_;
         return *this;
@@ -217,14 +225,12 @@ public:
     MoveOnlyValue(const MoveOnlyValue&) = delete;
     MoveOnlyValue& operator=(const MoveOnlyValue&) = delete;
 
-    // 返回测试值。
     int value() const { return value_; }
 
 private:
     int value_;
 };
 
-// 按 MoveOnlyValue 内部整数建立标准最大堆语义。
 struct MoveOnlyLess {
     bool operator()(const MoveOnlyValue& first, const MoveOnlyValue& second) const {
         return first.value() < second.value();
@@ -234,15 +240,19 @@ struct MoveOnlyLess {
 TEST(TeachingHeapRefactorTest, CompleteBinaryHeapKeepsMaxAndMinModes) {
     Heap<int> maxHeap;
     Heap<int, false> minHeap;
+
     for (int value : std::vector<int>{3, 9, 1, 7, 5}) {
         maxHeap.insert(value);
         minHeap.insert(value);
     }
 
-    for (int expected : std::vector<int>{9, 7, 5, 3, 1})
+    for (int expected : std::vector<int>{9, 7, 5, 3, 1}) {
         EXPECT_EQ(expected, maxHeap.delMax());
-    for (int expected : std::vector<int>{1, 3, 5, 7, 9})
+    }
+    for (int expected : std::vector<int>{1, 3, 5, 7, 9}) {
         EXPECT_EQ(expected, minHeap.delMax());
+    }
+
     EXPECT_THROW(maxHeap.getMax(), std::runtime_error);
     EXPECT_THROW(maxHeap.delMax(), std::runtime_error);
 }
@@ -269,8 +279,10 @@ TEST(IndustrialHeapRefactorTest, CompleteBinaryHeapSupportsRangeAndMinComparator
         values.end(),
         std::greater<int>()
     );
-    for (int expected : std::vector<int>{1, 3, 5, 7, 9})
+
+    for (int expected : std::vector<int>{1, 3, 5, 7, 9}) {
         EXPECT_EQ(expected, heap.extract_top());
+    }
 }
 
 TEST(IndustrialHeapRefactorTest, MeldConsumesSourceAndPreservesOrder) {
@@ -293,6 +305,7 @@ TEST(IndustrialHeapRefactorTest, MeldConsumesSourceAndPreservesOrder) {
 
 TEST(IndustrialHeapRefactorTest, NodeFamiliesCloseAllocatorLifecycle) {
     typedef CountingAllocator<int> Allocator;
+
     expectAllocatorLifecycleClosed<
         dsa::container::LeftistHeap<int, std::less<int>, Allocator>
     >();
@@ -310,6 +323,7 @@ TEST(IndustrialHeapRefactorTest, NodeFamiliesCloseAllocatorLifecycle) {
 TEST(IndustrialHeapRefactorTest, MeldRejectsIncompatibleAllocators) {
     AllocationCounts counts;
     typedef CountingAllocator<int> Allocator;
+
     dsa::container::PairingHeap<int, std::less<int>, Allocator> first(
         std::less<int>(),
         Allocator(&counts, 1)
