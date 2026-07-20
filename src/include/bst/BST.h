@@ -2,117 +2,172 @@
 #define __DSA_BST
 
 #include "BinTree.h"
+#include <dsa/core/tree/SearchTreeAlgorithm.h>
 
+#include <functional>
+
+namespace dsa {
+namespace core {
+
+// 在既有 TeachingBinNodeAccess 上补充可写链接语义，避免扩大教学 BinNode 的公开 API。
 template<typename T>
-class BST: public BinTree<T> {
+struct TeachingSearchNodeAccess : TeachingBinNodeAccess<T> {
+    typedef ::BinNode<T> node_type;
+
+    static node_type*& leftRef(node_type* node) { return node->lc; }
+    static node_type*& rightRef(node_type* node) { return node->rc; }
+    static node_type*& parentRef(node_type* node) { return node->parent; }
+    static int& heightRef(node_type* node) { return node->height; }
+};
+
+} // namespace core
+} // namespace dsa
+
+// 教学版 BST：保留 search 返回链接引用、_hot 与继承接口，
+// 但搜索、旋转和物理摘除统一复用 SearchTreeAlgorithm。
+template<typename T>
+class BST : public BinTree<T> {
 protected:
+    typedef dsa::core::TeachingSearchNodeAccess<T> Access;
+    typedef dsa::core::SearchTreeAlgorithm<Access> Algorithm;
+    typedef typename Algorithm::EraseResult EraseResult;
+
     BinNode<T>* _hot{nullptr};
+
+    // 兼容旧三节点重构 helper；只负责重连节点，不管理节点生命周期。
     BinNode<T>* connect34(
         BinNode<T>*, BinNode<T>*, BinNode<T>*,
         BinNode<T>*, BinNode<T>*, BinNode<T>*, BinNode<T>*
     );
+
+    // 对 x、其父节点和祖父节点执行四类三节点重构，并直接提交父链接或根链接。
     BinNode<T>* rotateAt(BinNode<T>* x);
+
+    // 供 AVL、红黑树和伸展树复用的单旋转；旋转后同步局部结构高度。
+    BinNode<T>* rotateLeft(BinNode<T>* pivot);
+    BinNode<T>* rotateRight(BinNode<T>* pivot);
+
+    // 从 search 返回的链接中物理摘除节点；不复制或交换键值。
+    EraseResult detachAt(BinNode<T>*& slot);
+
+    // 释放已经完全脱离树结构的单个教学节点。
+    void destroyDetached(BinNode<T>* node);
+
 public:
     virtual BinNode<T>*& search(const T& e);
-    virtual BinNode<T>*  insert(const T& e);
+    virtual BinNode<T>* insert(const T& e);
     virtual bool remove(const T& e);
 };
 
 template<typename T>
-BinNode<T>*&
-BST<T>::search(const T& e){
-    if ( !this->_root || e == this->_root->data ) { 
-        _hot = NULL; 
-        return this->_root; 
-    } //空树，或恰在树根命中
-    
-    for ( _hot = this->_root; ; ) { //否则，自顶而下
-        BinNode<T>*& v = ( e < _hot->data ) ? _hot->lc : _hot->rc; //确定方向，深入一层
-        if ( !v || e == v->data ) 
-            return v; //一旦命中或抵达叶子，随即返回
-        _hot = v; //返回目标节点位置的引用，以便后续插入、删除操作
-   } 
+BinNode<T>*& BST<T>::search(const T& e) {
+    return Algorithm::searchSlot(this->_root, _hot, e, std::less<T>());
 }
 
 template<typename T>
-BinNode<T>* 
-BST<T>::insert(const T& e){
-    BinNode<T>*& x = search(e);
-    if(x)
-        return x;
-    x = new BinNode<T>(e, _hot);
-    this->_size++;
-    this->updateHeightAbove(x);
-    return x;
+BinNode<T>* BST<T>::insert(const T& e) {
+    BinNode<T>*& slot = search(e);
+    if (slot)
+        return slot;
+
+    BinNode<T>* created = new BinNode<T>(e, _hot);
+    slot = created;
+    ++this->_size;
+    this->updateHeightAbove(created);
+    return created;
 }
 
 template<typename T>
-static BinNode<T>* removeAt(BinNode<T>*& x, BinNode<T>*& hot){
-    BinNode<T>* w = x;
-    BinNode<T>* succ = nullptr;
-    if(!HasLChild(*x))
-        succ = x = x->rc;
-    else if(!HasRChild(*x))
-        succ = x = x->lc;
-    else {
-        w = w->succ();
-        swap(x->data, w->data);
-        BinNode<T>* u = w->parent;
-        ((u==x)?u->rc:u->lc) = succ = w->rc;
-    }
-    hot = w->parent;
-    if(succ) succ->parent = hot;
-    //
-    return succ;
+typename BST<T>::EraseResult BST<T>::detachAt(BinNode<T>*& slot) {
+    return Algorithm::detachFromSlot(slot, slot);
 }
 
 template<typename T>
-bool BST<T>::remove(const T& e){
-    BinNode<T>*& x = search(e);
-    if(!x) 
+void BST<T>::destroyDetached(BinNode<T>* node) {
+    if (!node)
+        return;
+    release(node->data);
+    delete node;
+}
+
+template<typename T>
+bool BST<T>::remove(const T& e) {
+    BinNode<T>*& slot = search(e);
+    if (!slot)
         return false;
-    removeAt(x ,_hot);
-    this->_size--;
-    this->updateHeightAbove(_hot);
+
+    EraseResult result = detachAt(slot);
+    _hot = result.fix_parent;
+    destroyDetached(result.removed);
+    --this->_size;
+
+    if (result.moved_node)
+        Algorithm::updateHeight(result.moved_node);
+    Algorithm::updateHeightAbove(result.rebalance_from);
     return true;
 }
 
 template<typename T>
-BinNode<T>* 
-BST<T>::connect34(
+BinNode<T>* BST<T>::connect34(
     BinNode<T>* a, BinNode<T>* b, BinNode<T>* c,
-    BinNode<T>* T0, BinNode<T>* T1, BinNode<T>* T2, BinNode<T>* T3
-){
-    a->lc = T0; if ( T0 ) T0->parent = a;
-    a->rc = T1; if ( T1 ) T1->parent = a; this->updateHeight ( a );
-    c->lc = T2; if ( T2 ) T2->parent = c;
-    c->rc = T3; if ( T3 ) T3->parent = c; this->updateHeight ( c );
-    b->lc = a; a->parent = b;
-    b->rc = c; c->parent = b; this->updateHeight ( b );
-    return b; //该子树新的根节点
+    BinNode<T>* t0, BinNode<T>* t1, BinNode<T>* t2, BinNode<T>* t3
+) {
+    Algorithm::setLeft(a, t0);
+    Algorithm::setRight(a, t1);
+    Algorithm::updateHeight(a);
+
+    Algorithm::setLeft(c, t2);
+    Algorithm::setRight(c, t3);
+    Algorithm::updateHeight(c);
+
+    Algorithm::setLeft(b, a);
+    Algorithm::setRight(b, c);
+    Algorithm::updateHeight(b);
+    return b;
 }
 
 template<typename T>
-BinNode<T>* 
-BST<T>::rotateAt(BinNode<T>* v){
-    /*DSA*/if ( !v ) { printf ( "\a\nFail to rotate a null node\n" ); exit ( -1 ); }
-   BinNode<T>* p = v->parent; BinNode<T>* g = p->parent; //视v、p和g相对位置分四种情况
-   if ( IsLChild ( *p ) ) /* zig */
-      if ( IsLChild ( *v ) ) { /* zig-zig */ 
-         p->parent = g->parent; //向上联接
-         return connect34 ( v, p, g, v->lc, v->rc, p->rc, g->rc );
-      } else { /* zig-zag */  //*DSA*/printf("\tzIg-zAg: ");
-         v->parent = g->parent; //向上联接
-         return connect34 ( p, v, g, p->lc, v->lc, v->rc, g->rc );
-      }
-   else  /* zag */
-      if ( IsRChild ( *v ) ) { /* zag-zag */
-         p->parent = g->parent; //向上联接
-         return connect34 ( g, p, v, g->lc, p->lc, v->lc, v->rc );
-      } else { /* zag-zig */  //*DSA*/printf("\tzAg-zIg: ");
-         v->parent = g->parent; //向上联接
-         return connect34 ( g, v, p, g->lc, v->lc, v->rc, p->rc );
-      }
+BinNode<T>* BST<T>::rotateLeft(BinNode<T>* pivot) {
+    BinNode<T>* result = Algorithm::rotateLeft(this->_root, pivot);
+    Algorithm::updateHeight(pivot);
+    Algorithm::updateHeight(result);
+    return result;
+}
+
+template<typename T>
+BinNode<T>* BST<T>::rotateRight(BinNode<T>* pivot) {
+    BinNode<T>* result = Algorithm::rotateRight(this->_root, pivot);
+    Algorithm::updateHeight(pivot);
+    Algorithm::updateHeight(result);
+    return result;
+}
+
+template<typename T>
+BinNode<T>* BST<T>::rotateAt(BinNode<T>* x) {
+    BinNode<T>* result = Algorithm::restructure(this->_root, x);
+    if (!result)
+        return nullptr;
+    Algorithm::updateHeight(result->lc);
+    Algorithm::updateHeight(result->rc);
+    Algorithm::updateHeight(result);
+    return result;
+}
+
+// 兼容旧 helper：执行物理摘除并立即销毁被删除节点。
+// hot 返回双黑修复或高度更新所需的父节点，返回值为替代空位的孩子。
+template<typename T>
+static BinNode<T>* removeAt(BinNode<T>*& slot, BinNode<T>*& hot) {
+    typedef dsa::core::TeachingSearchNodeAccess<T> Access;
+    typedef dsa::core::SearchTreeAlgorithm<Access> Algorithm;
+    typename Algorithm::EraseResult result = Algorithm::detachFromSlot(slot, slot);
+    hot = result.fix_parent;
+    if (result.removed) {
+        release(result.removed->data);
+        delete result.removed;
+    }
+    if (result.moved_node)
+        Algorithm::updateHeight(result.moved_node);
+    return result.fix_node;
 }
 
 #endif
