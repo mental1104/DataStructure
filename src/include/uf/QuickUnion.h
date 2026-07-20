@@ -41,10 +41,10 @@ public:
     QuickUnion() = delete;
 
     /// 构造 N 棵单节点树。
-    explicit QuickUnion(int N);
+    QuickUnion(int N);
 
     /// 从文件流读取 N 和连接对，保留原教学构造入口。
-    explicit QuickUnion(std::ifstream& input);
+    QuickUnion(std::ifstream& input);
 
     /// 复用基类深拷贝语义。
     QuickUnion(const QuickUnion& other) = default;
