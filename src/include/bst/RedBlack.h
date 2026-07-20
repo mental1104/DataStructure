@@ -152,6 +152,7 @@ bool RedBlack<T>::remove(const T& e) {
 template<typename T>
 void RedBlack<T>::solveDoubleBlack(BinNode<T>* x) {
     BinNode<T>* parent = x ? x->parent : this->_hot;
+    BinNode<T>* height_anchor = parent ? parent : x;
     while (x != this->_root && IsBlack(x)) {
         if (!parent)
             break;
@@ -230,6 +231,8 @@ void RedBlack<T>::solveDoubleBlack(BinNode<T>* x) {
     }
     if (x)
         x->color = RBColor::BLACK;
+    // solveDoubleBlack 是可独立调用的教学步骤；退出前收敛旋转或夹具遗留的结构高度。
+    this->updateHeightAbove(height_anchor);
 }
 
 #endif

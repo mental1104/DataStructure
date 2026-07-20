@@ -279,19 +279,20 @@ void BTree<T>::solveUnderflow(BTNode<T>* node) {
             }
             delete node;
         } else {
+            // 教学版旧契约要求向右合并时保留右兄弟节点身份，删除当前亏空节点。
             BTNode<T>* right = parent->child[position + 1];
-            node->key.insert(node->key.size(), parent->key.remove(position));
-            parent->child.remove(position + 1);
-            while (!right->key.empty()) {
-                node->key.insert(node->key.size(), right->key.remove(0));
+            right->key.insert(0, parent->key.remove(position));
+            parent->child.remove(position);
+            while (!node->key.empty()) {
+                right->key.insert(0, node->key.remove(node->key.size() - 1));
             }
-            while (!right->child.empty()) {
-                BTNode<T>* child = right->child.remove(0);
-                node->child.insert(node->child.size(), child);
+            while (!node->child.empty()) {
+                BTNode<T>* child = node->child.remove(node->child.size() - 1);
+                right->child.insert(0, child);
                 if (child)
-                    child->parent = node;
+                    child->parent = right;
             }
-            delete right;
+            delete node;
         }
         node = parent;
     }
