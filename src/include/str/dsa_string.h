@@ -1,246 +1,182 @@
-#ifndef __DSA_STRING
-#define __DSA_STRING
+#pragma once
 
 #include "utils.h"
-#include <cstring>
+#include "string_access.h"
+
+#include <cstddef>
+#include <string>
+#include <string_view>
+#include <utility>
+
+class String;
+
+namespace dsa {
+namespace str {
+
+template <typename Sequence>
+String substr(const Sequence& input, size_type pos, size_type count = static_cast<size_type>(-1));
+
+template <typename Sequence>
+String sub_str(const Sequence& input, size_type pos, size_type count = static_cast<size_type>(-1));
+
+template <typename Sequence>
+String prefix(const Sequence& input, size_type count);
+
+template <typename Sequence>
+String suffix(const Sequence& input, size_type count);
+
+template <typename Left, typename Right>
+String concat(const Left& left, const Right& right);
+
+}  // namespace str
+}  // namespace dsa
 
 class String {
 public:
     using value_type = char;
+    using iterator = std::string::iterator;
+    using const_iterator = std::string::const_iterator;
+    static constexpr size_type npos = static_cast<size_type>(-1);
 
-    String();//默认构造函数
-    String(const char* s);//C风格字符串的构造函数
-    String(char c);
-    String(const String& );//拷贝构造函数
-    String(const char* s, size_type k);//从位置s开始构造k个字符
+    String() = default;
+    String(const char* value) : data_(value == nullptr ? "" : value) {}
+    String(char value) : data_(1, value) {}
+    String(const char* value, size_type count)
+        : data_(value == nullptr ? std::string{} : std::string(value, static_cast<std::size_t>(count))) {}
+    String(std::string_view value)
+        : data_(value.empty() ? std::string{} : std::string(value.data(), value.size())) {}
+    String(const std::string& value) : data_(value) {}
+    String(std::string&& value) noexcept : data_(std::move(value)) {}
 
-    ~String() { delete[] data_; data_ = nullptr; end_ = nullptr;}//析构函数
-    String& operator=(const String&);//拷贝赋值运算符
+    String(const String&) = default;
+    String(String&&) noexcept = default;
+    String& operator=(const String&) = default;
+    String& operator=(String&&) noexcept = default;
+    ~String() = default;
 
-    const char& front() const;//第一个元素
-    const char& back()  const;//最后一个元素
-    bool check(size_type i) const;//下标越界检查
-    const char* c_str() const;//C风格字符串
+    char& front() { return data_.front(); }
+    const char& front() const { return data_.front(); }
+    char& back() { return data_.back(); }
+    const char& back() const { return data_.back(); }
 
-    size_type size() const {  return static_cast<size_type>(end_ - data_); }//大小
-    bool empty() const {    return end_ == data_;   }//判空
+    bool check(size_type index) const noexcept {
+        return static_cast<std::size_t>(index) < data_.size();
+    }
 
-    char charAt(size_type i)/* 返回对应字符前进行下标检查 */{   if(check(i))  return (*this)[i]; return '\0';}
-    String substr(size_type i, size_type k = -1);//返回从i开始的k个字符的子串
-    String prefix(size_type k);//返回前缀
-    String suffix(size_type k);//返回后缀
-    bool equal(const String& rhs)/* 判等 */ {   return *this == rhs;  }
-    String& concat(const String& rhs);//字符串拼接
-    //int indexOf(const String& rhs);//子串匹配
+    char charAt(size_type index) const noexcept {
+        return check(index) ? data_[static_cast<std::size_t>(index)] : '\0';
+    }
 
-    char& operator[](size_type r);//重载下标运算符
-    char operator[] (size_type) const;
-    bool operator==(const String& rhs);//重载判等运算符
-    bool operator!=(const String& rhs) {    return !(*this == rhs);     }
-    String operator+(const String& rhs);
-    String operator+(char rhs);
-    bool operator<(const String& rhs) const; 
-    template<typename VST> void traverse(VST&& visit);
-    void traverse(void (*visit)(char&));
+    const char* c_str() const noexcept { return data_.c_str(); }
+    char* data() noexcept { return data_.data(); }
+    const char* data() const noexcept { return data_.data(); }
 
-    char* begin() { return data_; }
-    const char* begin() const { return data_; }
-    char* end() { return end_; }
-    const char* end() const { return end_; }
+    size_type size() const noexcept { return static_cast<size_type>(data_.size()); }
+    bool empty() const noexcept { return data_.empty(); }
+    size_type capacity() const noexcept { return static_cast<size_type>(data_.capacity()); }
+
+    void clear() noexcept { data_.clear(); }
+    void reserve(size_type capacity) { data_.reserve(static_cast<std::size_t>(capacity)); }
+    void push_back(char value) { data_.push_back(value); }
+    void pop_back() { data_.pop_back(); }
+
+    String substr(size_type pos, size_type count = npos) const;
+    String prefix(size_type count) const;
+    String suffix(size_type count) const;
+
+    bool equal(const String& rhs) const noexcept { return *this == rhs; }
+    String& concat(const String& rhs);
+    String& append(std::string_view rhs) {
+        if (!rhs.empty()) {
+            data_.append(rhs.data(), rhs.size());
+        }
+        return *this;
+    }
+
+    char& operator[](size_type index) noexcept { return data_[static_cast<std::size_t>(index)]; }
+    const char& operator[](size_type index) const noexcept { return data_[static_cast<std::size_t>(index)]; }
+
+    bool operator==(const String& rhs) const noexcept { return data_ == rhs.data_; }
+    bool operator!=(const String& rhs) const noexcept { return !(*this == rhs); }
+    bool operator<(const String& rhs) const noexcept { return data_ < rhs.data_; }
+
+    String& operator+=(const String& rhs) { return concat(rhs); }
+    String& operator+=(char rhs) {
+        push_back(rhs);
+        return *this;
+    }
+
+    String operator+(const String& rhs) const;
+    String operator+(char rhs) const;
+
+    template <typename Visitor>
+    void traverse(Visitor&& visit) {
+        for (char& value : data_) {
+            visit(value);
+        }
+    }
+
+    void traverse(void (*visit)(char&)) {
+        for (char& value : data_) {
+            visit(value);
+        }
+    }
+
+    iterator begin() noexcept { return data_.begin(); }
+    const_iterator begin() const noexcept { return data_.begin(); }
+    const_iterator cbegin() const noexcept { return data_.cbegin(); }
+    iterator end() noexcept { return data_.end(); }
+    const_iterator end() const noexcept { return data_.end(); }
+    const_iterator cend() const noexcept { return data_.cend(); }
+
+    std::string_view view() const noexcept { return std::string_view(data_.data(), data_.size()); }
+    operator std::string_view() const noexcept { return view(); }
 
 private:
-    char* data_;
-    char* end_;
+    std::string data_;
 };
 
-String::String():data_(new char[1])
-{
-    *data_ = '\0';
-    end_ = data_;
+inline String operator+(char lhs, const String& rhs) {
+    String result(lhs);
+    result += rhs;
+    return result;
 }
 
-String::String(char c): data_(new char[2]) {
-    data_[0] = c;
-    data_[1] = '\0';
-    end_ = data_ + 1;  // ✅ 正确设置 end_ 指向字符串末尾
+namespace dsa {
+namespace str {
+
+inline std::string_view as_string_view(const String& value) noexcept {
+    return value.view();
 }
 
-String::String(const char* s){
-    size_type len = static_cast<size_type>(std::strlen(s));
-    data_ = new char[len + 1];
-    std::memcpy(data_, s, len + 1);
-    end_ = data_ + len;
+}  // namespace str
+}  // namespace dsa
+
+#include "string_algorithms.h"
+
+inline String String::substr(size_type pos, size_type count) const {
+    return dsa::str::substr(*this, pos, count);
 }
 
-String::String(const String& rhs){
-    size_type len = static_cast<size_type>(std::strlen(rhs.c_str()));
-    data_ = new char[len + 1];
-    std::memcpy(data_, rhs.c_str(), len + 1);
-    end_ = data_ + len;
+inline String String::prefix(size_type count) const {
+    return dsa::str::prefix(*this, count);
 }
 
-String::String(const char* s, size_type k){
-    data_ = new char[k+1];
-    size_type i;
-    for(i = 0; i < k; i++){
-        data_[i] = s[i];
-    }
-    data_[i] = '\0';
-    end_ = &data_[i];
+inline String String::suffix(size_type count) const {
+    return dsa::str::suffix(*this, count);
 }
 
-const char& String::front() const {
-    return *data_;
-}
-
-const char& String::back() const {
-    return *(end_ - 1);
-}
-
-char& String::operator[](size_type r){
-    return data_[r];
-}
-
-char String::operator[](size_type r) const {
-    return data_[r];
-}
-
-const char* String::c_str() const{
-    return data_;
-}
-
-String& String::operator=(const String& rhs){
-    if(&rhs != this){
-        const char* temp = rhs.c_str();
-        delete[] data_;
-        size_type len = static_cast<size_type>(std::strlen(temp));
-        data_ = new char[len + 1];
-        std::memcpy(data_, temp, len + 1);
-        end_ = data_ + len;
-    }
+inline String& String::concat(const String& rhs) {
+    data_.append(rhs.data_.data(), rhs.data_.size());
     return *this;
 }
 
-bool String::check(size_type i) const
-{
-    if (i >= this->size()) 
-        return false;
-    return true;
+inline String String::operator+(const String& rhs) const {
+    return dsa::str::concat(*this, rhs);
 }
 
-String String::substr(size_type i, size_type k){
-    String ret;
-    if(check(i)){
-        size_type comp = this->size() - i;
-
-        size_type size = (k<comp)?k:comp;
-        //printf("size:  %u\n", size);
-        String str(data_+i, size);
-        ret = str;
-    }
-    return ret;
+inline String String::operator+(char rhs) const {
+    String result(*this);
+    result.push_back(rhs);
+    return result;
 }
-
-bool String::operator==(const String& rhs){
-    if(!strcmp(this->data_, rhs.data_))
-        return true;
-    return false;
-}
-
-String String::prefix(size_type k){
-    if(check(k))
-        return String(this->data_, k);
-    return String(*this);
-}
-
-String String::suffix(size_type k){
-    if(check(k))
-        return String(this->end_ - k, k);
-    return String(*this);
-}
-
-String& String::concat(const String& rhs){
-    size_type l = this->size();
-    size_type r = rhs.size();
-    size_type sum = l+r;
-    char* n = new char[sum+1];
-    size_type i;
-    for(i = 0; i < l; i++){
-        *(n+i) = (*this)[i];
-    }
-
-    for(size_type j = 0; i < sum; i++, j++){
-        *(n+i) = *(rhs.data_ +j);
-    }
-
-    *(n+i) = '\0';
-    end_ = n+i;
-
-    delete[] data_;
-    data_ = n;
-    return *this;
-}
-
-String String::operator+(const String& rhs){
-    size_type l = this->size();
-    size_type r = rhs.size();
-    size_type sum = l+r;
-    char* n = new char[sum+1];
-    size_type i;
-    for(i = 0; i < l; i++){
-        *(n+i) = (*this)[i];
-    }
-
-    for(size_type j = 0; i < sum; i++, j++){
-        *(n+i) = *(rhs.data_ +j);
-    }
-
-    *(n+i) = '\0';
-    String ret(n);
-    delete[] n;
-    return ret;
-}
-
-String String::operator+(char rhs){
-    
-    char* n = new char[this->size()+2];
-    size_type i;
-    for(i = 0; i < this->size(); i++){
-        *(n+i) = (*this)[i];
-    }
-    *(n+i) = rhs;
-    i++;
-    *(n+i) = '\0';
-
-    String ret(n);
-    delete[] n;
-
-    return ret;
-}
-
-bool String::operator<(const String& rhs) const { 
-    if(strcmp(this->data_, rhs.data_) < 0) 
-        return true;
-    else 
-        return false;
-}
-
-
-template<typename VST>
-void String::traverse(VST&& visit){
-    char* ptr = data_;
-    while(ptr != end_){
-        visit(*ptr);
-        ++ptr;
-    }
-}
-
-void String::traverse(void (*visit)(char&)){
-    char* ptr = data_;
-    while(ptr != end_){
-        visit(*ptr);
-        ++ptr;
-    }
-}
-
-#endif

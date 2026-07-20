@@ -1,202 +1,313 @@
-#ifndef __DSA_TST
-#define __DSA_TST
+#pragma once
 
-#include "dsa_string.h"
 #include "StringST.h"
 #include "Vector.h"
-#include "Queue.h"
+#include "dsa_string.h"
+#include "string_access.h"
 
-template<typename T>
-struct TSTNode {
-    char c;
-    TSTNode* left;
-    TSTNode* mid;
-    TSTNode* right;
-    T val;
-    TSTNode() = delete;
-    TSTNode(char rhs):c(rhs), left(nullptr), mid(nullptr), right(nullptr), val(0){}
-};
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <utility>
 
-template<typename T>
-class TST : public StringST<T>{
+namespace dsa {
+namespace str {
+
+template <typename T>
+class TernarySearchTrie : public StringST<T> {
 private:
-    TSTNode<T>* root{nullptr};
-    TSTNode<T>* get(TSTNode<T>* x, String& key, size_type d);
-    TSTNode<T>* put(TSTNode<T>* x, const String& key, T val, size_type d);
-    TSTNode<T>* remove(TSTNode<T>* x, const String& key, size_type d);
+    struct Node {
+        explicit Node(unsigned char character) : character(character) {}
 
-    void collect(TSTNode<T>* x, String prefix, Vector<String>& q);
-    void collect(TSTNode<T>* x, String prefix, size_type i, String pattern, Vector<String>& q);
+        unsigned char character;
+        std::unique_ptr<Node> left;
+        std::unique_ptr<Node> middle;
+        std::unique_ptr<Node> right;
+        std::optional<T> value;
+    };
+
 public:
-    TST() = default;
-    ~TST();
-    T get(String& key);
-    T get(const char*);
-    void put(const String& key, T val) {  root = put(root, key, val, 0);  }
-    void remove(const String& key);
+    TernarySearchTrie() = default;
+    TernarySearchTrie(const TernarySearchTrie&) = delete;
+    TernarySearchTrie& operator=(const TernarySearchTrie&) = delete;
+    TernarySearchTrie(TernarySearchTrie&&) noexcept = default;
+    TernarySearchTrie& operator=(TernarySearchTrie&&) noexcept = default;
+    ~TernarySearchTrie() override = default;
 
-    String longestPrefixOf(String input);
-    Vector<String> keysWithPrefix(String pre);
-    Vector<String> keysThatMatch(String pattern);
-};
+    template <typename Key>
+    void put(const Key& key, T value) {
+        const std::string_view view = as_string_view(key);
+        if (view.empty()) {
+            if (!empty_value_) {
+                ++this->size_;
+            }
+            empty_value_ = std::move(value);
+            return;
+        }
 
-template<typename T>
-TST<T>::~TST(){
-    if (root == nullptr) {
-        return;
-    }
-    Queue<TSTNode<T>*> Q;
-    this->s = 0;
-    TSTNode<T>* node = root;
-    Q.enqueue(node);
-    while(!Q.empty()){
-        TSTNode<T>* current = Q.dequeue();
-        if(current->left) Q.enqueue(current->left);
-        if(current->mid) Q.enqueue(current->mid);
-        if(current->right) Q.enqueue(current->right);
-        release(current->val);
-        release(current);
-    }
-}
-
-template<typename T>
-TSTNode<T>* TST<T>::put(TSTNode<T>* x, const String& key, T val, size_type d){
-    char c = key[d];
-    if(x == nullptr){
-        x = new TSTNode<T>(c);
-    }
-    if      (c < x->c) x->left = put(x->left, key, val, d);
-    else if (c > x->c) x->right = put(x->right, key, val, d);
-    else if (d + 1 < key.size()) x->mid = put(x->mid, key, val, d+1);
-    else {
-        x->val = val;
-        ++this->s;
-    }
-    return x;
-}
-
-template<typename T>
-T TST<T>::get(String& key){
-    TSTNode<T>* x = get(root, key, 0);
-    if(x)
-        return x->val;
-    return 0;
-}
-
-template<typename T>
-T TST<T>::get(const char* key) {
-    String strKey(key);  // 将 C 字符串转换为 std::string
-    return get(strKey);       // 复用已有的 `get` 方法
-}
-
-template<typename T>
-TSTNode<T>* TST<T>::get(TSTNode<T>* x, String& key, size_type d){
-    if(x == nullptr)
-        return nullptr;
-
-    char c = key[d];
-    if      (c < x->c)  return get(x->left, key, d);
-    else if (c > x->c)  return get(x->right, key, d);
-    else if (d + 1 < key.size()) 
-                        return get(x->mid, key, d+1);
-    else return x;
-}
-
-template<typename T>
-void TST<T>::remove(const String& key){
-    root = remove(root, key, 0);
-}
-
-template<typename T>
-TSTNode<T>* TST<T>::remove(TSTNode<T>* x, const String& key, size_type d){
-    if(x == nullptr)
-        return nullptr;
-
-    char c = key[d];
-    if      (c < x->c) x->left = remove(x->left, key, d);
-    else if (c > x->c) x->right = remove(x->right, key, d);
-    else if (d + 1 < key.size()) x->mid = remove(x->mid, key, d+1);
-    else {
-        x->val = 0;
-        --this->s;
-    }
-
-    if(x->val != 0) return x;
-    
-    if(x->left || x->mid || x->right)
-        return x;
-    else{
-        release(x->val);
-        release(x);
-        return nullptr;
-    }
-}
-
-template<typename T>
-String TST<T>::longestPrefixOf(String input){
-    if(input.size() == 0)
-        return input;
-    size_type length = 0;
-    TSTNode<T>* x = root;
-    size_type i = 0;
-    while (x != nullptr && i < input.size()){
-        char c = input[i];
-        if      (c < x->c) x = x->left;
-        else if (c > x->c) x = x->right;
-        else {
-            i++;
-            if(x->val != 0) length = i;
-            x = x->mid;
+        bool inserted = false;
+        root_ = put_node(std::move(root_), view, 0, std::move(value), inserted);
+        if (inserted) {
+            ++this->size_;
         }
     }
-    return input.substr(0, length);
-}
 
-template<typename T>
-Vector<String> TST<T>::keysWithPrefix(String pre){
-    Vector<String> q;
-    if(pre == String("")){
-        collect(root, pre, q);
-        return q;
+    template <typename Key>
+    const T* find(const Key& key) const noexcept {
+        const std::string_view view = as_string_view(key);
+        if (view.empty()) {
+            return empty_value_ ? std::addressof(*empty_value_) : nullptr;
+        }
+        const Node* node = find_node(view);
+        return node != nullptr && node->value ? std::addressof(*node->value) : nullptr;
     }
-    TSTNode<T>* x = get(root, pre, 0);
-    if(x == nullptr) return q;
-    if(x->val != 0) q.insert(pre);
-    collect(x->mid, pre, q);
-    return q;
-}
 
-template<typename T>
-void TST<T>::collect(TSTNode<T>* x, String prefix, Vector<String>& q){
-    if(x == nullptr)
-        return;
-    collect(x->left, prefix, q);
-    String connected_str = prefix + String(x->c);
-    if(x->val != 0) q.insert(connected_str);
-    collect(x->mid, connected_str, q);
-    collect(x->right, prefix, q);
-}
-
-template<typename T>
-Vector<String> TST<T>::keysThatMatch(String pattern){
-    Vector<String> q;
-    collect(root, "", 0, pattern, q);
-    return q;
-}
-
-template<typename T>
-void TST<T>::collect(TSTNode<T>* x, String prefix, size_type i, String pattern, Vector<String>& q){
-    if(x == nullptr) return;
-    char c = pattern[i];
-    if(c == '.' || c < x->c) 
-        collect(x->left, prefix, i, pattern, q);
-    if(c == '.' || c == x->c){
-        if(i + 1 == pattern.size() && x->val != 0)
-            q.insert(prefix + x->c);
-        if(i + 1 < pattern.size())
-            collect(x->mid, prefix+x->c, i+1, pattern, q);
+    template <typename Key>
+    T* find(const Key& key) noexcept {
+        return const_cast<T*>(static_cast<const TernarySearchTrie*>(this)->find(key));
     }
-    if(c == '.' || c > x->c) collect(x->right, prefix, i, pattern, q);
-}
 
-#endif
+    template <typename Key>
+    T get(const Key& key) const {
+        const T* value = find(key);
+        return value == nullptr ? T{} : *value;
+    }
+
+    template <typename Key>
+    bool contains(const Key& key) const noexcept {
+        return find(key) != nullptr;
+    }
+
+    template <typename Key>
+    bool remove(const Key& key) {
+        const std::string_view view = as_string_view(key);
+        if (view.empty()) {
+            if (!empty_value_) {
+                return false;
+            }
+            empty_value_.reset();
+            --this->size_;
+            return true;
+        }
+
+        bool removed = false;
+        root_ = remove_node(std::move(root_), view, 0, removed);
+        if (removed) {
+            --this->size_;
+        }
+        return removed;
+    }
+
+    Vector<String> keys() const {
+        return keysWithPrefix(std::string_view{});
+    }
+
+    template <typename Prefix>
+    Vector<String> keysWithPrefix(const Prefix& prefix) const {
+        const std::string_view view = as_string_view(prefix);
+        Vector<String> result;
+
+        if (view.empty()) {
+            if (empty_value_) {
+                result.insert(String{});
+            }
+            String current;
+            collect(root_.get(), current, result);
+            return result;
+        }
+
+        const Node* node = find_node(view);
+        if (node == nullptr) {
+            return result;
+        }
+
+        String current(view);
+        if (node->value) {
+            result.insert(current);
+        }
+        collect(node->middle.get(), current, result);
+        return result;
+    }
+
+    template <typename Pattern>
+    Vector<String> keysThatMatch(const Pattern& pattern) const {
+        const std::string_view view = as_string_view(pattern);
+        Vector<String> result;
+        if (view.empty()) {
+            if (empty_value_) {
+                result.insert(String{});
+            }
+            return result;
+        }
+
+        String current;
+        collect_match(root_.get(), view, 0, current, result);
+        return result;
+    }
+
+    template <typename Input>
+    String longestPrefixOf(const Input& input) const {
+        const std::string_view view = as_string_view(input);
+        if (view.empty()) {
+            return String{};
+        }
+
+        const Node* node = root_.get();
+        std::size_t index = 0;
+        std::size_t longest = empty_value_ ? 0 : std::string_view::npos;
+
+        while (node != nullptr && index < view.size()) {
+            const unsigned char character = to_character(view[index]);
+            if (character < node->character) {
+                node = node->left.get();
+            } else if (character > node->character) {
+                node = node->right.get();
+            } else {
+                ++index;
+                if (node->value) {
+                    longest = index;
+                }
+                node = node->middle.get();
+            }
+        }
+
+        return longest == std::string_view::npos
+            ? String{}
+            : String(view.substr(0, longest));
+    }
+
+private:
+    static unsigned char to_character(char value) noexcept {
+        return static_cast<unsigned char>(value);
+    }
+
+    static std::unique_ptr<Node> put_node(std::unique_ptr<Node> node,
+                                          std::string_view key,
+                                          std::size_t depth,
+                                          T value,
+                                          bool& inserted) {
+        const unsigned char character = to_character(key[depth]);
+        if (!node) {
+            node = std::make_unique<Node>(character);
+        }
+
+        if (character < node->character) {
+            node->left = put_node(std::move(node->left), key, depth, std::move(value), inserted);
+        } else if (character > node->character) {
+            node->right = put_node(std::move(node->right), key, depth, std::move(value), inserted);
+        } else if (depth + 1 < key.size()) {
+            node->middle = put_node(std::move(node->middle), key, depth + 1, std::move(value), inserted);
+        } else {
+            inserted = !node->value;
+            node->value = std::move(value);
+        }
+        return node;
+    }
+
+    const Node* find_node(std::string_view key) const noexcept {
+        const Node* node = root_.get();
+        std::size_t depth = 0;
+        while (node != nullptr) {
+            const unsigned char character = to_character(key[depth]);
+            if (character < node->character) {
+                node = node->left.get();
+            } else if (character > node->character) {
+                node = node->right.get();
+            } else if (depth + 1 < key.size()) {
+                ++depth;
+                node = node->middle.get();
+            } else {
+                return node;
+            }
+        }
+        return nullptr;
+    }
+
+    static std::unique_ptr<Node> remove_node(std::unique_ptr<Node> node,
+                                             std::string_view key,
+                                             std::size_t depth,
+                                             bool& removed) {
+        if (!node) {
+            return nullptr;
+        }
+
+        const unsigned char character = to_character(key[depth]);
+        if (character < node->character) {
+            node->left = remove_node(std::move(node->left), key, depth, removed);
+        } else if (character > node->character) {
+            node->right = remove_node(std::move(node->right), key, depth, removed);
+        } else if (depth + 1 < key.size()) {
+            node->middle = remove_node(std::move(node->middle), key, depth + 1, removed);
+        } else if (node->value) {
+            node->value.reset();
+            removed = true;
+        }
+
+        if (!node->value && !node->left && !node->middle && !node->right) {
+            return nullptr;
+        }
+        return node;
+    }
+
+    static void collect(const Node* node, String& prefix, Vector<String>& result) {
+        if (node == nullptr) {
+            return;
+        }
+
+        collect(node->left.get(), prefix, result);
+
+        prefix.push_back(static_cast<char>(node->character));
+        if (node->value) {
+            result.insert(prefix);
+        }
+        collect(node->middle.get(), prefix, result);
+        prefix.pop_back();
+
+        collect(node->right.get(), prefix, result);
+    }
+
+    static void collect_match(const Node* node,
+                              std::string_view pattern,
+                              std::size_t depth,
+                              String& prefix,
+                              Vector<String>& result) {
+        if (node == nullptr) {
+            return;
+        }
+
+        const char expected = pattern[depth];
+        const unsigned char expected_character = to_character(expected);
+        if (expected == '.' || expected_character < node->character) {
+            collect_match(node->left.get(), pattern, depth, prefix, result);
+        }
+
+        if (expected == '.' || expected_character == node->character) {
+            prefix.push_back(static_cast<char>(node->character));
+            if (depth + 1 == pattern.size()) {
+                if (node->value) {
+                    result.insert(prefix);
+                }
+            } else {
+                collect_match(node->middle.get(), pattern, depth + 1, prefix, result);
+            }
+            prefix.pop_back();
+        }
+
+        if (expected == '.' || expected_character > node->character) {
+            collect_match(node->right.get(), pattern, depth, prefix, result);
+        }
+    }
+
+    std::unique_ptr<Node> root_;
+    std::optional<T> empty_value_;
+};
+
+}  // namespace str
+}  // namespace dsa
+
+template <typename T>
+using TST = dsa::str::TernarySearchTrie<T>;
+
+template <typename T>
+using TernarySearchTrie = dsa::str::TernarySearchTrie<T>;

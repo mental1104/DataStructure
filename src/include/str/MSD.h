@@ -6,54 +6,55 @@
 
 #define R 128
 
-
 class MSD {
 private:
     static int charAt(const String& s, int d);
     static void sort(Vector<String>& a, Vector<String>& aux, int lo, int hi, int d);
     static void insertionSort(Vector<String>& a, int lo, int hi, int d);
 public:
-    static void sort(Vector<String>& a);  
+    static void sort(Vector<String>& a);
 };
 
-int MSD::charAt(const String& s, int d){
+inline int MSD::charAt(const String& s, int d){
     if(d >= 0 && static_cast<size_type>(d) < s.size())
         return s[static_cast<size_type>(d)];
     return -1;
 }
 
-void MSD::sort(Vector<String>& a){
+inline void MSD::sort(Vector<String>& a){
     int N = a.size();
     Vector<String> aux(N, N, String());
     sort(a, aux, 0, N-1, 0);
 }
 
-void MSD::sort(Vector<String>& a, Vector<String>& aux, int lo, int hi, int d){
+inline void MSD::sort(Vector<String>& a, Vector<String>& aux, int lo, int hi, int d){
     if(hi <= lo + 3){
         insertionSort(a, lo, hi, d);
         return;
     }
 
-    Vector<int> count(R+2, R+2, 0);         //Compute frequency counts
+    Vector<int> count(R+2, R+2, 0);
     for(int i = lo; i <= hi; i++)
         count[charAt(a[i], d)+2]++;
 
-    for(int r = 0; r < R+1; r++)    //Transform counts to indices
+    for(int r = 0; r < R+1; r++)
         count[r+1] += count[r];
-    
-    for(int i = lo; i <= hi; i++)   //Distribute
+
+    for(int i = lo; i <= hi; i++)
         aux[count[charAt(a[i], d)+1]++] = a[i];
-    
-    for(int i = lo; i <= hi; i++)   //copy back
+
+    for(int i = lo; i <= hi; i++)
         a[i] = aux[i-lo];
-    
+
     for(int r = 0; r < R; r++)
         sort(a, aux, lo + count[r], lo + count[r+1]-1, d+1);
 }
 
-void MSD::insertionSort(Vector<String>& a, int lo, int hi, int d){
+inline void MSD::insertionSort(Vector<String>& a, int lo, int hi, int d){
     for(int i = lo; i <= hi; i++)
-        for(int j = i; j > lo && (a[j].substr(d) < a[j-1].substr(d)); --j)
+        for(int j = i; j > lo &&
+             (dsa::str::substr(a[j], static_cast<size_type>(d)) <
+              dsa::str::substr(a[j-1], static_cast<size_type>(d))); --j)
             swap(a[j], a[j-1]);
 }
 

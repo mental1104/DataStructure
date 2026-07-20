@@ -1,190 +1,255 @@
-#ifndef __DSA_TRIE
-#define __DSA_TRIE
+#pragma once
 
-#include "dsa_string.h"
 #include "StringST.h"
 #include "Vector.h"
-#include "Queue.h"
+#include "dsa_string.h"
+#include "string_access.h"
 
-template<typename T>
-struct Node {
-    T val;
-    Vector<Node<T>*> next;
-    Node():val(0), next(R, R, nullptr){}
-};
+#include <array>
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <string_view>
+#include <utility>
 
-template<typename T>
+namespace dsa {
+namespace str {
+
+template <typename T>
 class Trie : public StringST<T> {
 private:
-    Node<T>* root{nullptr};
+    static constexpr std::size_t kRadix = 256;
 
-    Node<T>* get(Node<T>* x, String& key, size_type d);
-    Node<T>* put(Node<T>* x, const String& key, T val, size_type d);
-    Node<T>* remove(Node<T>* x, const String& key, size_type d);
+    struct Node {
+        std::optional<T> value;
+        std::array<std::unique_ptr<Node>, kRadix> children{};
+    };
 
-    void collect(Node<T>* x, String pre, Vector<String>& q);
-    void collect(Node<T>* x, String pre, const String &pat, Vector<String>& q);
-    size_type search(Node<T>* x, String input, size_type d, size_type length);
-    
 public:
     Trie() = default;
-    ~Trie() {   if(0 < this->s) destruct(root); }
+    Trie(const Trie&) = delete;
+    Trie& operator=(const Trie&) = delete;
+    Trie(Trie&&) noexcept = default;
+    Trie& operator=(Trie&&) noexcept = default;
+    ~Trie() override = default;
 
-    T get(String& key);
-    T get(const char* key);
-    void put(const String& key, T val);
-    void remove(const String& key);
+    template <typename Key>
+    void put(const Key& key, T value) {
+        put_view(as_string_view(key), std::move(value));
+    }
 
-    Vector<String> keysWithPrefix(String pre);
-    Vector<String> keysThatMatch(String pat);
-    String longestPrefixOf(String input);
+    template <typename Key>
+    const T* find(const Key& key) const noexcept {
+        const Node* node = find_node(as_string_view(key));
+        return node != nullptr && node->value ? std::addressof(*node->value) : nullptr;
+    }
+
+    template <typename Key>
+    T* find(const Key& key) noexcept {
+        Node* node = find_node(as_string_view(key));
+        return node != nullptr && node->value ? std::addressof(*node->value) : nullptr;
+    }
+
+    template <typename Key>
+    T get(const Key& key) const {
+        const T* value = find(key);
+        return value == nullptr ? T{} : *value;
+    }
+
+    template <typename Key>
+    bool contains(const Key& key) const noexcept {
+        return find(key) != nullptr;
+    }
+
+    template <typename Key>
+    bool remove(const Key& key) {
+        const bool removed = remove_node(root_, as_string_view(key), 0);
+        if (removed) {
+            --this->size_;
+        }
+        return removed;
+    }
+
+    Vector<String> keys() const {
+        return keysWithPrefix(std::string_view{});
+    }
+
+    template <typename Prefix>
+    Vector<String> keysWithPrefix(const Prefix& prefix) const {
+        const std::string_view view = as_string_view(prefix);
+        Vector<String> result;
+        const Node* node = find_node(view);
+        if (node == nullptr) {
+            return result;
+        }
+
+        String current(view);
+        collect(node, current, result);
+        return result;
+    }
+
+    template <typename Pattern>
+    Vector<String> keysThatMatch(const Pattern& pattern) const {
+        Vector<String> result;
+        String current;
+        collect_match(root_.get(), as_string_view(pattern), 0, current, result);
+        return result;
+    }
+
+    template <typename Input>
+    String longestPrefixOf(const Input& input) const {
+        const std::string_view view = as_string_view(input);
+        const Node* node = root_.get();
+        std::size_t longest = node != nullptr && node->value ? 0 : std::string_view::npos;
+
+        std::size_t index = 0;
+        while (node != nullptr && index < view.size()) {
+            node = node->children[to_index(view[index])].get();
+            if (node == nullptr) {
+                break;
+            }
+            ++index;
+            if (node->value) {
+                longest = index;
+            }
+        }
+
+        return longest == std::string_view::npos
+            ? String{}
+            : String(view.substr(0, longest));
+    }
+
+private:
+    static std::size_t to_index(char value) noexcept {
+        return static_cast<unsigned char>(value);
+    }
+
+    void put_view(std::string_view key, T value) {
+        if (!root_) {
+            root_ = std::make_unique<Node>();
+        }
+
+        Node* node = root_.get();
+        for (char value_char : key) {
+            std::unique_ptr<Node>& child = node->children[to_index(value_char)];
+            if (!child) {
+                child = std::make_unique<Node>();
+            }
+            node = child.get();
+        }
+
+        if (!node->value) {
+            ++this->size_;
+        }
+        node->value = std::move(value);
+    }
+
+    Node* find_node(std::string_view key) noexcept {
+        return const_cast<Node*>(static_cast<const Trie*>(this)->find_node(key));
+    }
+
+    const Node* find_node(std::string_view key) const noexcept {
+        const Node* node = root_.get();
+        for (char value_char : key) {
+            if (node == nullptr) {
+                return nullptr;
+            }
+            node = node->children[to_index(value_char)].get();
+        }
+        return node;
+    }
+
+    static bool has_children(const Node& node) noexcept {
+        for (const std::unique_ptr<Node>& child : node.children) {
+            if (child) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static bool remove_node(std::unique_ptr<Node>& node,
+                            std::string_view key,
+                            std::size_t depth) {
+        if (!node) {
+            return false;
+        }
+
+        bool removed = false;
+        if (depth == key.size()) {
+            if (node->value) {
+                node->value.reset();
+                removed = true;
+            }
+        } else {
+            removed = remove_node(node->children[to_index(key[depth])], key, depth + 1);
+        }
+
+        if (!node->value && !has_children(*node)) {
+            node.reset();
+        }
+        return removed;
+    }
+
+    static void collect(const Node* node, String& prefix, Vector<String>& result) {
+        if (node == nullptr) {
+            return;
+        }
+        if (node->value) {
+            result.insert(prefix);
+        }
+
+        for (std::size_t index = 0; index < kRadix; ++index) {
+            if (!node->children[index]) {
+                continue;
+            }
+            prefix.push_back(static_cast<char>(index));
+            collect(node->children[index].get(), prefix, result);
+            prefix.pop_back();
+        }
+    }
+
+    static void collect_match(const Node* node,
+                              std::string_view pattern,
+                              std::size_t depth,
+                              String& prefix,
+                              Vector<String>& result) {
+        if (node == nullptr) {
+            return;
+        }
+        if (depth == pattern.size()) {
+            if (node->value) {
+                result.insert(prefix);
+            }
+            return;
+        }
+
+        const char expected = pattern[depth];
+        if (expected == '.') {
+            for (std::size_t index = 0; index < kRadix; ++index) {
+                if (!node->children[index]) {
+                    continue;
+                }
+                prefix.push_back(static_cast<char>(index));
+                collect_match(node->children[index].get(), pattern, depth + 1, prefix, result);
+                prefix.pop_back();
+            }
+            return;
+        }
+
+        const std::unique_ptr<Node>& child = node->children[to_index(expected)];
+        if (child) {
+            prefix.push_back(expected);
+            collect_match(child.get(), pattern, depth + 1, prefix, result);
+            prefix.pop_back();
+        }
+    }
+
+    std::unique_ptr<Node> root_;
 };
 
-template<typename T>
-static void destruct(Node<T>* x){
-    Queue<Node<T>*> Q;
-    Q.enqueue(x);
-    while(!Q.empty()){
-        Node<T>* node = Q.dequeue();
-        for(int i = 0; i < R; i++){
-            if(node->next[i])
-                Q.enqueue(node->next[i]);
-        }
-        release(node->val);
-        release(node);
-    }
-}
+}  // namespace str
+}  // namespace dsa
 
-template<typename T>
-void Trie<T>::put(const String& key, T val){
-    if(val == 0)
-        return;
-    root = put(root, key, val, 0);
-}
-
-template<typename T>
-Node<T>* Trie<T>::put(Node<T>* x, const String& key, T val, size_type d){
-    if(x == nullptr) x = new Node<T>();
-    if(d == key.size()){
-        x->val = val;
-        this->s++;
-        return x;
-    }
-    char c = key[d];
-    x->next[c] = put(x->next[c], key, val, d+1);
-    return x;
-}
-
-template<typename T>
-T Trie<T>::get(String& key){
-    Node<T>* x = get(root, key, 0);
-    if(x)
-        return x->val;
-    else 
-        return 0;
-}
-
-template<typename T>
-T Trie<T>::get(const char* key){
-    String strkey(key);
-    return get(strkey);
-}
-
-template<typename T>
-Node<T>* Trie<T>::get(Node<T>* x, String& key, size_type d){
-    if(x == nullptr)
-        return nullptr;
-    if(d == key.size()) return x;
-    char c = key[d];
-    return get(x->next[c], key, d+1);
-}
-
-template<typename T>
-Vector<String> Trie<T>::keysWithPrefix(String pre){
-    Vector<String> q;
-    collect(get(root, pre, 0), pre, q);
-    return q;
-}
-
-template<typename T>
-void Trie<T>::collect(Node<T>* x, String pre, Vector<String>& q){
-    if(x == nullptr)
-        return;
-
-    if(x->val != 0){
-        q.insert(pre);
-    }
-    for(short c = 0; c < R; c++){
-        char temp = *(char*)&c;
-        collect(x->next[c], pre+temp, q);
-    }
-        
-}
-
-template<typename T>
-Vector<String> Trie<T>::keysThatMatch(String pat){
-    Vector<String> q;
-    collect(root, "", pat, q);
-    return q;
-}
-
-template<typename T>
-void Trie<T>::collect(Node<T>* x, String pre, const String& pat, Vector<String>& q){
-    size_type d = pre.size();
-    if(x == nullptr) return;
-    if(d == pat.size() && x->val != 0) q.insert(pre);
-    if(d == pat.size()) return;
-
-    char next = pat[d];
-    for(short i = 0; i < R; i++){
-        char c = *(char*)&i;
-        if(next =='.' || next == c)
-            collect(x->next[c], pre+c, pat, q);
-    }
-}
-
-template<typename T>
-String Trie<T>::longestPrefixOf(String input){
-    size_type length = search(root, input, 0, 0);
-    return input.substr(0, length);
-}
-
-template<typename T>
-size_type Trie<T>::search(Node<T>* x, String input, size_type d, size_type length){
-    if(x == nullptr) return length;
-    if(x->val != 0) length = d;
-    if(d == input.size()) return length;
-    char c = input[d];
-    return search(x->next[c], input, d+1, length);
-}
-
-template<typename T>
-void Trie<T>::remove(const String& key){
-    root = remove(root, key, 0);
-}
-
-template<typename T>
-Node<T>* Trie<T>::remove(Node<T>* x, const String& key, size_type d){
-    if(x == nullptr)    return nullptr;
-    if(d == key.size()){
-        x->val = 0;
-        --this->s;
-    }
-    else{
-        char c = key[d];
-        x->next[c] = remove(x->next[c], key, d+1);
-    }
-
-    if(x->val != 0) return x;
-    for(short i = 0; i < R; i++){
-        char c = *(char*)&i;
-        if(x->next[c] != nullptr)
-            return x;
-    }
-    release(x->val);
-    release(x);
-    return nullptr;
-}
-
-
-#endif
+template <typename T>
+using Trie = dsa::str::Trie<T>;

@@ -1,108 +1,219 @@
 #pragma once
 
-#include <algorithm>
-#include <cstdio>
-#include <cstring>
 #include "MatchObserver.h"
 #include "dsa_string.h"
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <string_view>
+#include <vector>
+
+namespace dsa {
+namespace str {
+namespace match {
+
 enum class BMStrategy { BadCharacter, Full };
 
-inline int* buildBC(const String& P, MatchObserver* obs = nullptr) { // Bad Character table
-    NoopMatchObserver noop;
-    MatchObserver& observer = obs ? *obs : noop;
-    int* bc = new int[256];
-    std::fill(bc, bc + 256, -1);
-    int m = (int)P.size();
-    const char* pc = P.c_str();
-    for (int j = 0; j < m; j++) bc[(unsigned char)pc[j]] = j;
-    observer.onBCTable(bc, 256);
-    return bc;
-}
-
-inline int* buildSS(const String& P, int m) { // suffix size table
-    const char* pc = P.c_str();
-    int* ss = new int[m];
-    ss[m - 1] = m;
-    for (int lo = m - 1, hi = m - 1, j = lo - 1; j >= 0; j--) {
-        if ((lo < j) && (ss[m - hi + j - 1] < j - lo))
-            ss[j] = ss[m - hi + j - 1];
-        else {
-            hi = j; lo = std::min(lo, hi);
-            while ((0 <= lo) && (pc[lo] == pc[m - hi + lo - 1])) lo--;
-            ss[j] = hi - lo;
-        }
+inline std::array<int, 256> build_bad_character(std::string_view pattern,
+                                                 MatchObserver* observer_ptr = nullptr) {
+    std::array<int, 256> table{};
+    table.fill(-1);
+    for (std::size_t index = 0; index < pattern.size(); ++index) {
+        table[static_cast<unsigned char>(pattern[index])] = static_cast<int>(index);
     }
-    return ss;
+    if (observer_ptr != nullptr) {
+        observer_ptr->onBCTable(table.data(), static_cast<int>(table.size()));
+    }
+    return table;
 }
 
-inline int* buildGS(const String& P, int m, MatchObserver* obs = nullptr) { // Good Suffix table
-    NoopMatchObserver noop;
-    MatchObserver& observer = obs ? *obs : noop;
-    int* ss = buildSS(P, m);
-    int* gs = new int[m];
-    for (int j = 0; j < m; j++) gs[j] = m;
-    for (int i = 0, j = m - 1; j >= 0; j--)
-        if (j + 1 == ss[j])
-            while (i < m - j - 1) gs[i++] = m - j - 1;
-    for (int j = 0; j < m - 1; j++) gs[m - ss[j] - 1] = m - j - 1;
-    observer.onGSTable(gs, m, P);
-    delete[] ss;
-    return gs;
+template <typename Pattern>
+std::array<int, 256> build_bad_character(const Pattern& pattern,
+                                          MatchObserver* observer = nullptr) {
+    return build_bad_character(as_string_view(pattern), observer);
 }
 
-inline int matchBM(const String& P, const String& T, BMStrategy strategy = BMStrategy::BadCharacter, MatchObserver* obs = nullptr) {
-    NoopMatchObserver noop;
-    MatchObserver& observer = obs ? *obs : noop;
-    int m = (int)P.size();
-    int n = (int)T.size();
-    if (m <= 0 || n <= 0) return 0;
-
-    int* bc = buildBC(P, &observer);
-    if (strategy == BMStrategy::BadCharacter) {
-        int i = 0, j = 0;
-        for (i = 0; i + m <= n; i += std::max(1, j - bc[(unsigned char)T[i + j]])) {
-            for (j = m - 1; (0 <= j) && (P[j] == T[i + j]); j--);
-            observer.onProgress(T, P, i, j, bc, 256);
-            observer.onPause();
-            if (j < 0) break;
-        }
-        delete[] bc;
-        return i;
+inline std::vector<int> build_suffix_sizes(std::string_view pattern) {
+    const int length = static_cast<int>(pattern.size());
+    std::vector<int> suffix(static_cast<std::size_t>(length), 0);
+    if (length == 0) {
+        return suffix;
     }
 
-    int* gs = buildGS(P, m, &observer);
-    int i = 0;
-    while (i + m <= n) {
-        int j = m - 1;
-        while (P[static_cast<size_type>(j)] == T[static_cast<size_type>(i + j)]) {
-            observer.onProgress(T, P, i, j, gs, m);
-            observer.onPause();
-            if (0 > --j) break;
+    suffix[static_cast<std::size_t>(length - 1)] = length;
+    int lower = length - 1;
+    int upper = length - 1;
+    for (int index = length - 2; index >= 0; --index) {
+        if (lower < index && suffix[static_cast<std::size_t>(length - upper + index - 1)] < index - lower) {
+            suffix[static_cast<std::size_t>(index)] =
+                suffix[static_cast<std::size_t>(length - upper + index - 1)];
+        } else {
+            upper = index;
+            lower = std::min(lower, upper);
+            while (lower >= 0 &&
+                   pattern[static_cast<std::size_t>(lower)] ==
+                       pattern[static_cast<std::size_t>(length - upper + lower - 1)]) {
+                --lower;
+            }
+            suffix[static_cast<std::size_t>(index)] = upper - lower;
         }
-        if (0 > j) {
-            observer.onProgress(T, P, i, j, gs, m);
-            observer.onPause();
-            break;
+    }
+    return suffix;
+}
+
+template <typename Pattern>
+std::vector<int> build_suffix_sizes(const Pattern& pattern) {
+    return build_suffix_sizes(as_string_view(pattern));
+}
+
+inline std::vector<int> build_good_suffix(std::string_view pattern,
+                                           MatchObserver* observer_ptr = nullptr) {
+    const int length = static_cast<int>(pattern.size());
+    std::vector<int> good_suffix(static_cast<std::size_t>(length), length);
+    if (length == 0) {
+        return good_suffix;
+    }
+
+    const std::vector<int> suffix = build_suffix_sizes(pattern);
+    int fill_index = 0;
+    for (int index = length - 1; index >= 0; --index) {
+        if (index + 1 == suffix[static_cast<std::size_t>(index)]) {
+            while (fill_index < length - index - 1) {
+                good_suffix[static_cast<std::size_t>(fill_index++)] = length - index - 1;
+            }
         }
-        observer.onProgress(T, P, i, j, gs, m);
+    }
+    for (int index = 0; index < length - 1; ++index) {
+        good_suffix[static_cast<std::size_t>(length - suffix[static_cast<std::size_t>(index)] - 1)] =
+            length - index - 1;
+    }
+
+    if (observer_ptr != nullptr) {
+        observer_ptr->onGSTable(good_suffix.data(), length, pattern);
+    }
+    return good_suffix;
+}
+
+template <typename Pattern>
+std::vector<int> build_good_suffix(const Pattern& pattern,
+                                    MatchObserver* observer = nullptr) {
+    return build_good_suffix(as_string_view(pattern), observer);
+}
+
+inline std::size_t boyer_moore_search(std::string_view pattern,
+                                      std::string_view text,
+                                      BMStrategy strategy = BMStrategy::BadCharacter,
+                                      MatchObserver* observer_ptr = nullptr) {
+    if (pattern.empty()) {
+        return 0;
+    }
+    if (text.empty() || pattern.size() > text.size()) {
+        return std::string_view::npos;
+    }
+
+    NoopMatchObserver noop;
+    MatchObserver& observer = observer_ptr == nullptr ? static_cast<MatchObserver&>(noop) : *observer_ptr;
+    const std::array<int, 256> bad_character = build_bad_character(pattern, &observer);
+    const std::vector<int> good_suffix = strategy == BMStrategy::Full
+        ? build_good_suffix(pattern, &observer)
+        : std::vector<int>{};
+
+    std::size_t alignment = 0;
+    while (alignment + pattern.size() <= text.size()) {
+        int pattern_index = static_cast<int>(pattern.size()) - 1;
+        while (pattern_index >= 0 &&
+               pattern[static_cast<std::size_t>(pattern_index)] ==
+                   text[alignment + static_cast<std::size_t>(pattern_index)]) {
+            --pattern_index;
+        }
+
+        observer.onProgress(text,
+                            pattern,
+                            static_cast<int>(alignment),
+                            pattern_index,
+                            strategy == BMStrategy::Full ? good_suffix.data() : bad_character.data(),
+                            strategy == BMStrategy::Full
+                                ? static_cast<int>(good_suffix.size())
+                                : static_cast<int>(bad_character.size()));
         observer.onPause();
-        i += std::max(gs[j], j - bc[(unsigned char)T[static_cast<size_type>(i + j)]]);
+
+        if (pattern_index < 0) {
+            return alignment;
+        }
+
+        const int bad_character_shift = pattern_index -
+            bad_character[static_cast<unsigned char>(text[alignment + static_cast<std::size_t>(pattern_index)])];
+        int shift = std::max(1, bad_character_shift);
+        if (strategy == BMStrategy::Full) {
+            shift = std::max(shift, good_suffix[static_cast<std::size_t>(pattern_index)]);
+        }
+        alignment += static_cast<std::size_t>(shift);
     }
-    delete[] gs;
-    delete[] bc;
-    return i;
+    return std::string_view::npos;
 }
 
-inline int matchBMBadCharacter(const String& P, const String& T) {
-    return matchBM(P, T, BMStrategy::BadCharacter, nullptr);
+template <typename Pattern, typename Text>
+std::size_t boyer_moore_search(const Pattern& pattern,
+                               const Text& text,
+                               BMStrategy strategy = BMStrategy::BadCharacter,
+                               MatchObserver* observer = nullptr) {
+    return boyer_moore_search(as_string_view(pattern), as_string_view(text), strategy, observer);
 }
 
-inline int matchBMFull(const String& P, const String& T) {
-    return matchBM(P, T, BMStrategy::Full, nullptr);
+}  // namespace match
+}  // namespace str
+}  // namespace dsa
+
+using BMStrategy = dsa::str::match::BMStrategy;
+
+template <typename Pattern>
+inline int* buildBC(const Pattern& pattern, MatchObserver* observer = nullptr) {
+    const std::array<int, 256> table = dsa::str::match::build_bad_character(pattern, observer);
+    int* result = new int[table.size()];
+    std::copy(table.begin(), table.end(), result);
+    return result;
 }
 
-inline int matchBMVerbose(const String& P, const String& T, BMStrategy strategy = BMStrategy::BadCharacter) {
-    StdoutMatchObserver obs;
-    return matchBM(P, T, strategy, &obs);
+template <typename Pattern>
+inline int* buildSS(const Pattern& pattern, int) {
+    const std::vector<int> suffix = dsa::str::match::build_suffix_sizes(pattern);
+    int* result = new int[suffix.size()];
+    std::copy(suffix.begin(), suffix.end(), result);
+    return result;
+}
+
+template <typename Pattern>
+inline int* buildGS(const Pattern& pattern, int, MatchObserver* observer = nullptr) {
+    const std::vector<int> good_suffix = dsa::str::match::build_good_suffix(pattern, observer);
+    int* result = new int[good_suffix.size()];
+    std::copy(good_suffix.begin(), good_suffix.end(), result);
+    return result;
+}
+
+template <typename Pattern, typename Text>
+inline int matchBM(const Pattern& pattern,
+                   const Text& text,
+                   BMStrategy strategy = BMStrategy::BadCharacter,
+                   MatchObserver* observer = nullptr) {
+    const std::size_t position = dsa::str::match::boyer_moore_search(pattern, text, strategy, observer);
+    return position == std::string_view::npos ? -1 : static_cast<int>(position);
+}
+
+template <typename Pattern, typename Text>
+inline int matchBMBadCharacter(const Pattern& pattern, const Text& text) {
+    return matchBM(pattern, text, BMStrategy::BadCharacter, nullptr);
+}
+
+template <typename Pattern, typename Text>
+inline int matchBMFull(const Pattern& pattern, const Text& text) {
+    return matchBM(pattern, text, BMStrategy::Full, nullptr);
+}
+
+template <typename Pattern, typename Text>
+inline int matchBMVerbose(const Pattern& pattern,
+                          const Text& text,
+                          BMStrategy strategy = BMStrategy::BadCharacter) {
+    StdoutMatchObserver observer;
+    return matchBM(pattern, text, strategy, &observer);
 }
