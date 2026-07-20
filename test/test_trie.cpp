@@ -45,12 +45,13 @@ TEST_F(TrieTest, PrefixMatching) {
     EXPECT_NE(keys.search(String("apply")), -1);
 }
 
-TEST_F(TrieTest, PutZeroIgnoredAndContains) {
+TEST_F(TrieTest, PutZeroStoredAndContains) {
     trie.put("zero", 0);
-    EXPECT_TRUE(trie.empty());
-    EXPECT_EQ(trie.size(), 0);
-    EXPECT_FALSE(trie.contains(String("zero")));
-    trie.keys();
+    EXPECT_FALSE(trie.empty());
+    EXPECT_EQ(trie.size(), 1);
+    EXPECT_TRUE(trie.contains(String("zero")));
+    EXPECT_EQ(trie.get("zero"), 0);
+    EXPECT_TRUE(containsString(trie.keys(), "zero"));
 }
 
 TEST_F(TrieTest, KeysThatMatchAndLongestPrefix) {
@@ -86,16 +87,17 @@ TEST_F(TrieTest, PrefixWithNoMatch) {
 TEST(TrieTestCoverage, WrapperMethods) {
     Trie<int> local;
     local.put("zero", 0);
-    EXPECT_TRUE(local.empty());
+    EXPECT_FALSE(local.empty());
 
-    Vector<String> emptyPrefix = local.keysWithPrefix("z");
-    EXPECT_EQ(emptyPrefix.size(), 0);
-    Vector<String> emptyMatch = local.keysThatMatch("z..");
-    EXPECT_EQ(emptyMatch.size(), 0);
+    Vector<String> zeroPrefix = local.keysWithPrefix("z");
+    EXPECT_EQ(zeroPrefix.size(), 1);
+    Vector<String> zeroMatch = local.keysThatMatch("z...");
+    EXPECT_EQ(zeroMatch.size(), 1);
 
-    local.remove("missing");
+    EXPECT_FALSE(local.remove("missing"));
     local.put("abc", 1);
-    local.remove("abc");
+    EXPECT_TRUE(local.remove("abc"));
+    EXPECT_TRUE(local.remove("zero"));
     EXPECT_EQ(local.size(), 0);
 }
 
