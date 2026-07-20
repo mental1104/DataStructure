@@ -1,6 +1,7 @@
 #ifndef DSA_CONTAINER_UF_UNION_FIND_H
 #define DSA_CONTAINER_UF_UNION_FIND_H
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <numeric>
