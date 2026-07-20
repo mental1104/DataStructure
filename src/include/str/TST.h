@@ -4,8 +4,9 @@
 #include "dsa_string.h"
 #include "StringST.h"
 #include "Vector.h"
-#include "Queue.h"
+#include "../dsa/core/string/TrieAlgorithm.h"
 
+/// 教学 Ternary Search Trie 节点。
 template<typename T>
 struct TSTNode {
     char c;
@@ -13,190 +14,300 @@ struct TSTNode {
     TSTNode* mid;
     TSTNode* right;
     T val;
-    TSTNode() = delete;
-    TSTNode(char rhs):c(rhs), left(nullptr), mid(nullptr), right(nullptr), val(0){}
+
+    explicit TSTNode(char character)
+        : c(character),
+          left(nullptr),
+          mid(nullptr),
+          right(nullptr),
+          val(T()) {
+    }
 };
 
+/// 教学 TST；保留 T() 哨兵语义并复用共享查找流程。
 template<typename T>
-class TST : public StringST<T>{
+class TST : public StringST<T> {
 private:
-    TSTNode<T>* root{nullptr};
-    TSTNode<T>* get(TSTNode<T>* x, String& key, size_type d);
-    TSTNode<T>* put(TSTNode<T>* x, const String& key, T val, size_type d);
-    TSTNode<T>* remove(TSTNode<T>* x, const String& key, size_type d);
+    typedef TSTNode<T> node_type;
 
-    void collect(TSTNode<T>* x, String prefix, Vector<String>& q);
-    void collect(TSTNode<T>* x, String prefix, size_type i, String pattern, Vector<String>& q);
+    struct Access {
+        static char symbol(node_type* node) {
+            return node->c;
+        }
+
+        static node_type* left(node_type* node) {
+            return node->left;
+        }
+
+        static node_type* middle(node_type* node) {
+            return node->mid;
+        }
+
+        static node_type* right(node_type* node) {
+            return node->right;
+        }
+
+        static bool terminal(node_type* node) {
+            return !(node->val == T());
+        }
+    };
+
+    typedef dsa::core::TernarySearchTrieAlgorithm<Access> ReadAlgorithm;
+
+    node_type* root_;
+
+    /// 递归插入键，并只在首次写入末端节点时报告 inserted。
+    node_type* putNode(
+        node_type* node,
+        const String& key,
+        T value,
+        size_type depth,
+        bool& inserted
+    );
+
+    /// 删除键并剪除无值叶节点。
+    node_type* removeNode(
+        node_type* node,
+        const String& key,
+        size_type depth,
+        bool& removed
+    );
+
+    /// 按字典序收集当前子树中的键。
+    void collect(
+        node_type* node,
+        const String& prefix,
+        Vector<String>& output
+    ) const;
+
+    /// 按点号通配模式收集等长键。
+    void collectMatch(
+        node_type* node,
+        const String& prefix,
+        const String& pattern,
+        size_type depth,
+        Vector<String>& output
+    ) const;
+
+    /// 递归释放整棵 TST。
+    void destroy(node_type* node) noexcept;
+
 public:
-    TST() = default;
+    TST();
     ~TST();
-    T get(String& key);
-    T get(const char*);
-    void put(const String& key, T val) {  root = put(root, key, val, 0);  }
-    void remove(const String& key);
 
-    String longestPrefixOf(String input);
-    Vector<String> keysWithPrefix(String pre);
-    Vector<String> keysThatMatch(String pattern);
+    /// 空键和 T() 值按教学兼容规则忽略。
+    void put(const String& key, T value) override;
+
+    T get(String& key) override;
+    T get(const char* key);
+
+    void remove(const String& key) override;
+
+    String longestPrefixOf(String input) override;
+    Vector<String> keysWithPrefix(String prefix) override;
+    Vector<String> keysThatMatch(String pattern) override;
 };
 
 template<typename T>
-TST<T>::~TST(){
-    if (root == nullptr) {
-        return;
-    }
-    Queue<TSTNode<T>*> Q;
+TST<T>::TST() : root_(nullptr) {
+}
+
+template<typename T>
+TST<T>::~TST() {
+    destroy(root_);
+    root_ = nullptr;
     this->s = 0;
-    TSTNode<T>* node = root;
-    Q.enqueue(node);
-    while(!Q.empty()){
-        TSTNode<T>* current = Q.dequeue();
-        if(current->left) Q.enqueue(current->left);
-        if(current->mid) Q.enqueue(current->mid);
-        if(current->right) Q.enqueue(current->right);
-        release(current->val);
-        release(current);
-    }
 }
 
 template<typename T>
-TSTNode<T>* TST<T>::put(TSTNode<T>* x, const String& key, T val, size_type d){
-    char c = key[d];
-    if(x == nullptr){
-        x = new TSTNode<T>(c);
-    }
-    if      (c < x->c) x->left = put(x->left, key, val, d);
-    else if (c > x->c) x->right = put(x->right, key, val, d);
-    else if (d + 1 < key.size()) x->mid = put(x->mid, key, val, d+1);
-    else {
-        x->val = val;
+void TST<T>::put(const String& key, T value) {
+    if (key.empty() || value == T())
+        return;
+
+    bool inserted = false;
+    root_ = putNode(root_, key, value, 0, inserted);
+    if (inserted)
         ++this->s;
-    }
-    return x;
 }
 
 template<typename T>
-T TST<T>::get(String& key){
-    TSTNode<T>* x = get(root, key, 0);
-    if(x)
-        return x->val;
-    return 0;
+typename TST<T>::node_type* TST<T>::putNode(
+    node_type* node,
+    const String& key,
+    T value,
+    size_type depth,
+    bool& inserted
+) {
+    const char currentSymbol = key[depth];
+    if (node == nullptr)
+        node = new node_type(currentSymbol);
+
+    if (currentSymbol < node->c) {
+        node->left = putNode(node->left, key, value, depth, inserted);
+    } else if (node->c < currentSymbol) {
+        node->right = putNode(node->right, key, value, depth, inserted);
+    } else if (depth + 1 < key.size()) {
+        node->mid = putNode(node->mid, key, value, depth + 1, inserted);
+    } else {
+        inserted = node->val == T();
+        node->val = value;
+    }
+    return node;
+}
+
+template<typename T>
+T TST<T>::get(String& key) {
+    node_type* node = ReadAlgorithm::find(root_, key);
+    return node == nullptr ? T() : node->val;
 }
 
 template<typename T>
 T TST<T>::get(const char* key) {
-    String strKey(key);  // 将 C 字符串转换为 std::string
-    return get(strKey);       // 复用已有的 `get` 方法
+    String converted(key);
+    return get(converted);
 }
 
 template<typename T>
-TSTNode<T>* TST<T>::get(TSTNode<T>* x, String& key, size_type d){
-    if(x == nullptr)
-        return nullptr;
+void TST<T>::remove(const String& key) {
+    if (key.empty())
+        return;
 
-    char c = key[d];
-    if      (c < x->c)  return get(x->left, key, d);
-    else if (c > x->c)  return get(x->right, key, d);
-    else if (d + 1 < key.size()) 
-                        return get(x->mid, key, d+1);
-    else return x;
-}
-
-template<typename T>
-void TST<T>::remove(const String& key){
-    root = remove(root, key, 0);
-}
-
-template<typename T>
-TSTNode<T>* TST<T>::remove(TSTNode<T>* x, const String& key, size_type d){
-    if(x == nullptr)
-        return nullptr;
-
-    char c = key[d];
-    if      (c < x->c) x->left = remove(x->left, key, d);
-    else if (c > x->c) x->right = remove(x->right, key, d);
-    else if (d + 1 < key.size()) x->mid = remove(x->mid, key, d+1);
-    else {
-        x->val = 0;
+    bool removed = false;
+    root_ = removeNode(root_, key, 0, removed);
+    if (removed)
         --this->s;
-    }
-
-    if(x->val != 0) return x;
-    
-    if(x->left || x->mid || x->right)
-        return x;
-    else{
-        release(x->val);
-        release(x);
-        return nullptr;
-    }
 }
 
 template<typename T>
-String TST<T>::longestPrefixOf(String input){
-    if(input.size() == 0)
-        return input;
-    size_type length = 0;
-    TSTNode<T>* x = root;
-    size_type i = 0;
-    while (x != nullptr && i < input.size()){
-        char c = input[i];
-        if      (c < x->c) x = x->left;
-        else if (c > x->c) x = x->right;
-        else {
-            i++;
-            if(x->val != 0) length = i;
-            x = x->mid;
+typename TST<T>::node_type* TST<T>::removeNode(
+    node_type* node,
+    const String& key,
+    size_type depth,
+    bool& removed
+) {
+    if (node == nullptr)
+        return nullptr;
+
+    const char currentSymbol = key[depth];
+    if (currentSymbol < node->c) {
+        node->left = removeNode(node->left, key, depth, removed);
+    } else if (node->c < currentSymbol) {
+        node->right = removeNode(node->right, key, depth, removed);
+    } else if (depth + 1 < key.size()) {
+        node->mid = removeNode(
+            node->mid,
+            key,
+            depth + 1,
+            removed
+        );
+    } else if (!(node->val == T())) {
+        node->val = T();
+        removed = true;
+    }
+
+    if (!(node->val == T()) || node->left != nullptr ||
+        node->mid != nullptr || node->right != nullptr) {
+        return node;
+    }
+    delete node;
+    return nullptr;
+}
+
+template<typename T>
+String TST<T>::longestPrefixOf(String input) {
+    return dsa::algorithm::substring<String>(
+        input,
+        0,
+        ReadAlgorithm::longestPrefixLength(root_, input)
+    );
+}
+
+template<typename T>
+Vector<String> TST<T>::keysWithPrefix(String prefix) {
+    Vector<String> output;
+    if (prefix.empty()) {
+        collect(root_, prefix, output);
+        return output;
+    }
+
+    node_type* node = ReadAlgorithm::find(root_, prefix);
+    if (node == nullptr)
+        return output;
+    if (!(node->val == T()))
+        output.insert(prefix);
+    collect(node->mid, prefix, output);
+    return output;
+}
+
+template<typename T>
+void TST<T>::collect(
+    node_type* node,
+    const String& prefix,
+    Vector<String>& output
+) const {
+    if (node == nullptr)
+        return;
+
+    collect(node->left, prefix, output);
+    const String connected = prefix + node->c;
+    if (!(node->val == T()))
+        output.insert(connected);
+    collect(node->mid, connected, output);
+    collect(node->right, prefix, output);
+}
+
+template<typename T>
+Vector<String> TST<T>::keysThatMatch(String pattern) {
+    Vector<String> output;
+    if (!pattern.empty())
+        collectMatch(root_, String(), pattern, 0, output);
+    return output;
+}
+
+template<typename T>
+void TST<T>::collectMatch(
+    node_type* node,
+    const String& prefix,
+    const String& pattern,
+    size_type depth,
+    Vector<String>& output
+) const {
+    if (node == nullptr)
+        return;
+
+    const char expected = pattern[depth];
+    if (expected == '.' || expected < node->c)
+        collectMatch(node->left, prefix, pattern, depth, output);
+
+    if (expected == '.' || expected == node->c) {
+        const String connected = prefix + node->c;
+        if (depth + 1 == pattern.size()) {
+            if (!(node->val == T()))
+                output.insert(connected);
+        } else {
+            collectMatch(
+                node->mid,
+                connected,
+                pattern,
+                depth + 1,
+                output
+            );
         }
     }
-    return input.substr(0, length);
+
+    if (expected == '.' || node->c < expected)
+        collectMatch(node->right, prefix, pattern, depth, output);
 }
 
 template<typename T>
-Vector<String> TST<T>::keysWithPrefix(String pre){
-    Vector<String> q;
-    if(pre == String("")){
-        collect(root, pre, q);
-        return q;
-    }
-    TSTNode<T>* x = get(root, pre, 0);
-    if(x == nullptr) return q;
-    if(x->val != 0) q.insert(pre);
-    collect(x->mid, pre, q);
-    return q;
-}
-
-template<typename T>
-void TST<T>::collect(TSTNode<T>* x, String prefix, Vector<String>& q){
-    if(x == nullptr)
+void TST<T>::destroy(node_type* node) noexcept {
+    if (node == nullptr)
         return;
-    collect(x->left, prefix, q);
-    String connected_str = prefix + String(x->c);
-    if(x->val != 0) q.insert(connected_str);
-    collect(x->mid, connected_str, q);
-    collect(x->right, prefix, q);
-}
-
-template<typename T>
-Vector<String> TST<T>::keysThatMatch(String pattern){
-    Vector<String> q;
-    collect(root, "", 0, pattern, q);
-    return q;
-}
-
-template<typename T>
-void TST<T>::collect(TSTNode<T>* x, String prefix, size_type i, String pattern, Vector<String>& q){
-    if(x == nullptr) return;
-    char c = pattern[i];
-    if(c == '.' || c < x->c) 
-        collect(x->left, prefix, i, pattern, q);
-    if(c == '.' || c == x->c){
-        if(i + 1 == pattern.size() && x->val != 0)
-            q.insert(prefix + x->c);
-        if(i + 1 < pattern.size())
-            collect(x->mid, prefix+x->c, i+1, pattern, q);
-    }
-    if(c == '.' || c > x->c) collect(x->right, prefix, i, pattern, q);
+    destroy(node->left);
+    destroy(node->mid);
+    destroy(node->right);
+    delete node;
 }
 
 #endif
