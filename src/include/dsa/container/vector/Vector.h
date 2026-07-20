@@ -17,28 +17,18 @@ namespace dsa {
 namespace container {
 namespace detail {
 
+/// 将普通指针直接转换为原始地址，兼容 C++11 环境下尚未提供的 std::to_address。
 template<typename T>
-T* toAddress(T* pointer) noexcept {
-    return pointer;
-}
+T* toAddress(T* pointer) noexcept;
 
+/// 递归解引用 fancy pointer，最终取得其指向对象的原始地址。
 template<typename Pointer>
 auto toAddress(const Pointer& pointer) noexcept
-    -> decltype(detail::toAddress(pointer.operator->())) {
-    return detail::toAddress(pointer.operator->());
-}
+    -> decltype(detail::toAddress(pointer.operator->()));
 
 } // namespace detail
 
-// A readable allocator-aware vector implementation modelled after std::vector.
-//
-// Design goals:
-// - contiguous storage and random-access iterators;
-// - only [0, size) contains constructed objects;
-// - allocator-aware copy/move/swap semantics;
-// - amortized O(1) push_back/emplace_back through geometric growth;
-// - shared insert/erase workflow through dsa::core::VectorAlgorithm;
-// - no automatic shrinking on erase, matching std::vector.
+/// 面向学习实现的 allocator-aware 连续数组容器，核心语义对齐 std::vector。
 template<typename T, typename Allocator = std::allocator<T> >
 class Vector {
 public:
@@ -65,161 +55,48 @@ private:
     size_type size_;
     size_type capacity_;
 
+    /// 将工业 Vector 的 allocator 与对象生命周期操作适配到共享 VectorAlgorithm。
     class Storage {
     public:
         typedef typename Vector::size_type size_type;
 
-        explicit Storage(Vector& owner)
-            : owner_(owner),
-              pendingAllocation_(),
-              pendingData_(nullptr),
-              pendingCapacity_(0),
-              usingPending_(false),
-              prefixConstructed_(0),
-              suffixBegin_(0),
-              suffixConstructed_(0),
-              gapConstructed_(false),
-              tailConstructed_(false),
-              position_(0),
-              oldSize_(0) {
-        }
+        /// 绑定当前要执行增删流程的 Vector 实例。
+        explicit Storage(Vector& owner);
 
-        ~Storage() {
-            discardPending();
-        }
+        /// 清理尚未提交的临时存储，保证异常路径不泄漏。
+        ~Storage();
 
-        size_type size() const {
-            return owner_.size_;
-        }
+        /// 返回当前逻辑元素数量。
+        size_type size() const;
 
-        size_type maxSize() const {
-            return owner_.max_size();
-        }
+        /// 返回当前 allocator 允许的最大元素数量。
+        size_type maxSize() const;
 
-        void ensureCapacity(size_type required) {
-            if (required <= owner_.capacity_)
-                return;
+        /// 为一次插入准备足够容量，但暂不提交新的存储。
+        void ensureCapacity(size_type required);
 
-            pendingCapacity_ = owner_.recommendedCapacity(required);
-            pendingAllocation_ = allocator_traits::allocate(
-                owner_.allocator_,
-                pendingCapacity_
-            );
-            pendingData_ = detail::toAddress(pendingAllocation_);
-            usingPending_ = true;
-        }
+        /// 在指定位置打开 count 个槽位，并搬运原有元素。
+        void openGap(size_type position, size_type count, size_type oldSize);
 
-        void openGap(
+        /// 将待插入值写入已经打开的槽位。
+        template<typename Value>
+        void writeGap(size_type position, Value&& value);
+
+        /// 插入失败时回滚当前 Storage 已创建的临时对象。
+        void rollbackGap(
             size_type position,
             size_type count,
             size_type oldSize
-        ) {
-            position_ = position;
-            oldSize_ = oldSize;
+        ) noexcept;
 
-            if (usingPending_) {
-                openGapInPendingStorage(position, count, oldSize);
-                return;
-            }
+        /// 删除区间后将后续元素前移，并析构退出逻辑区间的尾部对象。
+        void closeGap(size_type first, size_type last, size_type oldSize);
 
-            openGapInCurrentStorage(position, count, oldSize);
-        }
+        /// 提交新的 size；若使用了新存储，则同时切换底层内存。
+        void commitSize(size_type newSize);
 
-        template<typename Value>
-        void writeGap(size_type position, Value&& value) {
-            if (usingPending_) {
-                allocator_traits::construct(
-                    owner_.allocator_,
-                    pendingData_ + position,
-                    std::forward<Value>(value)
-                );
-                gapConstructed_ = true;
-                return;
-            }
-
-            if (position == oldSize_) {
-                allocator_traits::construct(
-                    owner_.allocator_,
-                    owner_.data_ + position,
-                    std::forward<Value>(value)
-                );
-                tailConstructed_ = true;
-                return;
-            }
-
-            owner_.data_[position] = std::forward<Value>(value);
-        }
-
-        void rollbackGap(
-            size_type,
-            size_type,
-            size_type
-        ) noexcept {
-            if (usingPending_) {
-                discardPending();
-                return;
-            }
-
-            // When an in-place assignment throws, std::vector can only provide
-            // the basic guarantee for element types whose move/copy assignment
-            // may throw. The shifted range remains valid but unspecified.
-            if (tailConstructed_) {
-                allocator_traits::destroy(
-                    owner_.allocator_,
-                    owner_.data_ + oldSize_
-                );
-                tailConstructed_ = false;
-            }
-        }
-
-        void closeGap(
-            size_type first,
-            size_type last,
-            size_type oldSize
-        ) {
-            const size_type removed = last - first;
-            size_type destination = first;
-            size_type source = last;
-
-            while (source < oldSize) {
-                owner_.data_[destination] = std::move_if_noexcept(
-                    owner_.data_[source]
-                );
-                ++destination;
-                ++source;
-            }
-
-            owner_.destroyRange(oldSize - removed, oldSize);
-        }
-
-        void commitSize(size_type newSize) {
-            if (!usingPending_) {
-                owner_.size_ = newSize;
-                tailConstructed_ = false;
-                return;
-            }
-
-            owner_.destroyRange(0, owner_.size_);
-            owner_.deallocateStorage();
-
-            owner_.allocation_ = pendingAllocation_;
-            owner_.data_ = pendingData_;
-            owner_.size_ = newSize;
-            owner_.capacity_ = pendingCapacity_;
-
-            pendingAllocation_ = allocation_pointer();
-            pendingData_ = nullptr;
-            pendingCapacity_ = 0;
-            usingPending_ = false;
-            prefixConstructed_ = 0;
-            suffixConstructed_ = 0;
-            gapConstructed_ = false;
-        }
-
-        void afterErase() {
-            // std::vector::erase does not reduce capacity. Users can request a
-            // compaction explicitly with shrink_to_fit().
-        }
+        /// 执行删除后的容器策略；工业版保持 capacity 不变。
+        void afterErase();
 
     private:
         Vector& owner_;
@@ -235,885 +112,347 @@ private:
         size_type position_;
         size_type oldSize_;
 
+        /// 禁止复制 Storage，避免重复管理同一份临时存储。
         Storage(const Storage&);
+
+        /// 禁止复制赋值 Storage，避免重复管理同一份临时存储。
         Storage& operator=(const Storage&);
 
+        /// 在新申请的存储中构造插入位置两侧的元素。
         void openGapInPendingStorage(
             size_type position,
             size_type count,
             size_type oldSize
-        ) {
-            suffixBegin_ = position + count;
+        );
 
-            try {
-                for (; prefixConstructed_ < position; ++prefixConstructed_) {
-                    allocator_traits::construct(
-                        owner_.allocator_,
-                        pendingData_ + prefixConstructed_,
-                        std::move_if_noexcept(
-                            owner_.data_[prefixConstructed_]
-                        )
-                    );
-                }
-
-                for (
-                    size_type source = position;
-                    source < oldSize;
-                    ++source, ++suffixConstructed_
-                ) {
-                    allocator_traits::construct(
-                        owner_.allocator_,
-                        pendingData_ + suffixBegin_ + suffixConstructed_,
-                        std::move_if_noexcept(owner_.data_[source])
-                    );
-                }
-            } catch (...) {
-                discardPending();
-                throw;
-            }
-        }
-
+        /// 在现有存储中原地后移元素，为插入打开一个槽位。
         void openGapInCurrentStorage(
             size_type position,
             size_type count,
             size_type oldSize
-        ) {
-            if (count != 1)
-                throw std::logic_error("Vector currently opens one slot at a time");
-            if (position == oldSize)
-                return;
+        );
 
-            allocator_traits::construct(
-                owner_.allocator_,
-                owner_.data_ + oldSize,
-                std::move_if_noexcept(owner_.data_[oldSize - 1])
-            );
-            tailConstructed_ = true;
-
-            try {
-                for (size_type index = oldSize - 1; index > position; --index) {
-                    owner_.data_[index] = std::move_if_noexcept(
-                        owner_.data_[index - 1]
-                    );
-                }
-            } catch (...) {
-                allocator_traits::destroy(
-                    owner_.allocator_,
-                    owner_.data_ + oldSize
-                );
-                tailConstructed_ = false;
-                throw;
-            }
-        }
-
-        void discardPending() noexcept {
-            if (!usingPending_)
-                return;
-
-            if (gapConstructed_) {
-                allocator_traits::destroy(
-                    owner_.allocator_,
-                    pendingData_ + position_
-                );
-                gapConstructed_ = false;
-            }
-
-            while (suffixConstructed_ > 0) {
-                --suffixConstructed_;
-                allocator_traits::destroy(
-                    owner_.allocator_,
-                    pendingData_ + suffixBegin_ + suffixConstructed_
-                );
-            }
-
-            while (prefixConstructed_ > 0) {
-                --prefixConstructed_;
-                allocator_traits::destroy(
-                    owner_.allocator_,
-                    pendingData_ + prefixConstructed_
-                );
-            }
-
-            allocator_traits::deallocate(
-                owner_.allocator_,
-                pendingAllocation_,
-                pendingCapacity_
-            );
-
-            pendingAllocation_ = allocation_pointer();
-            pendingData_ = nullptr;
-            pendingCapacity_ = 0;
-            usingPending_ = false;
-        }
+        /// 析构并释放尚未提交的新存储。
+        void discardPending() noexcept;
     };
 
     typedef dsa::core::VectorAlgorithm<Storage> MutationAlgorithm;
 
 public:
-    Vector() noexcept(std::is_nothrow_default_constructible<allocator_type>::value)
-        : allocator_(),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-    }
+    /// 构造空 Vector，并默认构造 allocator。
+    Vector() noexcept(std::is_nothrow_default_constructible<allocator_type>::value);
 
-    explicit Vector(const allocator_type& allocator) noexcept
-        : allocator_(allocator),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-    }
+    /// 使用指定 allocator 构造空 Vector。
+    explicit Vector(const allocator_type& allocator) noexcept;
 
+    /// 构造 count 个值初始化元素。
     explicit Vector(
         size_type count,
         const allocator_type& allocator = allocator_type()
-    )
-        : allocator_(allocator),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-        initializeDefault(count);
-    }
+    );
 
+    /// 构造 count 个 value 副本。
     Vector(
         size_type count,
         const value_type& value,
         const allocator_type& allocator = allocator_type()
-    )
-        : allocator_(allocator),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-        initializeFill(count, value);
-    }
+    );
 
+    /// 从迭代器区间 [first, last) 构造 Vector。
     template<typename InputIt>
     Vector(
         InputIt first,
         InputIt last,
         const allocator_type& allocator = allocator_type(),
         typename std::enable_if<!std::is_integral<InputIt>::value>::type* = nullptr
-    )
-        : allocator_(allocator),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-        initializeRange(
-            first,
-            last,
-            typename std::iterator_traits<InputIt>::iterator_category()
-        );
-    }
+    );
 
+    /// 从 initializer_list 构造 Vector。
     Vector(
         std::initializer_list<value_type> values,
         const allocator_type& allocator = allocator_type()
-    )
-        : allocator_(allocator),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-        initializeRange(
-            values.begin(),
-            values.end(),
-            std::forward_iterator_tag()
-        );
-    }
+    );
 
-    Vector(const Vector& other)
-        : allocator_(
-              allocator_traits::select_on_container_copy_construction(
-                  other.allocator_
-              )
-          ),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-        initializeRange(
-            other.begin(),
-            other.end(),
-            std::forward_iterator_tag()
-        );
-    }
+    /// 使用 select_on_container_copy_construction 选择 allocator 后深拷贝元素。
+    Vector(const Vector& other);
 
-    Vector(const Vector& other, const allocator_type& allocator)
-        : allocator_(allocator),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-        initializeRange(
-            other.begin(),
-            other.end(),
-            std::forward_iterator_tag()
-        );
-    }
+    /// 使用调用方指定的 allocator 深拷贝另一个 Vector。
+    Vector(const Vector& other, const allocator_type& allocator);
 
+    /// 移动构造并直接接管另一个 Vector 的存储。
     Vector(Vector&& other) noexcept(
         std::is_nothrow_move_constructible<allocator_type>::value
-    )
-        : allocator_(std::move(other.allocator_)),
-          allocation_(other.allocation_),
-          data_(other.data_),
-          size_(other.size_),
-          capacity_(other.capacity_) {
-        other.resetStorage();
-    }
+    );
 
-    Vector(Vector&& other, const allocator_type& allocator)
-        : allocator_(allocator),
-          allocation_(),
-          data_(nullptr),
-          size_(0),
-          capacity_(0) {
-        if (allocator_ == other.allocator_) {
-            stealStorage(other);
-        } else {
-            initializeRange(
-                std::make_move_iterator(other.begin()),
-                std::make_move_iterator(other.end()),
-                std::forward_iterator_tag()
-            );
-            other.clear();
-        }
-    }
+    /// 使用指定 allocator 移动构造；allocator 不同时逐个移动元素。
+    Vector(Vector&& other, const allocator_type& allocator);
 
-    ~Vector() {
-        clear();
-        deallocateStorage();
-    }
+    /// 析构所有有效元素并释放底层存储。
+    ~Vector();
 
-    Vector& operator=(const Vector& other) {
-        if (this == &other)
-            return *this;
+    /// 按 allocator propagation 规则执行拷贝赋值。
+    Vector& operator=(const Vector& other);
 
-        copyAssign(
-            other,
-            typename allocator_traits::propagate_on_container_copy_assignment()
-        );
-        return *this;
-    }
-
+    /// 按 allocator propagation 规则执行移动赋值。
     Vector& operator=(Vector&& other) noexcept(
         allocator_traits::propagate_on_container_move_assignment::value &&
         std::is_nothrow_move_assignable<allocator_type>::value
-    ) {
-        if (this == &other)
-            return *this;
+    );
 
-        moveAssign(
-            other,
-            typename allocator_traits::propagate_on_container_move_assignment()
-        );
-        return *this;
-    }
+    /// 使用 initializer_list 替换当前所有元素。
+    Vector& operator=(std::initializer_list<value_type> values);
 
-    Vector& operator=(std::initializer_list<value_type> values) {
-        assign(values.begin(), values.end());
-        return *this;
-    }
+    /// 将容器内容替换为 count 个 value 副本。
+    void assign(size_type count, const value_type& value);
 
-    void assign(size_type count, const value_type& value) {
-        Vector replacement(count, value, allocator_);
-        swapStorage(replacement);
-    }
-
+    /// 将容器内容替换为迭代器区间 [first, last) 的元素。
     template<typename InputIt>
     typename std::enable_if<!std::is_integral<InputIt>::value, void>::type
-    assign(InputIt first, InputIt last) {
-        Vector replacement(first, last, allocator_);
-        swapStorage(replacement);
-    }
+    assign(InputIt first, InputIt last);
 
-    void assign(std::initializer_list<value_type> values) {
-        assign(values.begin(), values.end());
-    }
+    /// 将容器内容替换为 initializer_list 中的元素。
+    void assign(std::initializer_list<value_type> values);
 
-    allocator_type get_allocator() const {
-        return allocator_;
-    }
+    /// 返回当前使用的 allocator 副本。
+    allocator_type get_allocator() const noexcept;
 
-    reference at(size_type position) {
-        checkPosition(position);
-        return data_[position];
-    }
+    /// 返回指定位置元素，并在越界时抛出 std::out_of_range。
+    reference at(size_type position);
 
-    const_reference at(size_type position) const {
-        checkPosition(position);
-        return data_[position];
-    }
+    /// 返回指定位置只读元素，并在越界时抛出 std::out_of_range。
+    const_reference at(size_type position) const;
 
-    reference operator[](size_type position) noexcept {
-        return data_[position];
-    }
+    /// 不检查边界地返回指定位置元素。
+    reference operator[](size_type position) noexcept;
 
-    const_reference operator[](size_type position) const noexcept {
-        return data_[position];
-    }
+    /// 不检查边界地返回指定位置只读元素。
+    const_reference operator[](size_type position) const noexcept;
 
-    reference front() noexcept {
-        return data_[0];
-    }
+    /// 返回首元素引用；空容器调用行为与 std::vector 一样未定义。
+    reference front() noexcept;
 
-    const_reference front() const noexcept {
-        return data_[0];
-    }
+    /// 返回首元素只读引用；空容器调用行为与 std::vector 一样未定义。
+    const_reference front() const noexcept;
 
-    reference back() noexcept {
-        return data_[size_ - 1];
-    }
+    /// 返回尾元素引用；空容器调用行为与 std::vector 一样未定义。
+    reference back() noexcept;
 
-    const_reference back() const noexcept {
-        return data_[size_ - 1];
-    }
+    /// 返回尾元素只读引用；空容器调用行为与 std::vector 一样未定义。
+    const_reference back() const noexcept;
 
-    pointer data() noexcept {
-        return data_;
-    }
+    /// 返回连续存储首地址。
+    pointer data() noexcept;
 
-    const_pointer data() const noexcept {
-        return data_;
-    }
+    /// 返回连续存储首地址的只读指针。
+    const_pointer data() const noexcept;
 
-    iterator begin() noexcept {
-        return data_;
-    }
+    /// 返回首元素迭代器。
+    iterator begin() noexcept;
 
-    const_iterator begin() const noexcept {
-        return data_;
-    }
+    /// 返回首元素只读迭代器。
+    const_iterator begin() const noexcept;
 
-    const_iterator cbegin() const noexcept {
-        return data_;
-    }
+    /// 返回首元素只读迭代器。
+    const_iterator cbegin() const noexcept;
 
-    iterator end() noexcept {
-        return size_ == 0 ? data_ : data_ + size_;
-    }
+    /// 返回尾后迭代器。
+    iterator end() noexcept;
 
-    const_iterator end() const noexcept {
-        return size_ == 0 ? data_ : data_ + size_;
-    }
+    /// 返回尾后只读迭代器。
+    const_iterator end() const noexcept;
 
-    const_iterator cend() const noexcept {
-        return size_ == 0 ? data_ : data_ + size_;
-    }
+    /// 返回尾后只读迭代器。
+    const_iterator cend() const noexcept;
 
-    reverse_iterator rbegin() noexcept {
-        return reverse_iterator(end());
-    }
+    /// 返回反向首迭代器。
+    reverse_iterator rbegin() noexcept;
 
-    const_reverse_iterator rbegin() const noexcept {
-        return const_reverse_iterator(end());
-    }
+    /// 返回反向首只读迭代器。
+    const_reverse_iterator rbegin() const noexcept;
 
-    const_reverse_iterator crbegin() const noexcept {
-        return const_reverse_iterator(cend());
-    }
+    /// 返回反向首只读迭代器。
+    const_reverse_iterator crbegin() const noexcept;
 
-    reverse_iterator rend() noexcept {
-        return reverse_iterator(begin());
-    }
+    /// 返回反向尾后迭代器。
+    reverse_iterator rend() noexcept;
 
-    const_reverse_iterator rend() const noexcept {
-        return const_reverse_iterator(begin());
-    }
+    /// 返回反向尾后只读迭代器。
+    const_reverse_iterator rend() const noexcept;
 
-    const_reverse_iterator crend() const noexcept {
-        return const_reverse_iterator(cbegin());
-    }
+    /// 返回反向尾后只读迭代器。
+    const_reverse_iterator crend() const noexcept;
 
-    bool empty() const noexcept {
-        return size_ == 0;
-    }
+    /// 判断容器是否不含元素。
+    bool empty() const noexcept;
 
-    size_type size() const noexcept {
-        return size_;
-    }
+    /// 返回当前有效元素数量。
+    size_type size() const noexcept;
 
-    size_type max_size() const noexcept {
-        const size_type allocatorMaximum = allocator_traits::max_size(allocator_);
-        const size_type differenceMaximum = static_cast<size_type>(
-            (std::numeric_limits<difference_type>::max)()
-        );
-        return allocatorMaximum < differenceMaximum
-            ? allocatorMaximum
-            : differenceMaximum;
-    }
+    /// 返回 allocator 和 difference_type 共同允许的最大元素数量。
+    size_type max_size() const noexcept;
 
-    void reserve(size_type requestedCapacity) {
-        if (requestedCapacity > max_size())
-            throw std::length_error("Vector::reserve exceeds max_size");
-        if (requestedCapacity <= capacity_)
-            return;
-        reallocateExact(requestedCapacity);
-    }
+    /// 至少预留 requestedCapacity 个元素的存储空间。
+    void reserve(size_type requestedCapacity);
 
-    size_type capacity() const noexcept {
-        return capacity_;
-    }
+    /// 返回当前可容纳且无需重新分配的元素数量。
+    size_type capacity() const noexcept;
 
-    void shrink_to_fit() {
-        if (size_ == capacity_)
-            return;
-        if (size_ == 0) {
-            deallocateStorage();
-            return;
-        }
-        reallocateExact(size_);
-    }
+    /// 尝试将 capacity 压缩到 size；空容器会释放全部存储。
+    void shrink_to_fit();
 
-    void clear() noexcept {
-        destroyRange(0, size_);
-        size_ = 0;
-    }
+    /// 析构所有有效元素，但保留底层容量。
+    void clear() noexcept;
 
-    iterator insert(const_iterator position, const value_type& value) {
-        value_type pending(value);
-        return insertPrepared(position, std::move(pending));
-    }
+    /// 在 position 前插入 value 的副本，并返回新元素迭代器。
+    iterator insert(const_iterator position, const value_type& value);
 
-    iterator insert(const_iterator position, value_type&& value) {
-        value_type pending(std::move(value));
-        return insertPrepared(position, std::move(pending));
-    }
+    /// 在 position 前移动插入 value，并返回新元素迭代器。
+    iterator insert(const_iterator position, value_type&& value);
 
+    /// 在 position 前原地构造元素，并返回新元素迭代器。
     template<typename... Args>
-    iterator emplace(const_iterator position, Args&&... args) {
-        value_type pending(std::forward<Args>(args)...);
-        return insertPrepared(position, std::move(pending));
-    }
+    iterator emplace(const_iterator position, Args&&... args);
 
-    iterator erase(const_iterator position) {
-        return erase(position, position + 1);
-    }
+    /// 删除 position 指向的元素，并返回其后继迭代器。
+    iterator erase(const_iterator position);
 
-    iterator erase(const_iterator first, const_iterator last) {
-        const size_type firstIndex = indexOf(first);
-        const size_type lastIndex = indexOf(last);
-        if (firstIndex > lastIndex || lastIndex > size_)
-            throw std::out_of_range("Vector::erase invalid range");
+    /// 删除区间 [first, last)，并返回删除位置的后继迭代器。
+    iterator erase(const_iterator first, const_iterator last);
 
-        Storage storage(*this);
-        MutationAlgorithm::erase(storage, firstIndex, lastIndex);
-        return iteratorAt(firstIndex);
-    }
+    /// 在尾部复制追加一个元素。
+    void push_back(const value_type& value);
 
-    void push_back(const value_type& value) {
-        insert(cend(), value);
-    }
+    /// 在尾部移动追加一个元素。
+    void push_back(value_type&& value);
 
-    void push_back(value_type&& value) {
-        insert(cend(), std::move(value));
-    }
-
+    /// 在尾部原地构造一个元素，并返回其引用。
     template<typename... Args>
-    reference emplace_back(Args&&... args) {
-        iterator inserted = emplace(cend(), std::forward<Args>(args)...);
-        return *inserted;
-    }
+    reference emplace_back(Args&&... args);
 
-    // Non-standard convenience extension. Like any front insertion in a
-    // contiguous vector, this is O(n).
-    void push_front(const value_type& value) {
-        insert(cbegin(), value);
-    }
+    /// 在首部复制插入一个元素；连续存储下复杂度为 O(n)。
+    void push_front(const value_type& value);
 
-    void push_front(value_type&& value) {
-        insert(cbegin(), std::move(value));
-    }
+    /// 在首部移动插入一个元素；连续存储下复杂度为 O(n)。
+    void push_front(value_type&& value);
 
+    /// 在首部原地构造一个元素；连续存储下复杂度为 O(n)。
     template<typename... Args>
-    reference emplace_front(Args&&... args) {
-        iterator inserted = emplace(cbegin(), std::forward<Args>(args)...);
-        return *inserted;
-    }
+    reference emplace_front(Args&&... args);
 
-    void pop_back() {
-        erase(cend() - 1);
-    }
+    /// 删除尾元素；空容器调用行为与 std::vector 一样未定义。
+    void pop_back();
 
-    void pop_front() {
-        erase(cbegin());
-    }
+    /// 删除首元素；这是非标准扩展且复杂度为 O(n)。
+    void pop_front();
 
-    void resize(size_type count) {
-        if (count < size_) {
-            destroyRange(count, size_);
-            size_ = count;
-            return;
-        }
+    /// 将逻辑大小调整为 count，新增元素使用值初始化。
+    void resize(size_type count);
 
-        if (count == size_)
-            return;
+    /// 将逻辑大小调整为 count，新增元素复制 value。
+    void resize(size_type count, const value_type& value);
 
-        reserveRecommended(count);
-        const size_type oldSize = size_;
-        try {
-            while (size_ < count) {
-                allocator_traits::construct(allocator_, data_ + size_);
-                ++size_;
-            }
-        } catch (...) {
-            destroyRange(oldSize, size_);
-            size_ = oldSize;
-            throw;
-        }
-    }
-
-    void resize(size_type count, const value_type& value) {
-        if (count < size_) {
-            destroyRange(count, size_);
-            size_ = count;
-            return;
-        }
-
-        if (count == size_)
-            return;
-
-        reserveRecommended(count);
-        const size_type oldSize = size_;
-        try {
-            while (size_ < count) {
-                allocator_traits::construct(
-                    allocator_,
-                    data_ + size_,
-                    value
-                );
-                ++size_;
-            }
-        } catch (...) {
-            destroyRange(oldSize, size_);
-            size_ = oldSize;
-            throw;
-        }
-    }
-
-    void swap(Vector& other) {
-        swapImpl(
-            other,
-            typename allocator_traits::propagate_on_container_swap()
-        );
-    }
+    /// 按 allocator propagation 规则交换两个 Vector。
+    void swap(Vector& other);
 
 private:
-    size_type recommendedCapacity(size_type required) const {
-        return MutationAlgorithm::recommendCapacity(
-            capacity_,
-            required,
-            size_type(1),
-            max_size()
-        );
-    }
+    /// 根据当前容量、目标容量和 max_size 计算几何增长后的推荐容量。
+    size_type recommendedCapacity(size_type required) const;
 
-    void reserveRecommended(size_type required) {
-        if (required > capacity_)
-            reserve(recommendedCapacity(required));
-    }
+    /// 仅在容量不足时按推荐容量执行 reserve。
+    void reserveRecommended(size_type required);
 
-    iterator iteratorAt(size_type index) noexcept {
-        if (index == 0)
-            return data_;
-        return data_ + index;
-    }
+    /// 根据下标构造可写迭代器，兼容空容器的 nullptr。
+    iterator iteratorAt(size_type index) noexcept;
 
-    const_iterator iteratorAt(size_type index) const noexcept {
-        if (index == 0)
-            return data_;
-        return data_ + index;
-    }
+    /// 根据下标构造只读迭代器，兼容空容器的 nullptr。
+    const_iterator iteratorAt(size_type index) const noexcept;
 
-    size_type indexOf(const_iterator position) const {
-        if (size_ == 0) {
-            if (position != data_)
-                throw std::out_of_range("Vector iterator does not belong to container");
-            return 0;
-        }
+    /// 将本容器迭代器转换为下标，并验证所属关系。
+    size_type indexOf(const_iterator position) const;
 
-        if (position < data_ || position > data_ + size_)
-            throw std::out_of_range("Vector iterator does not belong to container");
-        return static_cast<size_type>(position - data_);
-    }
-
+    /// 将已准备好的值交给共享 VectorAlgorithm 完成插入。
     template<typename Value>
-    iterator insertPrepared(const_iterator position, Value&& value) {
-        const size_type index = indexOf(position);
-        Storage storage(*this);
-        MutationAlgorithm::insert(storage, index, std::forward<Value>(value));
-        return iteratorAt(index);
-    }
+    iterator insertPrepared(const_iterator position, Value&& value);
 
-    void checkPosition(size_type position) const {
-        if (position >= size_)
-            throw std::out_of_range("Vector::at position out of range");
-    }
+    /// 检查元素访问位置是否合法。
+    void checkPosition(size_type position) const;
 
-    void initializeDefault(size_type count) {
-        if (count == 0)
-            return;
-        if (count > max_size())
-            throw std::length_error("Vector size exceeds max_size");
+    /// 初始化 count 个值初始化元素。
+    void initializeDefault(size_type count);
 
-        allocateStorage(count);
-        try {
-            while (size_ < count) {
-                allocator_traits::construct(allocator_, data_ + size_);
-                ++size_;
-            }
-        } catch (...) {
-            destroyRange(0, size_);
-            deallocateStorage();
-            throw;
-        }
-    }
+    /// 初始化 count 个 value 副本。
+    void initializeFill(size_type count, const value_type& value);
 
-    void initializeFill(size_type count, const value_type& value) {
-        if (count == 0)
-            return;
-        if (count > max_size())
-            throw std::length_error("Vector size exceeds max_size");
-
-        allocateStorage(count);
-        try {
-            while (size_ < count) {
-                allocator_traits::construct(
-                    allocator_,
-                    data_ + size_,
-                    value
-                );
-                ++size_;
-            }
-        } catch (...) {
-            destroyRange(0, size_);
-            deallocateStorage();
-            throw;
-        }
-    }
-
+    /// 使用单遍输入迭代器逐个追加元素。
     template<typename InputIt>
-    void initializeRange(
-        InputIt first,
-        InputIt last,
-        std::input_iterator_tag
-    ) {
-        try {
-            for (; first != last; ++first)
-                emplace_back(*first);
-        } catch (...) {
-            clear();
-            deallocateStorage();
-            throw;
-        }
-    }
+    void initializeRange(InputIt first, InputIt last, std::input_iterator_tag);
 
+    /// 使用前向迭代器预先计算距离并一次申请存储。
     template<typename ForwardIt>
-    void initializeRange(
-        ForwardIt first,
-        ForwardIt last,
-        std::forward_iterator_tag
-    ) {
-        const difference_type distance = std::distance(first, last);
-        if (distance <= 0)
-            return;
+    void initializeRange(ForwardIt first, ForwardIt last, std::forward_iterator_tag);
 
-        const size_type count = static_cast<size_type>(distance);
-        if (count > max_size())
-            throw std::length_error("Vector size exceeds max_size");
+    /// 使用 allocator 申请指定容量的未初始化存储。
+    void allocateStorage(size_type capacity);
 
-        allocateStorage(count);
-        try {
-            for (; first != last; ++first) {
-                allocator_traits::construct(
-                    allocator_,
-                    data_ + size_,
-                    *first
-                );
-                ++size_;
-            }
-        } catch (...) {
-            destroyRange(0, size_);
-            deallocateStorage();
-            throw;
-        }
-    }
+    /// 使用 allocator 释放当前底层存储。
+    void deallocateStorage() noexcept;
 
-    void allocateStorage(size_type capacity) {
-        if (capacity == 0)
-            return;
-        allocation_ = allocator_traits::allocate(allocator_, capacity);
-        data_ = detail::toAddress(allocation_);
-        capacity_ = capacity;
-    }
+    /// 逆序析构下标区间 [first, last) 内的元素。
+    void destroyRange(size_type first, size_type last) noexcept;
 
-    void deallocateStorage() noexcept {
-        if (capacity_ != 0) {
-            allocator_traits::deallocate(
-                allocator_,
-                allocation_,
-                capacity_
-            );
-        }
-        allocation_ = allocation_pointer();
-        data_ = nullptr;
-        capacity_ = 0;
-    }
+    /// 精确重新分配到 newCapacity，并搬运所有有效元素。
+    void reallocateExact(size_type newCapacity);
 
-    void destroyRange(size_type first, size_type last) noexcept {
-        while (last > first) {
-            --last;
-            allocator_traits::destroy(allocator_, data_ + last);
-        }
-    }
+    /// 将存储字段重置为空状态，不析构也不释放原存储。
+    void resetStorage() noexcept;
 
-    void reallocateExact(size_type newCapacity) {
-        allocation_pointer newAllocation = allocator_traits::allocate(
-            allocator_,
-            newCapacity
-        );
-        pointer newData = detail::toAddress(newAllocation);
-        size_type constructed = 0;
+    /// 接管 other 的存储，并将 other 重置为空状态。
+    void stealStorage(Vector& other) noexcept;
 
-        try {
-            for (; constructed < size_; ++constructed) {
-                allocator_traits::construct(
-                    allocator_,
-                    newData + constructed,
-                    std::move_if_noexcept(data_[constructed])
-                );
-            }
-        } catch (...) {
-            while (constructed > 0) {
-                --constructed;
-                allocator_traits::destroy(
-                    allocator_,
-                    newData + constructed
-                );
-            }
-            allocator_traits::deallocate(
-                allocator_,
-                newAllocation,
-                newCapacity
-            );
-            throw;
-        }
+    /// 仅交换存储字段，不交换 allocator。
+    void swapStorage(Vector& other) noexcept;
 
-        destroyRange(0, size_);
-        deallocateStorage();
-        allocation_ = newAllocation;
-        data_ = newData;
-        capacity_ = newCapacity;
-    }
+    /// allocator 允许传播时执行拷贝赋值。
+    void copyAssign(const Vector& other, std::true_type);
 
-    void resetStorage() noexcept {
-        allocation_ = allocation_pointer();
-        data_ = nullptr;
-        size_ = 0;
-        capacity_ = 0;
-    }
+    /// allocator 不允许传播时使用当前 allocator 执行拷贝赋值。
+    void copyAssign(const Vector& other, std::false_type);
 
-    void stealStorage(Vector& other) noexcept {
-        allocation_ = other.allocation_;
-        data_ = other.data_;
-        size_ = other.size_;
-        capacity_ = other.capacity_;
-        other.resetStorage();
-    }
+    /// allocator 允许传播时执行移动赋值。
+    void moveAssign(Vector& other, std::true_type);
 
-    void swapStorage(Vector& other) noexcept {
-        using std::swap;
-        swap(allocation_, other.allocation_);
-        swap(data_, other.data_);
-        swap(size_, other.size_);
-        swap(capacity_, other.capacity_);
-    }
+    /// allocator 不允许传播时根据 allocator 是否相等决定接管或逐个移动。
+    void moveAssign(Vector& other, std::false_type);
 
-    void copyAssign(const Vector& other, std::true_type) {
-        if (allocator_ != other.allocator_) {
-            Vector replacement(other, other.allocator_);
-            clear();
-            deallocateStorage();
-            allocator_ = other.allocator_;
-            stealStorage(replacement);
-            return;
-        }
+    /// allocator 允许传播时交换 allocator 与存储。
+    void swapImpl(Vector& other, std::true_type);
 
-        Vector replacement(other, allocator_);
-        swapStorage(replacement);
-    }
-
-    void copyAssign(const Vector& other, std::false_type) {
-        Vector replacement(other, allocator_);
-        swapStorage(replacement);
-    }
-
-    void moveAssign(Vector& other, std::true_type) {
-        clear();
-        deallocateStorage();
-        allocator_ = std::move(other.allocator_);
-        stealStorage(other);
-    }
-
-    void moveAssign(Vector& other, std::false_type) {
-        if (allocator_ == other.allocator_) {
-            clear();
-            deallocateStorage();
-            stealStorage(other);
-            return;
-        }
-
-        Vector replacement(
-            std::make_move_iterator(other.begin()),
-            std::make_move_iterator(other.end()),
-            allocator_
-        );
-        swapStorage(replacement);
-        other.clear();
-    }
-
-    void swapImpl(Vector& other, std::true_type) {
-        using std::swap;
-        swap(allocator_, other.allocator_);
-        swapStorage(other);
-    }
-
-    void swapImpl(Vector& other, std::false_type) {
-        if (allocator_ != other.allocator_) {
-            throw std::logic_error(
-                "Vector::swap requires equal non-propagating allocators"
-            );
-        }
-        swapStorage(other);
-    }
+    /// allocator 不允许传播时仅允许相等 allocator 交换存储。
+    void swapImpl(Vector& other, std::false_type);
 };
 
+/// 比较两个 Vector 的长度和逐项元素是否相等。
 template<typename T, typename Allocator>
 bool operator==(
     const Vector<T, Allocator>& left,
     const Vector<T, Allocator>& right
-) {
-    return left.size() == right.size() &&
-           std::equal(left.begin(), left.end(), right.begin());
-}
+);
 
+/// 判断两个 Vector 是否不相等。
 template<typename T, typename Allocator>
 bool operator!=(
     const Vector<T, Allocator>& left,
     const Vector<T, Allocator>& right
-) {
-    return !(left == right);
-}
+);
 
+/// 调用成员 swap 交换两个 Vector。
 template<typename T, typename Allocator>
-void swap(Vector<T, Allocator>& left, Vector<T, Allocator>& right) {
-    left.swap(right);
-}
+void swap(Vector<T, Allocator>& left, Vector<T, Allocator>& right);
+
+#include "detail/VectorStorage.inl"
+#include "detail/VectorLifecycle.inl"
+#include "detail/VectorModifiers.inl"
+#include "detail/VectorHelpers.inl"
 
 } // namespace container
 } // namespace dsa

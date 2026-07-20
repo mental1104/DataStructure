@@ -16,20 +16,22 @@
 #include "SortImpl.h"
 #include "../dsa/container/vector/Vector.h"
 
-
+/// 调用原有 VectorSortImpl 对教学版 Vector 执行指定排序策略。
 template<typename T>
-void Sort(Vector<T>& container, SortStrategy strategy = SortStrategy::QuickSort){
+void Sort(Vector<T>& container, SortStrategy strategy = SortStrategy::QuickSort) {
     VectorSortImpl::Sort(container, 0, container.size(), strategy);
 }
 
+/// 调用原有 ListSortImpl 对教学版 List 执行指定排序策略。
 template<typename T>
-void Sort(List<T>& container, SortStrategy strategy = SortStrategy::MergeSort){
+void Sort(List<T>& container, SortStrategy strategy = SortStrategy::MergeSort) {
     ListSortImpl::Sort(container, strategy);
 }
 
 namespace dsa {
 namespace sort_detail {
 
+/// 使用相邻元素比较和交换实现冒泡排序。
 template<typename RandomIt>
 void bubbleSort(RandomIt first, RandomIt last) {
     while (first != last) {
@@ -37,6 +39,7 @@ void bubbleSort(RandomIt first, RandomIt last) {
         RandomIt current = first;
         if (current == last)
             return;
+
         RandomIt next = current;
         ++next;
         while (next != last) {
@@ -47,12 +50,14 @@ void bubbleSort(RandomIt first, RandomIt last) {
             ++current;
             ++next;
         }
+
         if (sorted)
             return;
         --last;
     }
 }
 
+/// 每轮选择未排序区间最小元素并放到当前起点。
 template<typename RandomIt>
 void selectionSort(RandomIt first, RandomIt last) {
     for (RandomIt current = first; current != last; ++current) {
@@ -66,10 +71,12 @@ void selectionSort(RandomIt first, RandomIt last) {
     }
 }
 
+/// 通过不断向前交换，将当前元素插入前方已排序区间。
 template<typename RandomIt>
 void insertionSort(RandomIt first, RandomIt last) {
     if (first == last)
         return;
+
     for (RandomIt current = first + 1; current != last; ++current) {
         RandomIt moving = current;
         while (moving != first && *moving < *(moving - 1)) {
@@ -79,9 +86,11 @@ void insertionSort(RandomIt first, RandomIt last) {
     }
 }
 
+/// 使用 Knuth 间隔序列实现希尔排序。
 template<typename RandomIt>
 void shellSort(RandomIt first, RandomIt last) {
     typedef typename std::iterator_traits<RandomIt>::difference_type Difference;
+
     const Difference count = last - first;
     Difference gap = 1;
     while (gap < count / 3)
@@ -101,6 +110,7 @@ void shellSort(RandomIt first, RandomIt last) {
     }
 }
 
+/// 根据 SortStrategy 为随机访问迭代器区间选择排序实现。
 template<typename RandomIt>
 void sortRandomAccess(
     RandomIt first,
@@ -143,6 +153,7 @@ void sortRandomAccess(
 } // namespace sort_detail
 } // namespace dsa
 
+/// 对工业版 allocator-aware Vector 执行指定排序策略。
 template<typename T, typename Allocator>
 void Sort(
     dsa::container::Vector<T, Allocator>& container,

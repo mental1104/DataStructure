@@ -17,66 +17,83 @@ namespace {
 template<typename T>
 using IndustrialVector = dsa::container::Vector<T>;
 
+/// 用于验证容器支持不可拷贝、不可默认构造元素的测试类型。
 struct MoveOnlyValue {
     int value;
 
+    /// 使用整数初始化测试值。
     explicit MoveOnlyValue(int current)
-        : value(current) {}
+        : value(current) {
+    }
 
+    /// 移动构造测试值，并将源对象标记为已移动。
     MoveOnlyValue(MoveOnlyValue&& other) noexcept
         : value(other.value) {
         other.value = -1;
     }
 
+    /// 移动赋值测试值，并将源对象标记为已移动。
     MoveOnlyValue& operator=(MoveOnlyValue&& other) noexcept {
         value = other.value;
         other.value = -1;
         return *this;
     }
 
+    /// 禁止拷贝构造，确保测试覆盖 move-only 元素。
     MoveOnlyValue(const MoveOnlyValue&) = delete;
+
+    /// 禁止拷贝赋值，确保测试覆盖 move-only 元素。
     MoveOnlyValue& operator=(const MoveOnlyValue&) = delete;
 
+    /// 提供排序算法需要的小于比较。
     bool operator<(const MoveOnlyValue& other) const {
         return value < other.value;
     }
 
+    /// 提供序列算法和断言需要的相等比较。
     bool operator==(const MoveOnlyValue& other) const {
         return value == other.value;
     }
 };
 
+/// 用于验证 erase、clear 和析构是否及时结束对象生命周期的测试类型。
 struct TrackedValue {
     static int live;
     int value;
 
+    /// 构造对象并增加存活计数。
     explicit TrackedValue(int current = 0)
         : value(current) {
         ++live;
     }
 
+    /// 拷贝构造对象并增加存活计数。
     TrackedValue(const TrackedValue& other)
         : value(other.value) {
         ++live;
     }
 
+    /// 移动构造对象并增加存活计数。
     TrackedValue(TrackedValue&& other) noexcept
         : value(other.value) {
         other.value = -1;
         ++live;
     }
 
+    /// 拷贝赋值对象值，不改变存活计数。
     TrackedValue& operator=(const TrackedValue& other) {
         value = other.value;
         return *this;
     }
 
+    /// 移动赋值对象值，不改变存活计数。
     TrackedValue& operator=(TrackedValue&& other) noexcept {
         value = other.value;
         other.value = -1;
         return *this;
     }
 
+    /// 析构对象并减少存活计数。
     ~TrackedValue() {
         --live;
     }
@@ -84,6 +101,7 @@ struct TrackedValue {
 
 int TrackedValue::live = 0;
 
+/// 用于验证扩容和插入异常回滚的可注入异常测试类型。
 struct ThrowingValue {
     static int live;
     static int copies;
@@ -91,11 +109,13 @@ struct ThrowingValue {
 
     int value;
 
+    /// 构造对象并增加存活计数。
     explicit ThrowingValue(int current = 0)
         : value(current) {
         ++live;
     }
 
+    /// 在达到指定次数后抛出异常的拷贝构造函数。
     ThrowingValue(const ThrowingValue& other)
         : value(other.value) {
         if (throwAfter >= 0 && copies++ >= throwAfter)
@@ -103,6 +123,7 @@ struct ThrowingValue {
         ++live;
     }
 
+    /// 在达到指定次数后抛出异常的移动构造函数。
     ThrowingValue(ThrowingValue&& other) noexcept(false)
         : value(other.value) {
         if (throwAfter >= 0 && copies++ >= throwAfter)
@@ -111,6 +132,7 @@ struct ThrowingValue {
         ++live;
     }
 
+    /// 在达到指定次数后抛出异常的拷贝赋值运算符。
     ThrowingValue& operator=(const ThrowingValue& other) {
         if (throwAfter >= 0 && copies++ >= throwAfter)
             throw std::runtime_error("copy assignment failed");
@@ -118,6 +140,7 @@ struct ThrowingValue {
         return *this;
     }
 
+    /// 在达到指定次数后抛出异常的移动赋值运算符。
     ThrowingValue& operator=(ThrowingValue&& other) noexcept(false) {
         if (throwAfter >= 0 && copies++ >= throwAfter)
             throw std::runtime_error("move assignment failed");
@@ -126,6 +149,7 @@ struct ThrowingValue {
         return *this;
     }
 
+    /// 析构对象并减少存活计数。
     ~ThrowingValue() {
         --live;
     }
@@ -135,14 +159,18 @@ int ThrowingValue::live = 0;
 int ThrowingValue::copies = 0;
 int ThrowingValue::throwAfter = -1;
 
+/// 记录测试 allocator 的申请和释放次数。
 struct AllocationState {
     int allocations;
     int deallocations;
 
+    /// 将申请与释放计数初始化为零。
     AllocationState()
-        : allocations(0), deallocations(0) {}
+        : allocations(0), deallocations(0) {
+    }
 };
 
+/// 用于验证 stateful allocator propagation 和存储释放配对的测试 allocator。
 template<typename T>
 class CountingAllocator {
 public:
@@ -153,34 +181,44 @@ public:
 
     AllocationState* state;
 
+    /// 构造未绑定统计状态的 allocator。
     CountingAllocator() noexcept
-        : state(nullptr) {}
+        : state(nullptr) {
+    }
 
+    /// 构造绑定指定统计状态的 allocator。
     explicit CountingAllocator(AllocationState* allocationState) noexcept
-        : state(allocationState) {}
+        : state(allocationState) {
+    }
 
+    /// 从其他 value_type 的 CountingAllocator 转换构造。
     template<typename U>
     CountingAllocator(const CountingAllocator<U>& other) noexcept
-        : state(other.state) {}
+        : state(other.state) {
+    }
 
+    /// 申请 count 个 T 的存储并记录申请次数。
     T* allocate(std::size_t count) {
         if (state != nullptr)
             ++state->allocations;
         return std::allocator<T>().allocate(count);
     }
 
+    /// 释放存储并记录释放次数。
     void deallocate(T* memory, std::size_t count) noexcept {
         if (state != nullptr)
             ++state->deallocations;
         std::allocator<T>().deallocate(memory, count);
     }
 
+    /// 为 allocator_traits 提供其他 value_type 的 rebinding 类型。
     template<typename U>
     struct rebind {
         typedef CountingAllocator<U> other;
     };
 };
 
+/// 判断两个 CountingAllocator 是否绑定同一个统计状态。
 template<typename T, typename U>
 bool operator==(
     const CountingAllocator<T>& left,
@@ -189,6 +227,7 @@ bool operator==(
     return left.state == right.state;
 }
 
+/// 判断两个 CountingAllocator 是否绑定不同统计状态。
 template<typename T, typename U>
 bool operator!=(
     const CountingAllocator<T>& left,
@@ -199,6 +238,7 @@ bool operator!=(
 
 } // namespace
 
+/// 验证主要构造方式、随机访问和 at 越界检查。
 TEST(IndustrialVectorTest, ConstructorsAndElementAccessMatchStdVectorShape) {
     IndustrialVector<int> empty;
     EXPECT_TRUE(empty.empty());
@@ -225,6 +265,7 @@ TEST(IndustrialVectorTest, ConstructorsAndElementAccessMatchStdVectorShape) {
     EXPECT_EQ(listed.data(), listed.begin());
 }
 
+/// 验证单遍输入迭代器区间构造不会重复遍历输入源。
 TEST(IndustrialVectorTest, InputIteratorConstructorConsumesSinglePassRange) {
     std::istringstream stream("1 2 3 4");
     std::istream_iterator<int> first(stream);
@@ -236,6 +277,7 @@ TEST(IndustrialVectorTest, InputIteratorConstructorConsumesSinglePassRange) {
     EXPECT_EQ(values.back(), 4);
 }
 
+/// 验证拷贝拥有独立存储，移动操作正确转移所有权。
 TEST(IndustrialVectorTest, CopyAndMoveSemanticsOwnIndependentStorage) {
     IndustrialVector<int> original{1, 2, 3};
     IndustrialVector<int> copied(original);
@@ -258,6 +300,7 @@ TEST(IndustrialVectorTest, CopyAndMoveSemanticsOwnIndependentStorage) {
     EXPECT_TRUE(copyAssigned.empty());
 }
 
+/// 验证 push_back 使用几何增长并具备均摊 O(1) 扩容次数。
 TEST(IndustrialVectorTest, PushBackUsesGeometricAmortizedGrowth) {
     AllocationState state;
     typedef CountingAllocator<int> Allocator;
@@ -272,6 +315,7 @@ TEST(IndustrialVectorTest, PushBackUsesGeometricAmortizedGrowth) {
     EXPECT_EQ(values[512], 512);
 }
 
+/// 验证首尾插入和删除均经过共享 VectorAlgorithm 流程。
 TEST(IndustrialVectorTest, FrontAndBackInsertionReuseVectorMutationAlgorithm) {
     IndustrialVector<int> values;
     values.push_back(2);
@@ -292,6 +336,7 @@ TEST(IndustrialVectorTest, FrontAndBackInsertionReuseVectorMutationAlgorithm) {
     EXPECT_EQ(values.back(), 2);
 }
 
+/// 验证 erase 不自动缩容，而 shrink_to_fit 显式压缩容量。
 TEST(IndustrialVectorTest, EraseKeepsCapacityUntilShrinkToFit) {
     IndustrialVector<int> values;
     for (int value = 0; value < 32; ++value)
@@ -311,6 +356,7 @@ TEST(IndustrialVectorTest, EraseKeepsCapacityUntilShrinkToFit) {
     EXPECT_EQ(values.capacity(), values.size());
 }
 
+/// 验证 move-only 且不可默认构造类型可参与插入和删除。
 TEST(IndustrialVectorTest, MoveOnlyAndNonDefaultConstructibleValuesAreSupported) {
     IndustrialVector<MoveOnlyValue> values;
     values.emplace_back(2);
@@ -326,6 +372,7 @@ TEST(IndustrialVectorTest, MoveOnlyAndNonDefaultConstructibleValuesAreSupported)
     EXPECT_EQ(values[1].value, 3);
 }
 
+/// 验证 erase 和 clear 会立即析构退出逻辑区间的对象。
 TEST(IndustrialVectorTest, EraseAndClearDestroyElementsImmediately) {
     TrackedValue::live = 0;
     {
@@ -344,6 +391,7 @@ TEST(IndustrialVectorTest, EraseAndClearDestroyElementsImmediately) {
     EXPECT_EQ(TrackedValue::live, 0);
 }
 
+/// 验证重新分配过程中构造失败会清理临时存储并保留原容器。
 TEST(IndustrialVectorTest, ReallocationFailureRollsBackPendingStorage) {
     ThrowingValue::live = 0;
     ThrowingValue::copies = 0;
@@ -376,6 +424,7 @@ TEST(IndustrialVectorTest, ReallocationFailureRollsBackPendingStorage) {
     EXPECT_EQ(ThrowingValue::live, 0);
 }
 
+/// 验证 reserve、resize、assign 和 swap 的基本容器语义。
 TEST(IndustrialVectorTest, ReserveResizeAssignAndSwapFollowContainerSemantics) {
     IndustrialVector<int> values;
     values.reserve(20);
@@ -398,6 +447,7 @@ TEST(IndustrialVectorTest, ReserveResizeAssignAndSwapFollowContainerSemantics) {
     EXPECT_EQ(other.back(), 3);
 }
 
+/// 验证 Search.h 和 Sequence.h 可以直接操作工业 Vector 的连续迭代器。
 TEST(IndustrialVectorTest, SequenceAlgorithmsOperateOnIndustrialIterators) {
     IndustrialVector<int> values{1, 1, 2, 2, 3};
 
@@ -421,7 +471,8 @@ TEST(IndustrialVectorTest, SequenceAlgorithmsOperateOnIndustrialIterators) {
     EXPECT_EQ(upper - values.begin(), 2);
 }
 
-TEST(IndustrialVectorTest, ExistingSortFacadeAcceptsIndustrialVector) {
+/// 验证 Sort.h 的工业 Vector 重载支持普通类型和 move-only 类型。
+TEST(IndustrialVectorTest, SortFacadeSupportsIndustrialVector) {
     IndustrialVector<int> values{5, 1, 4, 2, 3};
     Sort(values, SortStrategy::QuickSort);
 
@@ -442,6 +493,7 @@ TEST(IndustrialVectorTest, ExistingSortFacadeAcceptsIndustrialVector) {
     );
 }
 
+/// 验证 stateful allocator 的传播规则和申请释放次数保持配对。
 TEST(IndustrialVectorTest, StatefulAllocatorPropagationDoesNotLeakStorage) {
     AllocationState firstState;
     AllocationState secondState;
