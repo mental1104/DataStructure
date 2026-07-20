@@ -1,30 +1,22 @@
 #ifndef __DSA_GRAPH
 #define __DSA_GRAPH
 
+#include <algorithm>
+#include <cstddef>
+#include <limits>
+#include <map>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
 #include "utils.h"
 #include "Vector.h"
 #include "Stack.h"
-#include "Queue.h"
-#include "Heap.h"
-#include "WeightedQuickUnionwithCompression.h"
 #include "GraphObserver.h"
-#include <climits>
-#include <limits>
+#include "dsa/core/graph/GraphAlgorithm.h"
 
-enum class VStatus {
-    SOURCE,
-    UNDISCOVERED,
-    DISCOVERED,
-    VISITED
-};//顶点状态
-
-enum class EType {
-    UNDETERMINED,
-    TREE,
-    CROSS,
-    FORWARD,
-    BACKWARD
-};//边状态
+using VStatus = dsa::core::graph::VertexStatus;
+using EType = dsa::core::graph::EdgeType;
 
 enum class GType {
     UNDIGRAPH,
@@ -33,6 +25,7 @@ enum class GType {
     WEIGHTEDDIGRAPH
 };
 
+/// 教学图顶点：结构数据与历史遍历元数据保持兼容。
 template<typename Tv>
 struct Vertex {
     Tv data;
@@ -44,618 +37,461 @@ struct Vertex {
     int parent{-1};
     double priority{std::numeric_limits<double>::infinity()};
     int rank{-1};
+
     Vertex() = default;
-    Vertex(int r, Tv const& d = Tv(0)):data(d), rank(r) {}
-    bool operator<(const Vertex<Tv>& rhs) const { return priority > rhs.priority;  }//权重越小，优先级越高
+
+    /// 保留仅传 rank 的历史构造方式；该重载要求 Tv 可默认构造。
+    explicit Vertex(int vertex_rank)
+        : data(), rank(vertex_rank) {
+    }
+
+    /// 使用显式数据构造顶点，不再要求 Tv 能由整数 0 隐式构造。
+    Vertex(int vertex_rank, Tv const& value)
+        : data(value), rank(vertex_rank) {
+    }
+
+    /// 教学 Heap 约定“小权重具有更高优先级”。
+    bool operator<(const Vertex<Tv>& rhs) const {
+        return priority > rhs.priority;
+    }
 };
 
+/// 教学图边；具体所有权仍由 GraphMatrix/GraphList 负责。
 template<typename Te>
 struct Edge {
     Te data;
-    double weight;
+    double weight{0.0};
     EType type{EType::UNDETERMINED};
-    int x;
-    int y;
+    int x{-1};
+    int y{-1};
+
     Edge() = default;
-    Edge(Te const& d, double w, int i, int j):data{d}, weight{w}, x(i), y(j){}
-    bool operator<(const Edge<Te>& rhs) const { return weight > rhs.weight;  }//权重越小，优先级越高
+
+    Edge(Te const& value, double edge_weight, int from, int to)
+        : data(value), weight(edge_weight), x(from), y(to) {
+    }
+
+    /// 教学 Heap 约定“小权重具有更高优先级”。
+    bool operator<(const Edge<Te>& rhs) const {
+        return weight > rhs.weight;
+    }
 };
 
+/// 教学图抽象门面。
+///
+/// 公开接口和顶点内遍历字段保持原样；实际 BFS/DFS/拓扑排序/SCC/最短路/MST
+/// 已统一委托给 dsa::core::graph::GraphAlgorithm。共享算法只看到邻接语义，
+/// GraphMatrix 与 GraphList 不再各自复制算法。
 template<typename Tv, typename Te>
 class Graph {
 private:
-    void reset(){
-        for(int i = 0; i < n; i++){
-            status(i) = VStatus::UNDISCOVERED;
-            dTime(i) = -1;
-            fTime(i) = -1;
-            parent(i) = -1;
-
-            priority(i) = std::numeric_limits<double>::infinity(); // Windows 的 unsigned long 是 32 位，之前的位模式常量会截断，改用标准写法跨平台
-
-            for(int j = 0; j < n; j++)
-                if(exists(i,j))
-                    type(i, j) = EType::UNDETERMINED;
+    /// 把历史虚接口适配为共享 GraphAlgorithm 的最小只读 View。
+    class AlgorithmView {
+    public:
+        explicit AlgorithmView(Graph& graph)
+            : graph_(graph) {
         }
-    }
-    void BFS(int, int& );//广度优先搜索
-    void DFS(int, int&);//深度优先搜索
-    void BCC(int, int&, Stack<int>& );//双连通分量分解
-    void TSort(int, int&, Stack<Tv>* );//拓扑排序
-    template<typename PU> void PFS(int, PU);//优先级搜索
 
-    void Cycle(int, int, bool&, Vector<bool>&);//无向图有环遍历
-    bool cycle();//无向图判断是否有环
+        std::size_t vertexCount() const {
+            return graph_.n < 0 ? 0U : static_cast<std::size_t>(graph_.n);
+        }
 
-    void DirectedCycle(int, Vector<bool>&, Vector<int>&, Stack<int>&, Vector<bool>&);//有向图有环遍历
-    bool directedCycle(bool flag = false);//有向图判断是否有环
+        int firstNeighbor(int vertex) const {
+            return graph_.firstNbr(vertex);
+        }
 
-    void ReversePost(int, Vector<bool>&, Stack<int>*&);
-    Stack<int>* reversePost();//给出逆序的拓扑排序序列（没有必须无环的限制）
+        int nextNeighbor(int vertex, int current) const {
+            return graph_.nextNbr(vertex, current);
+        }
 
-    void CC(int, Vector<int>&, Vector<bool>&, int&);//无向图-连通分量遍历
-    void RC(int, Vector<bool>&);//有向图-可达分量遍历
+        bool containsEdge(int from, int to) const {
+            return graph_.exists(from, to);
+        }
 
-    void KosarajuSCC(int, int&, Vector<bool>&, Vector<int>&);//强连通子图遍历
+        double edgeWeight(int from, int to) const {
+            return graph_.weight(from, to);
+        }
+
+    private:
+        Graph& graph_;
+    };
+
+    typedef dsa::core::graph::GraphAlgorithm<AlgorithmView> SharedAlgorithm;
+
+    /// 清空教学对象中的历史遍历状态和边分类。
+    void reset();
+
+    /// 将共享算法的外置状态同步回历史教学字段，维持原观察方式。
+    void applyState(const dsa::core::graph::TraversalState& state);
+
+    /// 无向图环检测的兼容入口。
+    bool cycle();
+
+    /// 有向图环检测的兼容入口；flag 仅保留历史签名。
+    bool directedCycle(bool flag = false);
+
+    /// 保留旧测试和教学材料使用的单入口拓扑递归 helper 签名。
+    void TSort(int vertex, int& clock, Stack<Tv>* stack);
+
+    /// 教学版 BCC 仍保留栈式演示流程；它依赖历史 hca/fTime 复用约定。
+    void BCC(int vertex, int& clock, Stack<int>& stack);
+
+    /// 历史 PFS updater 直接操作 Graph 指针，暂保留在教学门面中。
+    template<typename PU>
+    void PFS(int vertex, PU priority_updater);
 
 public:
-    GraphObserver<Tv, Te>* observer{nullptr};
-    void setObserver(GraphObserver<Tv, Te>* obs) { observer = obs; }
-
-    //顶点接口
+    GraphObserver<Tv, Te>* observer;
     int n;
-    virtual int insert(Tv const& ) = 0;//插入顶点，返回编号
-    virtual Tv remove(int) = 0;//删除顶点及其关联边，返回顶点信息
-    virtual Tv& vertex(int) = 0;//顶点v的数据
-    virtual int inDegree(int) = 0;//顶点v的入度
-    virtual int outDegree(int) = 0;//顶点v的出度
-    virtual int firstNbr(int) = 0;//顶点v的首个邻接顶点
-    virtual int nextNbr(int, int) = 0;//顶点v的下一个邻接顶点
+    int e;
+
+    Graph()
+        : observer(nullptr), n(0), e(0) {
+    }
+
+    virtual ~Graph() = default;
+
+    void setObserver(GraphObserver<Tv, Te>* graph_observer) {
+        observer = graph_observer;
+    }
+
+    // 顶点接口
+    virtual int insert(Tv const&) = 0;
+    virtual Tv remove(int) = 0;
+    virtual Tv& vertex(int) = 0;
+    virtual int inDegree(int) = 0;
+    virtual int outDegree(int) = 0;
+    virtual int firstNbr(int) = 0;
+    virtual int nextNbr(int, int) = 0;
     virtual VStatus& status(int) = 0;
-    virtual int& dTime(int) = 0;//时间标签
-    virtual int& fTime(int) = 0;//bcc时间标签
+    virtual int& dTime(int) = 0;
+    virtual int& fTime(int) = 0;
     virtual int& hca(int) = 0;
     virtual int& parent(int) = 0;
     virtual double& priority(int) = 0;
-    //边接口
-    int e;
+
+    // 边接口
     virtual bool exists(int, int) = 0;
-    virtual void insert(Te const& edge, int, int, double) = 0;//在顶点v和u之间插入权重为w的边e
+    virtual void insert(Te const& edge, int, int, double) = 0;
     virtual Te remove(int, int) = 0;
     virtual EType& type(int, int) = 0;
     virtual Te& edge(int, int) = 0;
     virtual double& weight(int, int) = 0;
     virtual void reverse() = 0;
-    //算法
-    void bfs(int);//广度优先搜索
-    void dfs(int);//深度优先搜索
-    void bcc(int);//双连通分量分解
-    Stack<Tv>* tSort(int);//基于DFS的拓扑排序
-    void prim(int);//最小生成树
-    void dijkstra(int);//最短路径
-    template<typename PU> void pfs(int, PU);
+
+    // 教学算法 facade
+    void bfs(int start);
+    void dfs(int start);
+    void bcc(int start);
+    Stack<Tv>* tSort(int start);
+    void prim(int start);
+    void dijkstra(int start);
+
+    template<typename PU>
+    void pfs(int start, PU priority_updater);
+
     void kruskal(bool flag = false);
-
-    int connectedComponents(bool flag = false);//无向图-连通分量生成
-    bool connectedComponents(int v, int w);//无向图-判断两点是否连通
-
-    void reachableComponents(int s);//有向图-可达分量生成
-
-    int kosarajuSCC(bool flag = false);//有向图-强连通子图统计
-
-}; 
+    int connectedComponents(bool flag = false);
+    bool connectedComponents(int lhs, int rhs);
+    void reachableComponents(int source);
+    int kosarajuSCC(bool flag = false);
+};
 
 template<typename Tv, typename Te>
-void Graph<Tv, Te>::bfs(int s) {
+void Graph<Tv, Te>::reset() {
+    for (int vertex_index = 0; vertex_index < n; ++vertex_index) {
+        status(vertex_index) = VStatus::UNDISCOVERED;
+        dTime(vertex_index) = -1;
+        fTime(vertex_index) = -1;
+        parent(vertex_index) = -1;
+        priority(vertex_index) = std::numeric_limits<double>::infinity();
+        for (int neighbor = firstNbr(vertex_index); neighbor >= 0;
+             neighbor = nextNbr(vertex_index, neighbor)) {
+            if (exists(vertex_index, neighbor))
+                type(vertex_index, neighbor) = EType::UNDETERMINED;
+        }
+    }
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::applyState(const dsa::core::graph::TraversalState& state) {
     reset();
-    if (n <= 0) return;
-    int clock = 0;
-    int v = s;
-    do {
-        if(VStatus::UNDISCOVERED == status(v)){//如果没有访问过
-            BFS(v, clock); //执行BFS
-            status(v) = VStatus::SOURCE;//第一个节点设为起点
-        }
-        v = (v + 1) % n;
+    const int count = std::min(n, static_cast<int>(state.status.size()));
+    for (int vertex_index = 0; vertex_index < count; ++vertex_index) {
+        status(vertex_index) = state.status[static_cast<std::size_t>(vertex_index)];
+        dTime(vertex_index) = state.discovery_time[static_cast<std::size_t>(vertex_index)];
+        fTime(vertex_index) = state.finish_time[static_cast<std::size_t>(vertex_index)];
+        parent(vertex_index) = state.parent[static_cast<std::size_t>(vertex_index)];
+        priority(vertex_index) = state.priority[static_cast<std::size_t>(vertex_index)];
     }
-    while(v != s);
-}
 
-template<typename Tv, typename Te>
-void Graph<Tv, Te>::BFS(int v, int& clock) {
-    Queue<int> Q;
-    status(v) = VStatus::DISCOVERED;
-    Q.enqueue(v);
-    while(!Q.empty()) {
-        int cur = Q.dequeue();
-        dTime(cur) = ++clock;
-        for(int u = firstNbr(cur); -1 < u; u = nextNbr(cur, u)){
-            if (!exists(cur, u)) continue;
-            if(VStatus::UNDISCOVERED == status(u)){
-                status(u) = VStatus::DISCOVERED;
-                Q.enqueue(u);
-                type(cur, u) = EType::TREE;
-                parent(u) = cur;
-            } else {
-                type(cur, u) = EType::CROSS;
-            }
-        }
-
-        if(status(cur)!=VStatus::SOURCE)
-            status(cur) = VStatus::VISITED;
+    for (typename std::map<std::pair<int, int>, EType>::const_iterator it = state.edge_type.begin();
+         it != state.edge_type.end(); ++it) {
+        if (exists(it->first.first, it->first.second))
+            type(it->first.first, it->first.second) = it->second;
     }
 }
 
 template<typename Tv, typename Te>
-void Graph<Tv, Te>::dfs(int s){
-    reset();
-    if (n <= 0) return;
-    int clock = 0;
-    int v = s;
-    do {
-        if(VStatus::UNDISCOVERED == status(v)){
-            DFS(v, clock);
-            status(v) = VStatus::SOURCE;
-        }
-        v = (v + 1) % n;
-    } while (v != s);  
+void Graph<Tv, Te>::bfs(int start) {
+    AlgorithmView view(*this);
+    const dsa::core::graph::TraversalResult result = SharedAlgorithm::breadthFirst(view, start);
+    applyState(result.state);
 }
 
 template<typename Tv, typename Te>
-void Graph<Tv, Te>::DFS(int v, int& clock) {
-    dTime(v) = ++clock;
-    status(v) = VStatus::DISCOVERED;
-    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)){
-        if (!exists(v, u)) continue;
-        switch(status(u)){
-            case VStatus::UNDISCOVERED:
-                type(v, u) = EType::TREE;
-                parent(u) = v;
-                DFS(u, clock);
-                break;
-            case VStatus::DISCOVERED:
-                type(v, u) = EType::BACKWARD;
-                break;
-            default:
-                type(v, u) = (dTime(v) < dTime(u))?EType::FORWARD:EType::CROSS;
-                break;
+void Graph<Tv, Te>::dfs(int start) {
+    AlgorithmView view(*this);
+    const dsa::core::graph::TraversalResult result = SharedAlgorithm::depthFirst(view, start);
+    applyState(result.state);
+}
+
+template<typename Tv, typename Te>
+Stack<Tv>* Graph<Tv, Te>::tSort(int start) {
+    Stack<Tv>* stack = new Stack<Tv>;
+    AlgorithmView view(*this);
+    const dsa::core::graph::TopologicalResult result = SharedAlgorithm::topologicalSort(view, start);
+    applyState(result.state);
+    if (!result.acyclic)
+        return stack;
+
+    for (typename std::vector<int>::const_reverse_iterator it = result.order.rbegin();
+         it != result.order.rend(); ++it) {
+        stack->push(vertex(*it));
+    }
+    return stack;
+}
+
+template<typename Tv, typename Te>
+bool Graph<Tv, Te>::cycle() {
+    AlgorithmView view(*this);
+    return SharedAlgorithm::hasUndirectedCycle(view);
+}
+
+template<typename Tv, typename Te>
+bool Graph<Tv, Te>::directedCycle(bool flag) {
+    (void)flag;
+    AlgorithmView view(*this);
+    return SharedAlgorithm::hasDirectedCycle(view);
+}
+
+template<typename Tv, typename Te>
+int Graph<Tv, Te>::connectedComponents(bool flag) {
+    AlgorithmView view(*this);
+    const dsa::core::graph::ComponentResult result = SharedAlgorithm::connectedComponents(view);
+    if (flag && observer) {
+        for (std::size_t component = 0; component < result.components.size(); ++component) {
+            Vector<int> nodes;
+            for (std::size_t index = 0; index < result.components[component].size(); ++index)
+                nodes.insert(result.components[component][index]);
+            observer->onSCCComponent(nodes);
         }
     }
-    status(v) = VStatus::VISITED;
-    fTime(v) = ++clock;
+    return result.count;
 }
 
 template<typename Tv, typename Te>
-Stack<Tv>* Graph<Tv, Te>::tSort(int s){
-    reset();
-    if (n <= 0) return new Stack<Tv>;
-    
-    int clock = 0;
-    int v = s;
-    Stack<Tv>* S = new Stack<Tv>;
+bool Graph<Tv, Te>::connectedComponents(int lhs, int rhs) {
+    AlgorithmView view(*this);
+    const dsa::core::graph::ComponentResult result = SharedAlgorithm::connectedComponents(view);
+    if (lhs < 0 || rhs < 0 || lhs >= n || rhs >= n)
+        return false;
+    return result.component_of[static_cast<std::size_t>(lhs)] ==
+           result.component_of[static_cast<std::size_t>(rhs)];
+}
 
-    
-    if(directedCycle()){
-        return S;
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::reachableComponents(int source) {
+    AlgorithmView view(*this);
+    const std::vector<bool> marked = SharedAlgorithm::reachable(view, source);
+    if (!observer)
+        return;
+
+    Vector<int> reachable_vertices;
+    for (std::size_t vertex_index = 0; vertex_index < marked.size(); ++vertex_index) {
+        if (marked[vertex_index])
+            reachable_vertices.insert(static_cast<int>(vertex_index));
     }
-
-    do {
-        if(VStatus::UNDISCOVERED == status(v))
-            TSort(v, clock, S);  
-        v = (v + 1) % n;
-    } while(v != s);
-
-    return S;
+    observer->onSCCComponent(reachable_vertices);
 }
 
 template<typename Tv, typename Te>
-void Graph<Tv, Te>::TSort(int v, int& clock, Stack<Tv>* S){
-    dTime(v) = ++clock;
-    status(v) = VStatus::DISCOVERED;
-    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)){
-        if (!exists(v, u)) continue;
-        switch(status(u)){
-            case VStatus::UNDISCOVERED:
-                parent(u) = v;
-                type(v, u) = EType::TREE;
-                TSort(u, clock, S);
-                break;
-            case VStatus::DISCOVERED:
-                type(v, u) = EType::BACKWARD;
-                return;
-            default:
-                type(v, u) = (dTime(v) < dTime(u)) ? EType::FORWARD : EType::CROSS;
-                break;
-        }
-    }
-    status(v) = VStatus::VISITED;
-    S->push(vertex(v));
-    return;
-}
+int Graph<Tv, Te>::kosarajuSCC(bool flag) {
+    AlgorithmView view(*this);
 
-template<typename Tv, typename Te>
-int Graph<Tv, Te>::connectedComponents(bool flag){
-    Vector<bool> marked{this->n,this->n, false};
-    Vector<int> id{this->n, this->n, 0};
-    int count = 0;
-
-    for(int s = 0; s < this->n; s++){
-        if(!marked[s])
-        {
-            CC(s, id, marked, count);
-            count++;
-        }
-    }
-
-    if(flag && observer){
-        for(int i = 0; i < count; i++){
-            Vector<int> comp;
-            for(int j = 0; j < id.size(); j++){
-                if(id[j] == i) comp.insert(j);
-            }
-            observer->onSCCComponent(comp);
-        }
-    }
-    return count;
-}
-
-template<typename Tv, typename Te>
-bool Graph<Tv, Te>::connectedComponents(int v, int w){
-    Vector<bool> marked{this->n,this->n, false};
-    Vector<int> id{this->n, this->n, 0};
-    int count = 0;
-
-    for(int s = 0; s < this->n; s++){
-        if(!marked[s])
-        {
-            CC(s, id, marked, count);
-            count++;
-        }
-    }
-    return id[v] == id[w];
-}
-
-template<typename Tv, typename Te>
-void Graph<Tv, Te>::CC(int v, Vector<int>& id, Vector<bool>& marked, int& count){
-    marked[v] = true;
-    id[v] = count;
-    for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)){
-        if(!marked[u]){
-            CC(u, id, marked, count);
-        }
-    }
-}
-
-//Digraph - reachability in digraphs in Algorithm 4.4
-template<typename Tv, typename Te>
-void Graph<Tv, Te>::reachableComponents(int s){
-    Vector<bool> marked(this->n, this->n, false);
-    RC(s, marked);
-
-
-    if(observer){
-        Vector<int> reach;
-        for(int i = 0; i < this->n; i++){
-            if(marked[i]) reach.insert(i);
-        }
-        observer->onSCCComponent(reach);
-    }
-}
-
-template<typename Tv, typename Te>
-void Graph<Tv, Te>::RC(int v, Vector<bool>& marked){
-    marked[v] = true;
-    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w)){
-        if(!marked[w])
-            RC(w, marked);
-
-    }
-    return;
-}
-
-//undigraph cycle
-template<typename Tv, typename Te>
-bool Graph<Tv, Te>::cycle(){
-    bool c = false;
-    Vector<bool> marked{this->n, this->n, false};
-    for(int s = 0; s < this->n; s++)
-        if(!marked[s])
-            Cycle(s, s, c, marked);
-
-    return c;
-}
-
-template<typename Tv, typename Te>
-void Graph<Tv, Te>::Cycle(int v, int u, bool& c, Vector<bool>& marked){
-    marked[v] = true;
-    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w))
-        if(!marked[w])
-            Cycle(w, v, c, marked);
-        else if(w != u)
-            c = true;
-}
-
-template<typename Tv, typename Te>
-bool Graph<Tv, Te>::directedCycle(bool flag){
-    Vector<bool> marked{this->n, this->n, false};
-    Vector<int> edgeTo{this->n, this->n, -1};
-    Stack<int> cycle;
-    Vector<bool> onStack(this->n, this->n, false);
-
-    for(int v = 0; v < this->n; v++){
-        if(!marked[v]) DirectedCycle(v, marked, edgeTo, cycle, onStack);
-    }
-
-    if(flag){
-        // print(cycle);
-    }
-
-    bool res = false;
-    if(!cycle.empty()){
-        res = true;
-    }
-
-    return res;
-}
-
-template<typename Tv, typename Te>
-void Graph<Tv, Te>::DirectedCycle(
-    int v, 
-    Vector<bool>& marked, 
-    Vector<int>& edgeTo, 
-    Stack<int>& cycle, 
-    Vector<bool>& onStack)
-{
-    onStack[v] = true;
-    marked[v] = true;
-
-    
-    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w)){
-        if(!cycle.empty()){
-            return;
-        }
-        else if(marked[w] == false){
-            edgeTo[w] = v;
-            DirectedCycle(w, marked, edgeTo, cycle, onStack);
-        } else if(onStack[w]){
-            for(int x = v; x != w; x = edgeTo[x])
-                cycle.push(x);
-            cycle.push(w);
-            cycle.push(v);
-        }
-    }
-    onStack[v] = false;
-}
-
-//output a reverse sequence
-template<typename Tv, typename Te>
-Stack<int>* Graph<Tv, Te>::reversePost(){
-    Stack<int>* order = new Stack<int>();
-    Vector<bool> marked(this->n, this->n, false);
-    for(int v = 0; v < this->n; v++)
-        if(!marked[v])
-            ReversePost(v, marked, order);
-    return order;
-}
-
-template<typename Tv, typename Te>
-void Graph<Tv, Te>::ReversePost(int v, Vector<bool>& marked, Stack<int>*& order){
-    marked[v] = true;
-    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w)){
-        if(!marked[w])
-            ReversePost(w, marked, order);
-    }
-    order->push(v);
-}
-
-template<typename Tv, typename Te>
-int Graph<Tv, Te>::kosarajuSCC(bool flag){
-    if(!directedCycle()){
+    // 保留历史教学契约：无环图返回 0；工业 Graph 则返回数学意义上的单点 SCC。
+    if (!SharedAlgorithm::hasDirectedCycle(view))
         return 0;
-    }
-    
-    Vector<bool> marked(this->n, this->n, false);
-    Vector<int> id(this->n, this->n, -1);
-    int count = 0;
-    reverse();
-    Stack<int>* order = reversePost();
-    reverse();
-    int size = order->size();
-    for(int i = 0; i < size; i++){
-        int s = order->pop();
-        if(!marked[s]){
-            KosarajuSCC(s, count, marked, id);
-            ++count;
+
+    const dsa::core::graph::ComponentResult result =
+        SharedAlgorithm::stronglyConnectedComponents(view);
+    if (flag && observer) {
+        for (std::size_t component = 0; component < result.components.size(); ++component) {
+            Vector<int> nodes;
+            for (std::size_t index = 0; index < result.components[component].size(); ++index)
+                nodes.insert(result.components[component][index]);
+            observer->onSCCComponent(nodes);
         }
     }
-    
-    if(flag && observer){
-        Vector<Vector<int>> comps(count, count, Vector<int>());
-        for (int v = 0; v < this->n; v++) {
-            if (id[v] >= 0 && id[v] < count) comps[id[v]].insert(v);
-        }
-        for (int i = 0; i < comps.size(); i++) observer->onSCCComponent(comps[i]);
-    }
-    return count;
+    return result.count;
 }
 
 template<typename Tv, typename Te>
-void Graph<Tv, Te>::KosarajuSCC(int v, int& count, Vector<bool>& marked, Vector<int>& id){
-    marked[v] = true;
-    id[v] = count;
-    for(int w = firstNbr(v); -1 < w; w = nextNbr(v, w)){
-        if(!marked[w])
-            KosarajuSCC(w, count, marked, id);
+void Graph<Tv, Te>::dijkstra(int start) {
+    AlgorithmView view(*this);
+    const dsa::core::graph::PathResult result = SharedAlgorithm::dijkstra(view, start);
+    applyState(result.state);
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::prim(int start) {
+    AlgorithmView view(*this);
+    const dsa::core::graph::PathResult result = SharedAlgorithm::prim(view, start);
+    applyState(result.state);
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::kruskal(bool flag) {
+    AlgorithmView view(*this);
+    const dsa::core::graph::SpanningForestResult result = SharedAlgorithm::kruskal(view);
+    applyState(result.state);
+
+    if (flag && observer) {
+        Vector<KruskalEdgeSummary<Tv, Te> > summaries;
+        for (std::size_t index = 0; index < result.edges.size(); ++index) {
+            const dsa::core::graph::SpanningEdge& selected = result.edges[index];
+            observer->onKruskalEdge(selected.from, selected.to, selected.weight);
+            KruskalEdgeSummary<Tv, Te> summary{selected.from, selected.to};
+            summaries.insert(summary);
+        }
+        observer->onKruskalDone(result.total_weight, summaries);
     }
 }
 
-template <typename Tv, typename Te> 
-void Graph<Tv, Te>::bcc(int s){
-    reset(); int clock = 0; int v = s; Stack<int> S; //栈S用以记录已访问的顶点
-    if (n <= 0) return;
-    do {
-        if (VStatus::UNDISCOVERED == status(v)) { //一旦发现未发现的顶点（新连通分量）
-            BCC ( v, clock, S ); //即从该顶点出发启动一次BCC
-            S.pop(); //遍历返回后，弹出栈中最后一个顶点——当前连通域的起点
-        }
-        v = (v + 1) % n;
-    } while(v != s);
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::TSort(int vertex, int& clock, Stack<Tv>* stack) {
+    if (!stack)
+        throw std::invalid_argument("topological stack must not be null");
+    AlgorithmView view(*this);
+    const dsa::core::graph::TopologicalResult result =
+        SharedAlgorithm::topologicalSort(view, vertex);
+    applyState(result.state);
+    clock = 0;
+    for (std::size_t index = 0; index < result.state.finish_time.size(); ++index)
+        clock = std::max(clock, result.state.finish_time[index]);
+    if (!result.acyclic)
+        return;
+    for (typename std::vector<int>::const_reverse_iterator it = result.order.rbegin();
+         it != result.order.rend(); ++it) {
+        stack->push(this->vertex(*it));
+    }
 }
 
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::bcc(int start) {
+    reset();
+    if (n <= 0)
+        return;
+    if (start < 0 || start >= n)
+        throw std::out_of_range("graph vertex index out of range");
 
-
-template <typename Tv, typename Te> //顶点类型、边类型
-void Graph<Tv, Te>::BCC( int v, int& clock, Stack<int>& S ){ //assert: 0 <= v < n
-   hca(v) = dTime(v) = ++clock; 
-   status(v) = VStatus::DISCOVERED; 
-   S.push (v); //v被发现并入栈
-
-   for(int u = firstNbr(v); -1 < u; u = nextNbr(v, u)) { //枚举v的所有邻居u
-        if (!exists(v, u)) {
-            continue;
+    int clock = 0;
+    int vertex_index = start;
+    Stack<int> stack;
+    do {
+        if (status(vertex_index) == VStatus::UNDISCOVERED) {
+            BCC(vertex_index, clock, stack);
+            if (!stack.empty())
+                stack.pop();
         }
-        switch(status(u)){ //并视u的状态分别处理
+        vertex_index = (vertex_index + 1) % n;
+    } while (vertex_index != start);
+}
+
+template<typename Tv, typename Te>
+void Graph<Tv, Te>::BCC(int vertex_index, int& clock, Stack<int>& stack) {
+    hca(vertex_index) = dTime(vertex_index) = ++clock;
+    status(vertex_index) = VStatus::DISCOVERED;
+    stack.push(vertex_index);
+
+    for (int neighbor = firstNbr(vertex_index); neighbor >= 0;
+         neighbor = nextNbr(vertex_index, neighbor)) {
+        if (!exists(vertex_index, neighbor))
+            continue;
+        switch (status(neighbor)) {
             case VStatus::UNDISCOVERED:
-                parent(u) = v; 
-                type(v, u)= EType::TREE; 
-                BCC(u, clock, S); //从顶点u处深入
-
-                if (hca(u) < dTime(v)) //遍历返回后，若发现u（通过后向边）可指向v的真祖先
-                    hca(v) = min(hca(v), hca(u)); //则v亦必如此
-                else {//否则，以v为关节点（u以下即是一个BCC，且其中顶点此时正集中于栈S的顶部）
-                    /*输出语句*/
-                    Stack<int> temp; 
-                    do { 
-                        temp.push(S.pop()); 
-                    } while ( u != temp.top() );
-
-                    while (!temp.empty()) 
-                        S.push(temp.pop());//将栈中的内容倒回去
-                    /*输出语句*/
-                    while (u != S.pop())
-                        ; //弹出当前BCC中（除v外）的所有节点，可视需要做进一步处理
-                    /*输出语句*/
+                parent(neighbor) = vertex_index;
+                type(vertex_index, neighbor) = EType::TREE;
+                BCC(neighbor, clock, stack);
+                if (hca(neighbor) < dTime(vertex_index)) {
+                    hca(vertex_index) = std::min(hca(vertex_index), hca(neighbor));
+                } else {
+                    while (!stack.empty()) {
+                        const int popped = stack.pop();
+                        if (popped == neighbor)
+                            break;
+                    }
                 }
-
                 break;
             case VStatus::DISCOVERED:
-                type(v, u) = EType::BACKWARD; //标记(v, u)，并按照“越小越高”的准则
-                if (u != parent(v)) 
-                    hca(v) = ::min(hca(v), dTime(u)); //更新hca[v]
+            case VStatus::SOURCE:
+                type(vertex_index, neighbor) = EType::BACKWARD;
+                if (neighbor != parent(vertex_index))
+                    hca(vertex_index) = std::min(hca(vertex_index), dTime(neighbor));
                 break;
-            default: //VISITED (digraphs only)
-                type(v, u) = (dTime(v) < dTime(u))?EType::FORWARD:EType::CROSS;
+            case VStatus::VISITED:
+                type(vertex_index, neighbor) =
+                    dTime(vertex_index) < dTime(neighbor) ? EType::FORWARD : EType::CROSS;
                 break;
         }
     }
-    status(v) = VStatus::VISITED; //对v的访问结束
+    status(vertex_index) = VStatus::VISITED;
 }
 
-template <typename Tv, typename Te> template <typename PU>
-void Graph<Tv, Te>::pfs( int s, PU prioUpdater ) {
-   reset();
-   for ( int v = s; v < s + n; v++ )
-      if ( VStatus::UNDISCOVERED == status( v % n ) )
-         PFS( v % n, prioUpdater );
-}
+template<typename Tv, typename Te>
+template<typename PU>
+void Graph<Tv, Te>::pfs(int start, PU priority_updater) {
+    reset();
+    if (n <= 0)
+        return;
+    if (start < 0 || start >= n)
+        throw std::out_of_range("graph vertex index out of range");
 
-template <typename Tv, typename Te> template <typename PU>
-void Graph<Tv, Te>::PFS( int v, PU prioUpdater ) {
-   priority( v ) = 0; status( v ) = VStatus::VISITED;
-   for ( int k = 1 ; k < n ; k++ ) {
-      for ( int u = firstNbr( v ); - 1 != u; u = nextNbr( v, u ) )
-         prioUpdater( this, v, u );
-      double shortest = priority(v);
-      int next = -1;
-      for ( int u = 0; u < n; u++ )
-         if ( ( VStatus::UNDISCOVERED == status( u ) ) && ( (next == -1) || (priority( u ) < shortest) ) ) {
-            shortest = priority( u ); next = u;
-         }
-      if (next == -1) break;
-      v = next;
-      status( v ) = VStatus::VISITED;
-      if (parent(v) >= 0) type( parent( v ), v ) = EType::TREE;
-   }
-}
-
-template <typename Tv, typename Te> //最短路径Dijkstra算法：适用于一般的有向图
-void Graph<Tv, Te>::dijkstra( int s ) {
-   reset(); priority( s ) = 0;
-   for ( int i = 0; i < n; i++ ) {
-      status( s ) = VStatus::VISITED;
-      if ( -1 != parent( s ) ) type( parent( s ), s ) = EType::TREE;
-      for ( int j = firstNbr( s ); -1 != j; j = nextNbr( s, j ) )
-         if ( ( status( j ) == VStatus::UNDISCOVERED ) && ( priority( j ) > priority( s ) + weight( s, j ) ) )
-            { priority( j ) = priority( s ) + weight( s, j ); parent( j ) = s; }
-      double shortest = priority(s);
-      int next = -1;
-      for ( int j = 0; j < n; j++ )
-         if ( ( status( j ) == VStatus::UNDISCOVERED ) && ( (next == -1) || (priority( j ) < shortest) ) ) {
-            shortest = priority( j );
-            next = j;
-         }
-      if (next == -1) break;
-      s = next;
-   }
-}
-
-template <typename Tv, typename Te>
-void Graph<Tv, Te>::kruskal(bool flag){
-    Vector<Edge<Te>> mst;
-    Heap<Edge<Te>> pq;
-    WeightedQuickUnionwithCompression uf(n);
-    for(int i = 0; i < n; i++)
-        for(int j = firstNbr(i); -1 < j; j = nextNbr(i, j)){
-            Edge<Te> edge(Te(), weight(i, j), i, j);
-            pq.insert(edge);
-        }
-
-    double weight = 0.00;
-    while(!pq.empty() && mst.size() < n-1){
-        Edge<Te> edge = pq.delMax();
-        int v = edge.x;
-        int w = edge.y;
-        if(uf.connected(v, w)) continue;
-        uf.unite(v, w);
-        mst.insert(edge);
-
-        weight += edge.weight;
-        type(v, w) = EType::TREE;
-        status(v) = VStatus::VISITED;
-        status(w) = VStatus::VISITED; 
+    for (int offset = 0; offset < n; ++offset) {
+        const int vertex_index = (start + offset) % n;
+        if (status(vertex_index) == VStatus::UNDISCOVERED)
+            PFS(vertex_index, priority_updater);
     }
-
-    if(flag && observer){
-        Vector<KruskalEdgeSummary<Tv, Te>> edges;
-        for(int i = 0; i < mst.size(); i++){
-            observer->onKruskalEdge(mst[i].x, mst[i].y, mst[i].weight);
-            KruskalEdgeSummary<Tv, Te> summary{mst[i].x, mst[i].y};
-            edges.insert(summary);
-        }
-        observer->onKruskalDone(weight, edges);
-   }
 }
 
-template <typename Tv, typename Te> //Prim算法：无向连通图，各边表示为方向互逆、权重相等的一对边
-void Graph<Tv, Te>::prim( int s ) { // s < n
-   reset(); priority ( s ) = 0;
-    for ( int i = 0; i < n; i++ ) {
-      status( s ) = VStatus::VISITED;
-      if ( -1 != parent( s ) ) type( parent( s ), s ) = EType::TREE;
-      for ( int j = firstNbr( s ); -1 != j; j = nextNbr( s, j ) )
-         if ( ( status( j ) == VStatus::UNDISCOVERED ) && ( priority( j ) > weight( s, j ) ) ) {
-            priority( j ) = weight( s, j ); parent( j ) = s;
-         }
-      double shortest = priority(s);
-      int next = -1;
-      for ( int j = 0; j < n; j++ )
-         if ( ( status( j ) == VStatus::UNDISCOVERED ) && ( (next == -1) || (priority( j ) < shortest) ) ) {
-            shortest = priority( j );
-            next = j;
-         }
-      if (next == -1) break;
-      s = next;
-   }
+template<typename Tv, typename Te>
+template<typename PU>
+void Graph<Tv, Te>::PFS(int vertex_index, PU priority_updater) {
+    priority(vertex_index) = 0.0;
+    status(vertex_index) = VStatus::VISITED;
+
+    for (int visited = 1; visited < n; ++visited) {
+        for (int neighbor = firstNbr(vertex_index); neighbor >= 0;
+             neighbor = nextNbr(vertex_index, neighbor)) {
+            if (exists(vertex_index, neighbor))
+                priority_updater(this, vertex_index, neighbor);
+        }
+
+        double shortest = std::numeric_limits<double>::infinity();
+        int next = -1;
+        for (int candidate = 0; candidate < n; ++candidate) {
+            if (status(candidate) == VStatus::UNDISCOVERED && priority(candidate) < shortest) {
+                shortest = priority(candidate);
+                next = candidate;
+            }
+        }
+        if (next < 0)
+            break;
+        vertex_index = next;
+        status(vertex_index) = VStatus::VISITED;
+        if (parent(vertex_index) >= 0)
+            type(parent(vertex_index), vertex_index) = EType::TREE;
+    }
 }
 
 #endif
