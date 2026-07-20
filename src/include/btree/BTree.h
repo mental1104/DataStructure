@@ -1,27 +1,127 @@
 #ifndef __DSA_BTREE
 #define __DSA_BTREE
 
-#include "BTNode.h"  
+#include "BTNode.h"
+#include <dsa/core/tree/BTreeAlgorithm.h>
 
+#include <functional>
+#include <utility>
+
+namespace dsa {
+namespace core {
+
+// 将教学版 BTNode 的 Vector 布局适配为多路搜索树共享算法语义。
+template<typename T>
+struct TeachingBTreeNodeAccess {
+    typedef ::BTNode<T> node_type;
+    typedef T key_type;
+
+    static std::size_t keyCount(const node_type* node) {
+        return static_cast<std::size_t>(node->key.size());
+    }
+    static T& key(node_type* node, std::size_t index) {
+        return node->key[static_cast<Rank>(index)];
+    }
+    static const T& key(const node_type* node, std::size_t index) {
+        return node->key[static_cast<Rank>(index)];
+    }
+    // 教学节点的叶子保留 key_count + 1 个空孩子槽；算法层将其视为 0 个结构孩子。
+    static std::size_t childCount(const node_type* node) {
+        if (node->child.empty() || !node->child[0])
+            return 0;
+        return static_cast<std::size_t>(node->child.size());
+    }
+    static node_type* child(node_type* node, std::size_t index) {
+        return node->child[static_cast<Rank>(index)];
+    }
+    static const node_type* child(const node_type* node, std::size_t index) {
+        return node->child[static_cast<Rank>(index)];
+    }
+    static node_type* parent(node_type* node) { return node ? node->parent : nullptr; }
+    static const node_type* parent(const node_type* node) { return node ? node->parent : nullptr; }
+};
+
+} // namespace core
+} // namespace dsa
+
+// 教学版 B-Tree：保留原有 Vector / BTNode 可观察布局，
+// 节点内定位、下降、孩子索引和迭代销毁统一复用 BTreeAlgorithm。
 template<typename T>
 class BTree {
 protected:
+    typedef dsa::core::TeachingBTreeNodeAccess<T> Access;
+    typedef dsa::core::BTreeAlgorithm<Access> Algorithm;
+
     int _size;
     int _order;
     BTNode<T>* _root;
     BTNode<T>* _hot;
-    void solveOverflow(BTNode<T>*);
-    void solveUnderflow(BTNode<T>*);
+
+    void solveOverflow(BTNode<T>* node);
+    void solveUnderflow(BTNode<T>* node);
+
+    static void destroyTree(BTNode<T>* root) {
+        Algorithm::destroySubtree(root, [](BTNode<T>* node) { delete node; });
+    }
+
+    static BTNode<T>* cloneTree(const BTNode<T>* source, BTNode<T>* parent) {
+        if (!source)
+            return nullptr;
+        BTNode<T>* clone = new BTNode<T>();
+        clone->parent = parent;
+        try {
+            for (Rank index = 0; index < source->key.size(); ++index)
+                clone->key.insert(clone->key.size(), source->key[index]);
+            while (!clone->child.empty())
+                clone->child.remove(clone->child.size() - 1);
+            for (Rank index = 0; index < source->child.size(); ++index)
+                clone->child.insert(clone->child.size(), cloneTree(source->child[index], clone));
+        } catch (...) {
+            destroyTree(clone);
+            throw;
+        }
+        return clone;
+    }
+
 public:
-    BTree(int order = 512):_size(0), _order(order){   _root = new BTNode<T>();    }
-    ~BTree(){   if(_root) release(_root);   }
+    explicit BTree(int order = 512)
+        : _size(0), _order(order < 3 ? 3 : order), _root(new BTNode<T>()), _hot(nullptr) {}
+
+    BTree(const BTree& other)
+        : _size(other._size), _order(other._order), _root(nullptr), _hot(nullptr) {
+        _root = cloneTree(other._root, nullptr);
+    }
+
+    BTree(BTree&& other) noexcept
+        : _size(other._size), _order(other._order), _root(other._root), _hot(nullptr) {
+        other._size = 0;
+        other._root = nullptr;
+        other._hot = nullptr;
+    }
+
+    BTree& operator=(BTree other) {
+        swap(other);
+        return *this;
+    }
+
+    ~BTree() { destroyTree(_root); }
+
+    void swap(BTree& other) noexcept {
+        using std::swap;
+        swap(_size, other._size);
+        swap(_order, other._order);
+        swap(_root, other._root);
+        _hot = nullptr;
+        other._hot = nullptr;
+    }
 
     int order() const { return _order; }
-    int size() const {  return _size; }
-    BTNode<T>*& root() {  return _root; }
-    bool  empty() const { return !_root || _root->key.empty(); }
+    int size() const { return _size; }
+    BTNode<T>*& root() { return _root; }
+    const BTNode<T>* root() const { return _root; }
+    bool empty() const { return !_root || _root->key.empty(); }
 
-    BTNode<T>* search (const T& e);
+    BTNode<T>* search(const T& e);
     bool insert(const T& e);
     bool remove(const T& e);
 
@@ -29,195 +129,180 @@ public:
     Res rangeAggregate(const T& lo, const T& hi, Res identity, Agg&& agg) const {
         return rangeAggregateRec(_root, lo, hi, identity, agg);
     }
+
 private:
     template<typename Res, typename Agg>
-    Res rangeAggregateRec(BTNode<T>* x, const T& lo, const T& hi, Res acc, Agg&& agg) const {
-        if (!x) return acc;
-        int n = x->key.size();
-        for (int i = 0; i < n; ++i) {
-            BTNode<T>* left = x->child[i];
-            if (left) acc = rangeAggregateRec(left, lo, hi, acc, agg);
-            if (!(x->key[i] < lo) && !(hi < x->key[i])) {
-                acc = agg(acc, x->key[i]);
-            }
+    Res rangeAggregateRec(BTNode<T>* node, const T& lo, const T& hi, Res acc, Agg&& agg) const {
+        if (!node)
+            return acc;
+        const int key_count = node->key.size();
+        for (int index = 0; index < key_count; ++index) {
+            BTNode<T>* left = node->child[index];
+            if (left)
+                acc = rangeAggregateRec(left, lo, hi, acc, agg);
+            if (!(node->key[index] < lo) && !(hi < node->key[index]))
+                acc = agg(acc, node->key[index]);
         }
-        if (x->child.size() == n + 1 && x->child[n]) {
-            acc = rangeAggregateRec(x->child[n], lo, hi, acc, agg);
-        }
+        if (node->child.size() == key_count + 1 && node->child[key_count])
+            acc = rangeAggregateRec(node->child[key_count], lo, hi, acc, agg);
         return acc;
     }
 };
 
 template<typename T>
-BTNode<T>* 
-BTree<T>::search(const T& e){
-    BTNode<T>* v = _root;
-    _hot = nullptr;
-    while(v){
-        Rank r = v->key.search(e);//查找返回的要求是不大于给定值的最大值。
-        if((0 <= r) && (e ==  v->key[r]))  return v;
-        _hot = v; 
-        v = v->child[r+1];//返回大于e值的前一个位置，故r+1.
+BTNode<T>* BTree<T>::search(const T& e) {
+    if (!_root) {
+        _hot = nullptr;
+        return nullptr;
     }
-    return nullptr;
+    typename Algorithm::SearchResult result = Algorithm::search(_root, e, std::less<T>());
+    _hot = result.found ? result.node->parent : result.node;
+    return result.found ? result.node : nullptr;
 }
 
-template<typename T> 
-bool BTree<T>::insert(const T& e){
-    BTNode<T>* v = search(e);
-    if(v)
+template<typename T>
+bool BTree<T>::insert(const T& e) {
+    if (!_root)
+        _root = new BTNode<T>();
+    BTNode<T>* found = search(e);
+    if (found)
         return false;
-    Rank r = _hot->key.search(e);
-    _hot->key.insert(r+1, e);
-    _hot->child.insert(r+2, nullptr);
-    _size++;
+
+    const Rank index = static_cast<Rank>(Algorithm::lowerBound(_hot, e, std::less<T>()));
+    _hot->key.insert(index, e);
+    _hot->child.insert(index + 1, nullptr);
+    ++_size;
     solveOverflow(_hot);
     return true;
 }
 
 template<typename T>
-void BTree<T>::solveOverflow(BTNode<T>* v){
-    if ( _order >= v->child.size() ) return; //递归基：当前节点并未上溢
-    Rank s = _order / 2; //轴点（此时应有_order = key.size() = child.size() - 1）
-    BTNode<T>* u = new BTNode<T>(); //注意：新节点已有一个空孩子
+void BTree<T>::solveOverflow(BTNode<T>* node) {
+    while (node && node->child.size() > _order) {
+        const Rank middle = node->key.size() / 2;
+        BTNode<T>* right = new BTNode<T>();
+        while (!right->child.empty())
+            right->child.remove(right->child.size() - 1);
 
-    /* 原节点一分为二，并将右侧节点更新至新节点 */
-    for ( Rank j = 0; j < _order - s - 1; j++ ) { //v右侧_order-s-1个孩子及关键码分裂为右侧节点u
-        u->child.insert ( j, v->child.remove ( s + 1 ) ); //逐个移动效率低
-        u->key.insert ( j, v->key.remove ( s + 1 ) ); //此策略可改进
+        for (Rank index = middle + 1; index < node->key.size();) {
+            right->key.insert(right->key.size(), node->key.remove(middle + 1));
+        }
+        for (Rank index = middle + 1; index < node->child.size();) {
+            BTNode<T>* child = node->child.remove(middle + 1);
+            right->child.insert(right->child.size(), child);
+            if (child)
+                child->parent = right;
+        }
+
+        T promoted = node->key.remove(middle);
+        BTNode<T>* parent = node->parent;
+        if (!parent) {
+            parent = new BTNode<T>();
+            parent->child[0] = node;
+            node->parent = parent;
+            _root = parent;
+        }
+
+        const Rank position = static_cast<Rank>(Algorithm::childIndex(parent, node));
+        parent->key.insert(position, promoted);
+        parent->child.insert(position + 1, right);
+        right->parent = parent;
+        node = parent;
     }
-
-    u->child[_order - s - 1] = v->child.remove ( s + 1 ); //单独一次移动v最靠右的孩子
-    /* 原节点一分为二，并将右侧节点更新至新节点 */
-
-
-    /*更新父节点 */
-    if ( u->child[0] ) //若u的孩子们非空，则
-        for ( Rank j = 0; j < _order - s; j++ ) //令它们的父节点统一
-            u->child[j]->parent = u; //指向u
-    /*更新父节点 */
-
-    BTNode<T>* p = v->parent; //v当前的父节点p
-
-    /* 上溢到根节点时 */
-    if ( !p ) { 
-        _root = p = new BTNode<T>(); 
-        p->child[0] = v; 
-        v->parent = p; 
-    } //若p空则创建之
-    /* 上溢到根节点时 */
-
-
-    Rank r = 1 + p->key.search ( v->key[0] ); //在父节点中找到待插入的位置
-    p->key.insert ( r, v->key.remove ( s ) ); //轴点关键码上升
-
-    p->child.insert ( r + 1, u );  
-    u->parent = p; //新节点u与父节点p互联
-    
-    solveOverflow ( p ); //上升一层，如有必要则继续分裂——至多递归O(logn)层
 }
 
 template<typename T>
-bool BTree<T>::remove(const T& e){
-    BTNode<T>* v = search(e);
-    if(!v)  return false;
-    Rank r = v->key.search(e);
-    if(v->child[0]){
-        BTNode<T>* u = v->child[r+1];
-        while(u->child[0]) u = u->child[0];//类似于二叉搜索树的直接后继，先右然后一左到底
-        v->key[r] = u->key[0];//用直接后继覆盖当前被删除节点
-        v = u;//转交节点控制权
-        r = 0;//准备删除原直接后继
+bool BTree<T>::remove(const T& e) {
+    BTNode<T>* node = search(e);
+    if (!node)
+        return false;
+
+    Rank index = static_cast<Rank>(Algorithm::lowerBound(node, e, std::less<T>()));
+    if (node->child[0]) {
+        BTNode<T>* successor = node->child[index + 1];
+        while (successor->child[0])
+            successor = successor->child[0];
+        node->key[index] = successor->key[0];
+        node = successor;
+        index = 0;
     }
-    v->key.remove(r);
-    v->child.remove(r+1);
-    _size--;
-    solveUnderflow(v);
+
+    node->key.remove(index);
+    node->child.remove(index + 1);
+    --_size;
+    solveUnderflow(node);
     return true;
 }
 
 template<typename T>
-void BTree<T>::solveUnderflow(BTNode<T>* v){
-    if ( ( _order + 1 ) / 2 <= v->child.size() ) return; //递归基：当前节点并未下溢
-    BTNode<T>* p = v->parent;
-    if ( !p ) { //递归基：已到根节点，没有孩子的下限
-        if ( !v->key.size() && v->child[0] ) {
-            //但倘若作为树根的v已不含关键码，却有（唯一的）非空孩子，则
-            ///*DSA*/printf ( "collapse\n" );
-            _root = v->child[0]; _root->parent = NULL; //这个节点可被跳过
-            v->child[0] = NULL; 
-            release ( v ); //并因不再有用而被销毁
-        } //整树高度降低一层
-        return;
+void BTree<T>::solveUnderflow(BTNode<T>* node) {
+    while (node && node != _root && node->child.size() < (_order + 1) / 2) {
+        BTNode<T>* parent = node->parent;
+        const Rank position = static_cast<Rank>(Algorithm::childIndex(parent, node));
+
+        if (position > 0) {
+            BTNode<T>* left = parent->child[position - 1];
+            if (left->child.size() > (_order + 1) / 2) {
+                node->key.insert(0, parent->key[position - 1]);
+                parent->key[position - 1] = left->key.remove(left->key.size() - 1);
+                node->child.insert(0, left->child.remove(left->child.size() - 1));
+                if (node->child[0])
+                    node->child[0]->parent = node;
+                return;
+            }
+        }
+
+        if (position + 1 < parent->child.size()) {
+            BTNode<T>* right = parent->child[position + 1];
+            if (right->child.size() > (_order + 1) / 2) {
+                node->key.insert(node->key.size(), parent->key[position]);
+                parent->key[position] = right->key.remove(0);
+                node->child.insert(node->child.size(), right->child.remove(0));
+                if (node->child[node->child.size() - 1])
+                    node->child[node->child.size() - 1]->parent = node;
+                return;
+            }
+        }
+
+        if (position > 0) {
+            BTNode<T>* left = parent->child[position - 1];
+            left->key.insert(left->key.size(), parent->key.remove(position - 1));
+            parent->child.remove(position);
+            while (!node->key.empty()) {
+                left->key.insert(left->key.size(), node->key.remove(0));
+            }
+            while (!node->child.empty()) {
+                BTNode<T>* child = node->child.remove(0);
+                left->child.insert(left->child.size(), child);
+                if (child)
+                    child->parent = left;
+            }
+            delete node;
+        } else {
+            BTNode<T>* right = parent->child[position + 1];
+            node->key.insert(node->key.size(), parent->key.remove(position));
+            parent->child.remove(position + 1);
+            while (!right->key.empty()) {
+                node->key.insert(node->key.size(), right->key.remove(0));
+            }
+            while (!right->child.empty()) {
+                BTNode<T>* child = right->child.remove(0);
+                node->child.insert(node->child.size(), child);
+                if (child)
+                    child->parent = node;
+            }
+            delete right;
+        }
+        node = parent;
     }
-    Rank r = 0; while ( p->child[r] != v ) r++;
-    //确定v是p的第r个孩子——此时v可能不含关键码，故不能通过关键码查找
 
-    //另外，在实现了孩子指针的判等器之后，也可直接调用Vector::find()定位
-    ///*DSA*/printf ( "\nrank = %d", r );
-    // 情况1：向左兄弟借关键码 - 旋转
-
-    if ( 0 < r ) { //若v不是p的第一个孩子，则
-        BTNode<T>* ls = p->child[r - 1]; //左兄弟必存在
-        if ( ( _order + 1 ) / 2 < ls->child.size() ) { //若该兄弟足够“胖”，则
-            ///*DSA*/printf ( " ... case 1\n" );
-            v->key.insert ( 0, p->key[r - 1] ); //p借出一个关键码给v（作为最小关键码）
-            p->key[r - 1] = ls->key.remove ( ls->key.size() - 1 ); //ls的最大关键码转入p
-            //r - 1的原因是左兄弟
-            v->child.insert ( 0, ls->child.remove ( ls->child.size() - 1 ) );
-            //同时ls的最右侧孩子过继给v
-            if ( v->child[0] ) v->child[0]->parent = v; //作为v的最左侧孩子
-            return; //至此，通过右旋已完成当前层（以及所有层）的下溢处理
-        }
-    } //至此，左兄弟要么为空，要么太“瘦”
-
-    // 情况2：向右兄弟借关键码 - 旋转
-    if ( p->child.size() - 1 > r ) { //若v不是p的最后一个孩子，则
-        BTNode<T>* rs = p->child[r + 1]; //右兄弟必存在
-        if ( ( _order + 1 ) / 2 < rs->child.size() ) { //若该兄弟足够“胖”，则
-            ///*DSA*/printf ( " ... case 2\n" );
-            v->key.insert ( v->key.size(), p->key[r] ); //p借出一个关键码给v（作为最大关键码）
-            p->key[r] = rs->key.remove ( 0 ); //rs的最小关键码转入p
-            v->child.insert ( v->child.size(), rs->child.remove ( 0 ) );
-            //同时rs的最左侧孩子过继给v
-            if ( v->child[v->child.size() - 1] ) //作为v的最右侧孩子
-            v->child[v->child.size() - 1]->parent = v;
-            return; //至此，通过左旋已完成当前层（以及所有层）的下溢处理
-        }
-    } //至此，右兄弟要么为空，要么太“瘦”
-
-    // 情况3：左、右兄弟要么为空（但不可能同时），要么都太“瘦”——合并
-    if ( 0 < r ) { //与左兄弟合并
-        ///*DSA*/printf ( " ... case 3L\n" );
-        BTNode<T>* ls = p->child[r - 1]; //左兄弟必存在
-        ls->key.insert ( ls->key.size(), p->key.remove ( r - 1 ) ); p->child.remove ( r );
-        //p的第r - 1个关键码转入ls，v不再是p的第r个孩子
-        ls->child.insert ( ls->child.size(), v->child.remove ( 0 ) );
-        if ( ls->child[ls->child.size() - 1] ) //v的最左侧孩子过继给ls做最右侧孩子
-            ls->child[ls->child.size() - 1]->parent = ls;
-        while ( !v->key.empty() ) { //v剩余的关键码和孩子，依次转入ls
-            ls->key.insert ( ls->key.size(), v->key.remove ( 0 ) );
-            ls->child.insert ( ls->child.size(), v->child.remove ( 0 ) );
-            if ( ls->child[ls->child.size() - 1] ) ls->child[ls->child.size() - 1]->parent = ls;
-        }
-        release ( v ); //释放v
-    } else { //与右兄弟合并
-        ///*DSA*/printf ( " ... case 3R\n" );
-        BTNode<T>* rs = p->child[r + 1]; //右兄弟必存在
-        rs->key.insert ( 0, p->key.remove ( r ) ); p->child.remove ( r );
-        //p的第r个关键码转入rs，v不再是p的第r个孩子
-        rs->child.insert ( 0, v->child.remove ( v->child.size() - 1 ) );
-        if ( rs->child[0] ) rs->child[0]->parent = rs; //v的最右侧孩子过继给rs做最左侧孩子
-        while ( !v->key.empty() ) { //v剩余的关键码和孩子，依次转入rs
-            rs->key.insert ( 0, v->key.remove ( v->key.size() - 1 ) );
-            rs->child.insert ( 0, v->child.remove ( v->child.size() - 1 ) );
-            if ( rs->child[0] ) rs->child[0]->parent = rs;
-        }
-        release ( v ); //释放v
+    if (_root && _root->key.empty() && _root->child[0]) {
+        BTNode<T>* old_root = _root;
+        _root = old_root->child[0];
+        _root->parent = nullptr;
+        old_root->child[0] = nullptr;
+        delete old_root;
     }
-    solveUnderflow ( p ); //上升一层，如有必要则继续分裂——至多递归O(logn)层
-    return;
 }
-
 
 #endif
