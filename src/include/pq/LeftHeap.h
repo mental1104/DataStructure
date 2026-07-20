@@ -1,8 +1,11 @@
 #ifndef __DSA_LEFT_HEAP
 #define __DSA_LEFT_HEAP
 
+#include <stdexcept>
+
 #include "BinTree.h"
 #include "PQ.h"
+#include "Vector.h"
 
 template <typename T, bool MAX = true>
 class LeftHeap : public PQ<T, MAX>, public BinTree<T> { //基于二叉树，以左式堆形式实现的PQ
