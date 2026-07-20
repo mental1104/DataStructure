@@ -1,7 +1,9 @@
 #ifndef DSA_CORE_TREE_BIN_NODE_ALGORITHM_H
 #define DSA_CORE_TREE_BIN_NODE_ALGORITHM_H
 
+#include <cstddef>
 #include <deque>
+#include <utility>
 #include <vector>
 
 namespace dsa {
@@ -9,6 +11,109 @@ namespace core {
 
 template<typename Node>
 class BinNodeAlgorithm {
+private:
+    template<typename NodePtr, typename Visitor>
+    static void traversePreGeneric(NodePtr root, Visitor& visit) {
+        if (!root)
+            return;
+
+        NodePtr boundary = root->parent;
+        NodePtr previous = boundary;
+        NodePtr current = root;
+
+        while (current && current != boundary) {
+            NodePtr next = nullptr;
+
+            if (previous == current->parent) {
+                visit(current->data);
+                if (current->lc)
+                    next = current->lc;
+                else if (current->rc)
+                    next = current->rc;
+                else
+                    next = current->parent;
+            } else if (previous == current->lc) {
+                next = current->rc ? current->rc : current->parent;
+            } else {
+                next = current->parent;
+            }
+
+            previous = current;
+            current = next;
+        }
+    }
+
+    template<typename NodePtr, typename Visitor>
+    static void traverseInGeneric(NodePtr root, Visitor& visit) {
+        if (!root)
+            return;
+
+        NodePtr end = successor(maximum(root));
+        NodePtr node = minimum(root);
+        while (node != end) {
+            visit(node->data);
+            node = successor(node);
+        }
+    }
+
+    template<typename NodePtr, typename Visitor>
+    static void traversePostGeneric(NodePtr root, Visitor& visit) {
+        if (!root)
+            return;
+
+        NodePtr boundary = root->parent;
+        NodePtr previous = boundary;
+        NodePtr current = root;
+
+        while (current && current != boundary) {
+            NodePtr next = nullptr;
+
+            if (previous == current->parent) {
+                if (current->lc)
+                    next = current->lc;
+                else if (current->rc)
+                    next = current->rc;
+                else {
+                    visit(current->data);
+                    next = current->parent;
+                }
+            } else if (previous == current->lc) {
+                if (current->rc)
+                    next = current->rc;
+                else {
+                    visit(current->data);
+                    next = current->parent;
+                }
+            } else {
+                visit(current->data);
+                next = current->parent;
+            }
+
+            previous = current;
+            current = next;
+        }
+    }
+
+    template<typename NodePtr, typename Visitor>
+    static void traverseLevelGeneric(NodePtr root, Visitor& visit) {
+        if (!root)
+            return;
+
+        std::deque<NodePtr> queue;
+        queue.push_back(root);
+
+        while (!queue.empty()) {
+            NodePtr node = queue.front();
+            queue.pop_front();
+            visit(node->data);
+
+            if (node->lc)
+                queue.push_back(node->lc);
+            if (node->rc)
+                queue.push_back(node->rc);
+        }
+    }
+
 public:
     static int stature(const Node* node) {
         return node ? node->height : -1;
@@ -30,6 +135,8 @@ public:
         return !isRoot(node);
     }
 
+    // Compatibility: the teaching API historically returns a mutable pointer
+    // even when the node reference itself is const.
     static Node* leftChild(const Node& node) {
         return node.lc;
     }
@@ -39,11 +146,11 @@ public:
     }
 
     static bool hasChild(const Node& node) {
-        return leftChild(node) || rightChild(node);
+        return node.lc || node.rc;
     }
 
     static bool hasBothChildren(const Node& node) {
-        return leftChild(node) && rightChild(node);
+        return node.lc && node.rc;
     }
 
     static bool isLeaf(const Node& node) {
@@ -85,124 +192,248 @@ public:
             : node->parent->parent->lc;
     }
 
-    static int subtreeSize(Node* root) {
-        if (!root)
-            return 0;
-        return 1 + subtreeSize(root->lc) + subtreeSize(root->rc);
+    static Node* minimum(Node* node) {
+        if (!node)
+            return nullptr;
+        while (node->lc)
+            node = node->lc;
+        return node;
+    }
+
+    static const Node* minimum(const Node* node) {
+        if (!node)
+            return nullptr;
+        while (node->lc)
+            node = node->lc;
+        return node;
+    }
+
+    static Node* maximum(Node* node) {
+        if (!node)
+            return nullptr;
+        while (node->rc)
+            node = node->rc;
+        return node;
+    }
+
+    static const Node* maximum(const Node* node) {
+        if (!node)
+            return nullptr;
+        while (node->rc)
+            node = node->rc;
+        return node;
     }
 
     static Node* successor(Node* node) {
         if (!node)
             return nullptr;
-
-        if (node->rc) {
-            node = node->rc;
-            while (node->lc)
-                node = node->lc;
-            return node;
-        }
+        if (node->rc)
+            return minimum(node->rc);
 
         while (node->parent && isRightChild(*node))
             node = node->parent;
         return node->parent;
     }
 
+    static const Node* successor(const Node* node) {
+        if (!node)
+            return nullptr;
+        if (node->rc)
+            return minimum(static_cast<const Node*>(node->rc));
+
+        while (node->parent && isRightChild(*node))
+            node = node->parent;
+        return node->parent;
+    }
+
+    static Node* predecessor(Node* node) {
+        if (!node)
+            return nullptr;
+        if (node->lc)
+            return maximum(node->lc);
+
+        while (node->parent && isLeftChild(*node))
+            node = node->parent;
+        return node->parent;
+    }
+
+    static const Node* predecessor(const Node* node) {
+        if (!node)
+            return nullptr;
+        if (node->lc)
+            return maximum(static_cast<const Node*>(node->lc));
+
+        while (node->parent && isLeftChild(*node))
+            node = node->parent;
+        return node->parent;
+    }
+
+    static std::size_t subtreeSizeWide(const Node* root) {
+        if (!root)
+            return 0;
+
+        const Node* end = successor(maximum(root));
+        const Node* node = minimum(root);
+        std::size_t count = 0;
+
+        while (node != end) {
+            ++count;
+            node = successor(node);
+        }
+        return count;
+    }
+
+    static int subtreeSize(Node* root) {
+        return static_cast<int>(subtreeSizeWide(root));
+    }
+
     template<typename Visitor>
     static void traversePre(Node* root, Visitor& visit) {
-        if (!root)
-            return;
+        traversePreGeneric(root, visit);
+    }
 
-        std::vector<Node*> stack;
-        stack.push_back(root);
-
-        while (!stack.empty()) {
-            Node* node = stack.back();
-            stack.pop_back();
-            visit(node->data);
-
-            if (node->rc)
-                stack.push_back(node->rc);
-            if (node->lc)
-                stack.push_back(node->lc);
-        }
+    template<typename Visitor>
+    static void traversePre(const Node* root, Visitor& visit) {
+        traversePreGeneric(root, visit);
     }
 
     template<typename Visitor>
     static void traverseIn(Node* root, Visitor& visit) {
-        std::vector<Node*> stack;
-        Node* node = root;
+        traverseInGeneric(root, visit);
+    }
 
-        while (node || !stack.empty()) {
-            while (node) {
-                stack.push_back(node);
-                node = node->lc;
-            }
-
-            node = stack.back();
-            stack.pop_back();
-            visit(node->data);
-            node = node->rc;
-        }
+    template<typename Visitor>
+    static void traverseIn(const Node* root, Visitor& visit) {
+        traverseInGeneric(root, visit);
     }
 
     template<typename Visitor>
     static void traversePost(Node* root, Visitor& visit) {
-        if (!root)
-            return;
+        traversePostGeneric(root, visit);
+    }
 
-        std::vector<Node*> pending;
-        std::vector<Node*> reversed;
-        pending.push_back(root);
-
-        while (!pending.empty()) {
-            Node* node = pending.back();
-            pending.pop_back();
-            reversed.push_back(node);
-
-            if (node->lc)
-                pending.push_back(node->lc);
-            if (node->rc)
-                pending.push_back(node->rc);
-        }
-
-        while (!reversed.empty()) {
-            visit(reversed.back()->data);
-            reversed.pop_back();
-        }
+    template<typename Visitor>
+    static void traversePost(const Node* root, Visitor& visit) {
+        traversePostGeneric(root, visit);
     }
 
     template<typename Visitor>
     static void traverseLevel(Node* root, Visitor& visit) {
-        if (!root)
-            return;
-
-        std::deque<Node*> queue;
-        queue.push_back(root);
-
-        while (!queue.empty()) {
-            Node* node = queue.front();
-            queue.pop_front();
-            visit(node->data);
-
-            if (node->lc)
-                queue.push_back(node->lc);
-            if (node->rc)
-                queue.push_back(node->rc);
-        }
+        traverseLevelGeneric(root, visit);
     }
 
-    template<typename DestroyNode>
-    static int destroySubtree(Node* root, DestroyNode& destroyNode) {
-        if (!root)
-            return 0;
+    template<typename Visitor>
+    static void traverseLevel(const Node* root, Visitor& visit) {
+        traverseLevelGeneric(root, visit);
+    }
 
-        Node* left = root->lc;
-        Node* right = root->rc;
-        const int removed =
-            1 + destroySubtree(left, destroyNode)
-              + destroySubtree(right, destroyNode);
-        destroyNode(root);
+    // O(n) time, O(1) auxiliary memory. The caller must unlink root first.
+    template<typename DestroyNode>
+    static std::size_t destroySubtree(Node* root, DestroyNode& destroyNode) {
+        std::size_t removed = 0;
+
+        while (root) {
+            if (root->lc) {
+                Node* promoted = root->lc;
+                root->lc = promoted->rc;
+                if (root->lc)
+                    root->lc->parent = root;
+
+                promoted->rc = root;
+                promoted->parent = root->parent;
+                root->parent = promoted;
+                root = promoted;
+            } else {
+                Node* next = root->rc;
+                if (next)
+                    next->parent = root->parent;
+
+                destroyNode(root);
+                root = next;
+                ++removed;
+            }
+        }
         return removed;
+    }
+
+    template<typename CreateNode, typename DestroyNode>
+    static Node* cloneSubtree(
+        const Node* source,
+        Node* parent,
+        CreateNode& createNode,
+        DestroyNode& destroyNode
+    ) {
+        if (!source)
+            return nullptr;
+
+        Node* result = nullptr;
+        try {
+            result = createNode(parent, *source);
+            typedef std::pair<const Node*, Node*> WorkItem;
+            std::vector<WorkItem> pending;
+            pending.push_back(WorkItem(source, result));
+
+            while (!pending.empty()) {
+                const WorkItem item = pending.back();
+                pending.pop_back();
+                const Node* src = item.first;
+                Node* dst = item.second;
+
+                if (src->lc) {
+                    dst->lc = createNode(dst, *src->lc);
+                    pending.push_back(WorkItem(src->lc, dst->lc));
+                }
+                if (src->rc) {
+                    dst->rc = createNode(dst, *src->rc);
+                    pending.push_back(WorkItem(src->rc, dst->rc));
+                }
+            }
+        } catch (...) {
+            if (result)
+                destroySubtree(result, destroyNode);
+            throw;
+        }
+        return result;
+    }
+
+    template<typename CreateNode, typename DestroyNode>
+    static Node* moveCloneSubtree(
+        Node* source,
+        Node* parent,
+        CreateNode& createNode,
+        DestroyNode& destroyNode
+    ) {
+        if (!source)
+            return nullptr;
+
+        Node* result = nullptr;
+        try {
+            result = createNode(parent, *source);
+            typedef std::pair<Node*, Node*> WorkItem;
+            std::vector<WorkItem> pending;
+            pending.push_back(WorkItem(source, result));
+
+            while (!pending.empty()) {
+                const WorkItem item = pending.back();
+                pending.pop_back();
+                Node* src = item.first;
+                Node* dst = item.second;
+
+                if (src->lc) {
+                    dst->lc = createNode(dst, *src->lc);
+                    pending.push_back(WorkItem(src->lc, dst->lc));
+                }
+                if (src->rc) {
+                    dst->rc = createNode(dst, *src->rc);
+                    pending.push_back(WorkItem(src->rc, dst->rc));
+                }
+            }
+        } catch (...) {
+            if (result)
+                destroySubtree(result, destroyNode);
+            throw;
+        }
+        return result;
     }
 };
 
