@@ -116,6 +116,16 @@ TEST(IteratorFirstSortTest, GlobalFacadeSupportsIteratorRange) {
     EXPECT_EQ(values, (std::vector<int>{4, 3, 2, 1}));
 }
 
+// 验证工业容器 facade 不会把非法策略静默吞掉。
+TEST(IteratorFirstSortTest, IndustrialFacadeRejectsUnknownStrategy) {
+    dsa::container::Vector<int> values{3, 1, 2};
+
+    EXPECT_THROW(
+        Sort(values, static_cast<SortStrategy>(999)),
+        std::invalid_argument
+    );
+}
+
 // ======================== List 排序单元测试 =========================
 
 // 测试不同排序策略下 List 排序的正确性
