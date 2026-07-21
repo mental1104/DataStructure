@@ -13,23 +13,23 @@
 
 /// iterator-first 公共入口，将区间排序直接转发到独立算法层。
 template<typename Iterator, typename Compare>
-void Sort(
+bool Sort(
     Iterator first,
     Iterator last,
     SortStrategy strategy,
     Compare compare
 ) {
-    dsa::algorithm::sort(first, last, strategy, compare);
+    return dsa::algorithm::sort(first, last, strategy, compare);
 }
 
 /// 使用元素默认小于关系的 iterator-first 公共入口。
 template<typename Iterator>
-void Sort(
+bool Sort(
     Iterator first,
     Iterator last,
     SortStrategy strategy = SortStrategy::QuickSort
 ) {
-    dsa::algorithm::sort(first, last, strategy);
+    return dsa::algorithm::sort(first, last, strategy);
 }
 
 /// 教学 Vector facade 只负责把容器转换为随机访问迭代器区间。
@@ -82,7 +82,8 @@ void Sort(
     dsa::container::Vector<T, Allocator>& container,
     SortStrategy strategy = SortStrategy::QuickSort
 ) {
-    Sort(container.begin(), container.end(), strategy);
+    if (!Sort(container.begin(), container.end(), strategy))
+        throw std::invalid_argument("unknown sort strategy");
 }
 
 /// 工业 List 对节点归并使用容器特化，其余可用策略转发到 iterator-first 算法。
@@ -101,7 +102,8 @@ void Sort(
             "RadixSort is only available for the teaching List"
         );
     default:
-        Sort(container.begin(), container.end(), strategy);
+        if (!Sort(container.begin(), container.end(), strategy))
+            throw std::invalid_argument("unknown sort strategy");
         return;
     }
 }
