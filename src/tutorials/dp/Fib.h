@@ -1,15 +1,18 @@
 #ifndef __DSA_FIB
 #define __DSA_FIB
 
-class Fib { //Fibonacci数列类
-private:
-   int f, g; //f = fib(k - 1), g = fib(k)。均为int型，很快就会数值溢出
+#include <dsa/algorithm/Fibonacci.h>
+
+// 教学门面保留原 int API，状态推进统一复用通用 Fibonacci 游标。
+class Fib {
 public:
-   Fib ( int n ) //初始化为不小于n的最小Fibonacci项
-   { f = 1; g = 0; while ( g < n ) next(); } //fib(-1), fib(0)，O(log_phi(n))时间
-   int get()  { return g; } //获取当前Fibonacci项，O(1)时间
-   int next() { g += f; f = g - f; return g; } //转至下一Fibonacci项，O(1)时间
-   int prev() { f = g - f; g -= f; return g; } //转至上一Fibonacci项，O(1)时间
+    explicit Fib(int n) : cursor_(n) {}
+    int get() const { return cursor_.get(); }
+    int next() { return cursor_.next(); }
+    int prev() { return cursor_.prev(); }
+
+private:
+    dsa::algorithm::FibonacciCursor<int> cursor_;
 };
 
 #endif

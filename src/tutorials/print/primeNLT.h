@@ -1,54 +1,71 @@
 #ifndef __DSA_PRIME_NLT
 #define __DSA_PRIME_NLT
 
-/******************************************************************************************
- * Data Structures in C++
- * ISBN: 7-302-33064-6 & 7-302-33065-3 & 7-302-29652-2 & 7-302-26883-3
- * Junhui DENG, deng@tsinghua.edu.cn
- * Computer Science & Technology, Tsinghua University
- * Copyright (c) 2003-2020. All rights reserved.
- ******************************************************************************************/
+#include <cstddef>
 #include "Bitmap.h"
+#include <dsa/algorithm/Prime.h>
 
-
-int primeNLT ( int c, int n, char* file ) { //根据file文件中的记录，在[c, n)内取最小的素数
-   Bitmap B ( file, n ); //file已经按位图格式记录了n以内的所有素数，因此只要
-   while ( c < n ) //从c开始，逐位地
-      if ( B.test ( c ) ) c++; //测试，即可
-      else return c; //返回首个发现的素数
-   return c; //若没有这样的素数，返回n（实用中不能如此简化处理）
+namespace dsa_prime_compat {
+struct BitmapComposite {
+    const Bitmap* bitmap;
+    bool operator()(std::size_t index) const {
+        return bitmap->test(static_cast<int>(index));
+    }
+};
 }
 
-int primeQHT ( int c, int n, char* file ) { //根据file文件中的记录，在[c, n)内取最小的素数
-   Bitmap B ( file, n ); //file已经按位图格式记录了n以内的所有素数，因此只要
-   while ( c < n ){ //从c开始，逐位地
-      if ( B.test ( c ) ) c++; //测试，即可
-      else {
-         if((c-3)%4 == 0)
-            return c; //返回首个发现的素数
-         c++;
-      }
-   }
-   return c; //若没有这样的素数，返回n（实用中不能如此简化处理）
+inline int primeNLT(int c, int n, const char* file) {
+    Bitmap bitmap(file, n);
+    return static_cast<int>(dsa::algorithm::nextPrime(
+        c < 0 ? 0u : static_cast<std::size_t>(c),
+        n < 0 ? 0u : static_cast<std::size_t>(n),
+        dsa_prime_compat::BitmapComposite{&bitmap}
+    ));
 }
 
-int primeNLT_mem(int c, int n, Bitmap* B){ //根据file文件中的记录，在[c, n)内取最小的素数
-   while ( c < n ) //从c开始，逐位地
-      if ( B->test ( c ) ) c++; //测试，即可
-      else return c; //返回首个发现的素数
-   return c; //若没有这样的素数，返回n（实用中不能如此简化处理）
+inline int primeNLT(int c, int n, char* file) {
+    return primeNLT(c, n, static_cast<const char*>(file));
 }
 
-int primeQHT_mem ( int c, int n, Bitmap* B) { //根据file文件中的记录，在[c, n)内取最小的素数
-   while ( c < n ){ //从c开始，逐位地
-      if ( B->test ( c ) ) c++; //测试，即可
-      else {
-         if((c-3)%4 == 0)
-            return c; //返回首个发现的素数
-         c++;
-      }
-   }
-   return c; //若没有这样的素数，返回n（实用中不能如此简化处理）
+inline int primeQHT(int c, int n, const char* file) {
+    Bitmap bitmap(file, n);
+    return static_cast<int>(dsa::algorithm::nextPrimeCongruent(
+        c < 0 ? 0u : static_cast<std::size_t>(c),
+        n < 0 ? 0u : static_cast<std::size_t>(n),
+        4u,
+        3u,
+        dsa_prime_compat::BitmapComposite{&bitmap}
+    ));
+}
+
+inline int primeQHT(int c, int n, char* file) {
+    return primeQHT(c, n, static_cast<const char*>(file));
+}
+
+inline int primeNLT_mem(int c, int n, const Bitmap* bitmap) {
+    return static_cast<int>(dsa::algorithm::nextPrime(
+        c < 0 ? 0u : static_cast<std::size_t>(c),
+        n < 0 ? 0u : static_cast<std::size_t>(n),
+        dsa_prime_compat::BitmapComposite{bitmap}
+    ));
+}
+
+inline int primeNLT_mem(int c, int n, Bitmap* bitmap) {
+    return primeNLT_mem(c, n, static_cast<const Bitmap*>(bitmap));
+}
+
+inline int primeQHT_mem(int c, int n, const Bitmap* bitmap) {
+    return static_cast<int>(dsa::algorithm::nextPrimeCongruent(
+        c < 0 ? 0u : static_cast<std::size_t>(c),
+        n < 0 ? 0u : static_cast<std::size_t>(n),
+        4u,
+        3u,
+        dsa_prime_compat::BitmapComposite{bitmap}
+    ));
+}
+
+inline int primeQHT_mem(int c, int n, Bitmap* bitmap) {
+    return primeQHT_mem(c, n, static_cast<const Bitmap*>(bitmap));
 }
 
 #endif

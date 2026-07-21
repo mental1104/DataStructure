@@ -2,6 +2,7 @@
 #define __DSA_SPLAY
 
 #include "BST.h"
+#include <dsa/core/tree/SplayTreeAlgorithm.h>
 
 // 教学版伸展树：使用 BST 提供的共享单旋转组合出 zig / zig-zig / zig-zag。
 template<typename T>
@@ -17,36 +18,15 @@ public:
 
 template<typename T>
 BinNode<T>* Splay<T>::splay(BinNode<T>* node) {
-    if (!node)
-        return nullptr;
-
-    while (node->parent) {
-        BinNode<T>* parent = node->parent;
-        BinNode<T>* grand = parent->parent;
-        if (!grand) {
-            if (node == parent->lc)
-                this->rotateRight(parent);
-            else
-                this->rotateLeft(parent);
-            continue;
-        }
-
-        if (node == parent->lc && parent == grand->lc) {
-            this->rotateRight(grand);
-            this->rotateRight(parent);
-        } else if (node == parent->rc && parent == grand->rc) {
-            this->rotateLeft(grand);
-            this->rotateLeft(parent);
-        } else if (node == parent->rc && parent == grand->lc) {
-            this->rotateLeft(parent);
-            this->rotateRight(grand);
-        } else {
-            this->rotateRight(parent);
-            this->rotateLeft(grand);
-        }
+    typedef dsa::core::SplayTreeAlgorithm<typename BST<T>::Access> SplayAlgorithm;
+    typedef typename BST<T>::Algorithm SearchAlgorithm;
+    BinNode<T>* root = SplayAlgorithm::splay(this->_root, node);
+    if (root) {
+        SearchAlgorithm::updateHeight(root->lc);
+        SearchAlgorithm::updateHeight(root->rc);
+        SearchAlgorithm::updateHeight(root);
     }
-    this->_root = node;
-    return node;
+    return root;
 }
 
 template<typename T>

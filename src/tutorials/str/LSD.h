@@ -3,7 +3,7 @@
 
 #include "Vector.h"
 #include "dsa_string.h"
-#include "../dsa/algorithm/StringSort.h"
+#include <dsa/algorithm/StringSort.h>
 
 /// 保留教学版入口，排序核心转发到泛型 LSD 字符串排序。
 inline void LSD(Vector<String>& values, int width) {

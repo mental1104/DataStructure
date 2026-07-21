@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <utility>
+#include <dsa/core/tree/MultiwayTreeAlgorithm.h>
 
 #include "Vector.h"
 
@@ -39,35 +40,11 @@ private:
     }
 
     int lowerBound(const Vector<Key>& keys, const Key& key) const {
-        int first = 0;
-        int count = keys.size();
-        while (count > 0) {
-            const int step = count / 2;
-            const int middle = first + step;
-            if (_cmp(keys[middle], key)) {
-                first = middle + 1;
-                count -= step + 1;
-            } else {
-                count = step;
-            }
-        }
-        return first;
+        return static_cast<int>(dsa::core::MultiwayTreeAlgorithm::lowerBound(keys, key, _cmp));
     }
 
     int upperBound(const Vector<Key>& keys, const Key& key) const {
-        int first = 0;
-        int count = keys.size();
-        while (count > 0) {
-            const int step = count / 2;
-            const int middle = first + step;
-            if (!_cmp(key, keys[middle])) {
-                first = middle + 1;
-                count -= step + 1;
-            } else {
-                count = step;
-            }
-        }
-        return first;
+        return static_cast<int>(dsa::core::MultiwayTreeAlgorithm::upperBound(keys, key, _cmp));
     }
 
     Node* findLeaf(const Key& key) const {

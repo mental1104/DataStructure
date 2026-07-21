@@ -5,7 +5,7 @@
 
 #include "MatchObserver.h"
 #include "dsa_string.h"
-#include "../../dsa/algorithm/SubstringSearch.h"
+#include <dsa/algorithm/SubstringSearch.h>
 
 constexpr int kKRMod = 97;
 constexpr int kKRBase = 10;
