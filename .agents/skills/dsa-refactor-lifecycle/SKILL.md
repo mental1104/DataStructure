@@ -55,6 +55,54 @@ refactor-container
 - commit 级跳过 CI 时使用标准 `[skip ci]`、`[ci skip]` 等格式；
 - 仓库代码和真实测试是事实来源，聊天记录只用于理解目标。
 
+## 工业实现的仓库内依赖闭环
+
+以下规则适用于生产实现目录：
+
+```text
+src/dsa/container/
+src/dsa/core/
+src/dsa/algorithm/
+```
+
+### 容器依赖规则
+
+- 生产实现禁止使用 STL 容器作为成员存储、返回结果、算法临时缓冲或内部工作队列；
+- 禁止包含 `<vector>`、`<list>`、`<map>`、`<queue>`、`<set>`、`<array>` 等 STL 容器头文件；
+- 数据结构依赖线性容器时，必须优先使用仓库中的 `dsa::container::Vector`、`List`、`Queue`、`Stack`、`BinaryHeap` 等实现；
+- 不得为了替换 STL 容器制造循环依赖。基础容器只能依赖更底层的 allocator、迭代器和共享流程，高层结构与算法可以依赖基础容器；
+- `std::allocator`、`allocator_traits`、智能指针、`pair`、`tuple`、迭代器 traits、类型 traits、函数对象、异常、`move`、`forward` 和 `swap` 不属于本条禁止范围；
+- `std::basic_string` 只允许作为文本值或外部兼容输入，不得作为已有仓库字符串容器能够承担的内部工作存储。
+
+### 泛型算法依赖规则
+
+使用任何 `std::<algorithm>` 前，必须先搜索：
+
+```text
+src/dsa/algorithm/
+src/dsa/core/
+```
+
+处理顺序：
+
+1. 仓库已有对等算法时，必须复用仓库实现；
+2. 仓库缺少、但该算法可脱离具体容器复用时，应先新增 iterator-first 的仓库算法，再由调用方复用；
+3. 不得让仓库的算法策略枚举表面存在，实际却委托给 `std::sort`、`std::stable_sort`、`std::make_heap` 等标准算法；
+4. 只有仓库不存在对等能力、且新增通用实现没有明确教学或工程价值时，才可保留标准算法，并在代码审阅中说明原因。
+
+### 测试与 Benchmark 边界
+
+- `test/` 和 `bench/` 可以使用 STL 容器或算法作为输入构造、差分 oracle、性能基线和预期结果；
+- 测试中的 STL 使用不得渗透为生产 API 或生产实现依赖；
+- 新增或修改生产代码后必须执行：
+
+```bash
+python3 tools/check_dsa_stl_dependencies.py
+cmake --build build --target check_dsa_stl_dependencies
+```
+
+静态门禁失败时，不得创建或更新交付 PR。
+
 # 什么时候触发
 
 以下请求必须使用本 Skill：
@@ -92,7 +140,7 @@ Result algorithm(Iterator first, Iterator last, Compare compare);
 
 要求：
 
-- 不包含具体容器头文件；
+- 原则上不包含具体业务容器头文件；必须拥有动态结果或临时缓冲时，只能依赖仓库基础容器，并保证不存在反向循环依赖；
 - 不直接访问 `_elem`、`_root`、`_size` 等字段；
 - 不负责修改容器的 size、capacity 或节点所有权；
 - 返回迭代器、计数或值，让容器自己提交状态；
