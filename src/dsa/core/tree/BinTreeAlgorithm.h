@@ -3,8 +3,9 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <deque>
-#include <vector>
+
+#include <dsa/container/queue/Queue.h>
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace core {
@@ -35,7 +36,7 @@ public:
             return 0;
 
         std::size_t count = 0;
-        std::vector<NodePointer> stack;
+        dsa::container::Vector<NodePointer> stack;
         stack.push_back(root);
         while (!stack.empty()) {
             NodePointer node = stack.back();
@@ -83,7 +84,7 @@ public:
         if (!root)
             return;
 
-        std::vector<NodePointer> stack;
+        dsa::container::Vector<NodePointer> stack;
         stack.push_back(root);
         while (!stack.empty()) {
             NodePointer node = stack.back();
@@ -102,7 +103,7 @@ public:
     // 以中序顺序迭代访问节点，额外空间为 O(height)。
     template<typename NodePointer, typename Visitor>
     static void forEachNodeInOrder(NodePointer root, Visitor&& visitor) {
-        std::vector<NodePointer> stack;
+        dsa::container::Vector<NodePointer> stack;
         NodePointer current = root;
 
         while (current || !stack.empty()) {
@@ -121,7 +122,7 @@ public:
     // 以后序顺序迭代访问节点；节点访问发生在两个孩子之后，可安全用于子树销毁。
     template<typename NodePointer, typename Visitor>
     static void forEachNodePostOrder(NodePointer root, Visitor&& visitor) {
-        std::vector<NodePointer> stack;
+        dsa::container::Vector<NodePointer> stack;
         NodePointer current = root;
         NodePointer lastVisited = NodePointer();
 
@@ -151,19 +152,19 @@ public:
         if (!root)
             return;
 
-        std::deque<NodePointer> queue;
-        queue.push_back(root);
+        dsa::container::Queue<NodePointer> queue;
+        queue.push(root);
         while (!queue.empty()) {
             NodePointer node = queue.front();
-            queue.pop_front();
+            queue.pop();
             visitor(node);
 
             NodePointer left = Access::left(node);
             NodePointer right = Access::right(node);
             if (left)
-                queue.push_back(left);
+                queue.push(left);
             if (right)
-                queue.push_back(right);
+                queue.push(right);
         }
     }
 
@@ -244,7 +245,7 @@ public:
         Result identity,
         Aggregate&& aggregate
     ) {
-        std::vector<NodePointer> stack;
+        dsa::container::Vector<NodePointer> stack;
         NodePointer current = root;
         Result result = identity;
 

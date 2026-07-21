@@ -26,7 +26,7 @@ public:
           n_(static_cast<int>(text_.size())),
           sa_(n_, n_, 0),
           less_() {
-        const std::vector<int> indices =
+        const dsa::container::Vector<int> indices =
             dsa::algorithm::buildSuffixIndices(text_, less_);
         for (int i = 0; i < n_; ++i)
             sa_[i] = indices[static_cast<std::size_t>(i)];

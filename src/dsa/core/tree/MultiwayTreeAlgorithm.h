@@ -2,7 +2,8 @@
 #define DSA_CORE_TREE_MULTIWAY_TREE_ALGORITHM_H
 
 #include <cstddef>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace core {
@@ -44,12 +45,12 @@ public:
     }
 
     // 将 total 均匀分组，每组不超过 maximum；可行时同时满足 minimum。
-    static std::vector<std::size_t> partitionCounts(
+    static dsa::container::Vector<std::size_t> partitionCounts(
         std::size_t total,
         std::size_t maximum,
         std::size_t minimum
     ) {
-        std::vector<std::size_t> result;
+        dsa::container::Vector<std::size_t> result;
         if (total == 0)
             return result;
         std::size_t groups = (total + maximum - 1) / maximum;

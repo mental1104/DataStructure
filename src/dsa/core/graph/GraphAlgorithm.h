@@ -1,15 +1,16 @@
 #ifndef DSA_CORE_GRAPH_GRAPH_ALGORITHM_H
 #define DSA_CORE_GRAPH_GRAPH_ALGORITHM_H
 
-#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <limits>
-#include <map>
-#include <queue>
 #include <stdexcept>
 #include <utility>
-#include <vector>
+
+#include <dsa/algorithm/Sort.h>
+#include <dsa/container/heap/Heap.h>
+#include <dsa/container/queue/Queue.h>
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace core {
@@ -34,12 +35,22 @@ enum class EdgeType {
 
 /// 一次图算法的外置状态，避免工业图把遍历时间、父节点和优先级永久塞进顶点对象。
 struct TraversalState {
-    std::vector<VertexStatus> status;
-    std::vector<int> discovery_time;
-    std::vector<int> finish_time;
-    std::vector<int> parent;
-    std::vector<double> priority;
-    std::map<std::pair<int, int>, EdgeType> edge_type;
+    dsa::container::Vector<VertexStatus> status;
+    dsa::container::Vector<int> discovery_time;
+    dsa::container::Vector<int> finish_time;
+    dsa::container::Vector<int> parent;
+    dsa::container::Vector<double> priority;
+
+    struct EdgeClassification {
+        int from;
+        int to;
+        EdgeType type;
+
+        EdgeClassification(int source, int target, EdgeType edgeType)
+            : from(source), to(target), type(edgeType) {}
+    };
+
+    dsa::container::Vector<EdgeClassification> edge_type;
 
     explicit TraversalState(std::size_t count = 0) {
         reset(count);
@@ -57,21 +68,31 @@ struct TraversalState {
 
     /// 记录一条真实边在本次算法中的分类。
     void setEdgeType(int from, int to, EdgeType type) {
-        edge_type[std::make_pair(from, to)] = type;
+        for (dsa::container::Vector<EdgeClassification>::iterator it = edge_type.begin();
+             it != edge_type.end(); ++it) {
+            if (it->from == from && it->to == to) {
+                it->type = type;
+                return;
+            }
+        }
+        edge_type.push_back(EdgeClassification(from, to, type));
     }
 
     /// 查询边分类；未触达的边保持 UNDETERMINED。
     EdgeType edgeType(int from, int to) const {
-        const std::map<std::pair<int, int>, EdgeType>::const_iterator found =
-            edge_type.find(std::make_pair(from, to));
-        return found == edge_type.end() ? EdgeType::UNDETERMINED : found->second;
+        for (dsa::container::Vector<EdgeClassification>::const_iterator it = edge_type.begin();
+             it != edge_type.end(); ++it) {
+            if (it->from == from && it->to == to)
+                return it->type;
+        }
+        return EdgeType::UNDETERMINED;
     }
 };
 
 /// BFS/DFS 的访问顺序和完整外置状态。
 struct TraversalResult {
     TraversalState state;
-    std::vector<int> order;
+    dsa::container::Vector<int> order;
 
     explicit TraversalResult(std::size_t count = 0)
         : state(count) {
@@ -81,7 +102,7 @@ struct TraversalResult {
 /// 拓扑排序结果；存在有向环时 acyclic 为 false 且 order 为空。
 struct TopologicalResult {
     TraversalState state;
-    std::vector<int> order;
+    dsa::container::Vector<int> order;
     bool acyclic;
 
     explicit TopologicalResult(std::size_t count = 0)
@@ -92,8 +113,8 @@ struct TopologicalResult {
 /// 连通分量或强连通分量结果，component_of[v] 给出顶点所属分量编号。
 struct ComponentResult {
     int count;
-    std::vector<int> component_of;
-    std::vector<std::vector<int> > components;
+    dsa::container::Vector<int> component_of;
+    dsa::container::Vector<dsa::container::Vector<int> > components;
 
     explicit ComponentResult(std::size_t vertex_count = 0)
         : count(0), component_of(vertex_count, -1) {
@@ -123,7 +144,7 @@ struct SpanningEdge {
 /// Kruskal 结果；state 仅记录被选边和涉及顶点的访问状态。
 struct SpanningForestResult {
     TraversalState state;
-    std::vector<SpanningEdge> edges;
+    dsa::container::Vector<SpanningEdge> edges;
     double total_weight;
 
     explicit SpanningForestResult(std::size_t count = 0)
@@ -193,7 +214,7 @@ public:
         checkVertex(start, count);
 
         int clock = 0;
-        std::vector<int> postorder;
+        dsa::container::Vector<int> postorder;
         int vertex = start;
         do {
             if (result.state.status[vertex] == VertexStatus::UNDISCOVERED &&
@@ -212,7 +233,7 @@ public:
     /// 判断无向视角下是否存在环；调用方负责保证每条无向边的表示语义一致。
     static bool hasUndirectedCycle(const View& view) {
         const int count = checkedCount(view);
-        std::vector<bool> marked(static_cast<std::size_t>(count), false);
+        dsa::container::Vector<bool> marked(static_cast<std::size_t>(count), false);
         for (int vertex = 0; vertex < count; ++vertex) {
             if (!marked[vertex] && undirectedCycleVisit(view, vertex, -1, marked))
                 return true;
@@ -223,7 +244,7 @@ public:
     /// 判断有向图是否存在环。
     static bool hasDirectedCycle(const View& view) {
         const int count = checkedCount(view);
-        std::vector<unsigned char> color(static_cast<std::size_t>(count), 0);
+        dsa::container::Vector<unsigned char> color(static_cast<std::size_t>(count), 0);
         for (int vertex = 0; vertex < count; ++vertex) {
             if (color[vertex] == 0 && directedCycleVisit(view, vertex, color))
                 return true;
@@ -238,7 +259,7 @@ public:
         for (int vertex = 0; vertex < count; ++vertex) {
             if (result.component_of[vertex] != -1)
                 continue;
-            result.components.push_back(std::vector<int>());
+            result.components.push_back(dsa::container::Vector<int>());
             componentVisit(view, vertex, result.count, result);
             ++result.count;
         }
@@ -246,13 +267,13 @@ public:
     }
 
     /// 返回从 source 通过出边可达的顶点标记。
-    static std::vector<bool> reachable(const View& view, int source) {
+    static dsa::container::Vector<bool> reachable(const View& view, int source) {
         const int count = checkedCount(view);
         if (count == 0)
-            return std::vector<bool>();
+            return dsa::container::Vector<bool>();
         checkVertex(source, count);
 
-        std::vector<bool> marked(static_cast<std::size_t>(count), false);
+        dsa::container::Vector<bool> marked(static_cast<std::size_t>(count), false);
         reachableVisit(view, source, marked);
         return marked;
     }
@@ -261,7 +282,7 @@ public:
     static ComponentResult stronglyConnectedComponents(const View& view) {
         const int count = checkedCount(view);
         ComponentResult result(static_cast<std::size_t>(count));
-        std::vector<std::vector<int> > reverse(static_cast<std::size_t>(count));
+        dsa::container::Vector<dsa::container::Vector<int> > reverse(static_cast<std::size_t>(count));
 
         for (int from = 0; from < count; ++from) {
             for (int to = view.firstNeighbor(from); to >= 0;
@@ -271,19 +292,19 @@ public:
             }
         }
 
-        std::vector<bool> marked(static_cast<std::size_t>(count), false);
-        std::vector<int> postorder;
+        dsa::container::Vector<bool> marked(static_cast<std::size_t>(count), false);
+        dsa::container::Vector<int> postorder;
         for (int vertex = 0; vertex < count; ++vertex) {
             if (!marked[vertex])
                 reversePostVisit(reverse, vertex, marked, postorder);
         }
 
-        for (std::vector<int>::reverse_iterator it = postorder.rbegin();
+        for (dsa::container::Vector<int>::reverse_iterator it = postorder.rbegin();
              it != postorder.rend(); ++it) {
             const int vertex = *it;
             if (result.component_of[vertex] != -1)
                 continue;
-            result.components.push_back(std::vector<int>());
+            result.components.push_back(dsa::container::Vector<int>());
             componentVisit(view, vertex, result.count, result);
             ++result.count;
         }
@@ -299,7 +320,7 @@ public:
         checkVertex(source, count);
 
         typedef std::pair<double, int> QueueEntry;
-        std::priority_queue<QueueEntry, std::vector<QueueEntry>, std::greater<QueueEntry> > queue;
+        dsa::container::BinaryHeap<QueueEntry, std::greater<QueueEntry> > queue;
         result.state.priority[source] = 0.0;
         queue.push(QueueEntry(0.0, source));
 
@@ -342,7 +363,7 @@ public:
         checkVertex(source, count);
 
         typedef std::pair<double, int> QueueEntry;
-        std::priority_queue<QueueEntry, std::vector<QueueEntry>, std::greater<QueueEntry> > queue;
+        dsa::container::BinaryHeap<QueueEntry, std::greater<QueueEntry> > queue;
         result.state.priority[source] = 0.0;
         queue.push(QueueEntry(0.0, source));
 
@@ -377,7 +398,7 @@ public:
     static SpanningForestResult kruskal(const View& view) {
         const int count = checkedCount(view);
         SpanningForestResult result(static_cast<std::size_t>(count));
-        std::vector<SpanningEdge> candidates;
+        dsa::container::Vector<SpanningEdge> candidates;
         for (int from = 0; from < count; ++from) {
             for (int to = view.firstNeighbor(from); to >= 0;
                  to = view.nextNeighbor(from, to)) {
@@ -386,9 +407,12 @@ public:
             }
         }
 
-        std::sort(candidates.begin(), candidates.end(), spanningEdgeLess);
+        dsa::algorithm::sort(
+            candidates.begin(), candidates.end(),
+            dsa::algorithm::SortStrategy::QuickSort, spanningEdgeLess
+        );
         DisjointSet sets(count);
-        for (typename std::vector<SpanningEdge>::const_iterator it = candidates.begin();
+        for (typename dsa::container::Vector<SpanningEdge>::const_iterator it = candidates.begin();
              it != candidates.end(); ++it) {
             if (it->from == it->to || sets.connected(it->from, it->to))
                 continue;
@@ -441,8 +465,8 @@ private:
         }
 
     private:
-        std::vector<int> parent_;
-        std::vector<int> rank_;
+        dsa::container::Vector<int> parent_;
+        dsa::container::Vector<int> rank_;
     };
 
     static int checkedCount(const View& view) {
@@ -463,7 +487,7 @@ private:
         TraversalResult& result,
         int& clock
     ) {
-        std::queue<int> queue;
+        dsa::container::Queue<int> queue;
         result.state.status[source] = VertexStatus::DISCOVERED;
         queue.push(source);
 
@@ -533,7 +557,7 @@ private:
         const View& view,
         int vertex,
         TopologicalResult& result,
-        std::vector<int>& postorder,
+        dsa::container::Vector<int>& postorder,
         int& clock
     ) {
         result.state.discovery_time[vertex] = ++clock;
@@ -572,7 +596,7 @@ private:
         const View& view,
         int vertex,
         int parent,
-        std::vector<bool>& marked
+        dsa::container::Vector<bool>& marked
     ) {
         marked[vertex] = true;
         for (int neighbor = view.firstNeighbor(vertex); neighbor >= 0;
@@ -592,7 +616,7 @@ private:
     static bool directedCycleVisit(
         const View& view,
         int vertex,
-        std::vector<unsigned char>& color
+        dsa::container::Vector<unsigned char>& color
     ) {
         color[vertex] = 1;
         for (int neighbor = view.firstNeighbor(vertex); neighbor >= 0;
@@ -623,7 +647,7 @@ private:
         }
     }
 
-    static void reachableVisit(const View& view, int vertex, std::vector<bool>& marked) {
+    static void reachableVisit(const View& view, int vertex, dsa::container::Vector<bool>& marked) {
         marked[vertex] = true;
         for (int neighbor = view.firstNeighbor(vertex); neighbor >= 0;
              neighbor = view.nextNeighbor(vertex, neighbor)) {
@@ -633,14 +657,14 @@ private:
     }
 
     static void reversePostVisit(
-        const std::vector<std::vector<int> >& reverse,
+        const dsa::container::Vector<dsa::container::Vector<int> >& reverse,
         int vertex,
-        std::vector<bool>& marked,
-        std::vector<int>& postorder
+        dsa::container::Vector<bool>& marked,
+        dsa::container::Vector<int>& postorder
     ) {
         marked[vertex] = true;
-        const std::vector<int>& neighbors = reverse[static_cast<std::size_t>(vertex)];
-        for (std::vector<int>::const_iterator it = neighbors.begin(); it != neighbors.end(); ++it) {
+        const dsa::container::Vector<int>& neighbors = reverse[static_cast<std::size_t>(vertex)];
+        for (dsa::container::Vector<int>::const_iterator it = neighbors.begin(); it != neighbors.end(); ++it) {
             if (!marked[*it])
                 reversePostVisit(reverse, *it, marked, postorder);
         }

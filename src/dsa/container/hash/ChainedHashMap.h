@@ -5,13 +5,13 @@
 #include <cstddef>
 #include <functional>
 #include <iterator>
-#include <list>
 #include <memory>
 #include <stdexcept>
 #include <utility>
-#include <vector>
 
 #include <dsa/container/hash/Dictionary.h>
+#include <dsa/container/list/List.h>
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace container {
@@ -36,10 +36,10 @@ public:
     typedef std::ptrdiff_t difference_type;
 
 private:
-    typedef std::list<value_type, allocator_type> bucket_type;
+    typedef dsa::container::List<value_type, allocator_type> bucket_type;
     typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<bucket_type>
         bucket_allocator_type;
-    typedef std::vector<bucket_type, bucket_allocator_type> bucket_array_type;
+    typedef dsa::container::Vector<bucket_type, bucket_allocator_type> bucket_array_type;
 
     template<bool IsConst>
     class BasicIterator {
@@ -331,7 +331,7 @@ public:
             return;
 
         bucket_array_type replacement = makeBuckets(count);
-        std::vector<size_type> destinations;
+        dsa::container::Vector<size_type> destinations;
         destinations.reserve(size_);
         for (size_type bucket = 0; bucket < buckets_.size(); ++bucket) {
             for (typename bucket_type::const_iterator it = buckets_[bucket].begin();

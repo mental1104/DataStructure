@@ -2,7 +2,8 @@
 #define DSA_CONTAINER_GRAPH_GRAPH_H
 
 #include <cstddef>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include "../../core/graph/GraphAlgorithm.h"
 
@@ -63,7 +64,7 @@ public:
     }
 
     /// 返回从 source 通过出边可达的顶点集合标记。
-    std::vector<bool> reachableFrom(vertex_id source) const {
+    dsa::container::Vector<bool> reachableFrom(vertex_id source) const {
         const View view(derived());
         return Algorithm::reachable(view, source);
     }

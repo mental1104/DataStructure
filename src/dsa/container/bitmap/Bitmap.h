@@ -11,8 +11,8 @@
 #include <string>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
+#include <dsa/container/vector/Vector.h>
 #include <dsa/core/bitmap/BitmapAlgorithm.h>
 
 namespace dsa {
@@ -31,7 +31,7 @@ public:
 private:
     typedef std::allocator_traits<allocator_type> allocator_traits_type;
     typedef typename allocator_traits_type::template rebind_alloc<word_type> word_allocator_type;
-    typedef std::vector<word_type, word_allocator_type> storage_type;
+    typedef dsa::container::Vector<word_type, word_allocator_type> storage_type;
     typedef dsa::core::BitmapLayout<word_type> Layout;
 
     class Storage;

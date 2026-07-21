@@ -2,7 +2,8 @@
 #define DSA_CORE_TREE_B_TREE_ALGORITHM_H
 
 #include <cstddef>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace core {
@@ -104,7 +105,7 @@ public:
             Frame(node_type* value, std::size_t index) : node(value), next_child(index) {}
         };
 
-        std::vector<Frame> stack;
+        dsa::container::Vector<Frame> stack;
         stack.push_back(Frame(root, 0));
         std::size_t count = 0;
         while (!stack.empty()) {
