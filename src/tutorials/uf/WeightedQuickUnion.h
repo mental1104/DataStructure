@@ -8,7 +8,7 @@
 #include <utility>
 
 #include "UnionFind.h"
-#include "../dsa/core/uf/UnionFindAlgorithm.h"
+#include <dsa/core/uf/UnionFindAlgorithm.h>
 
 /// 教学版按大小合并 Quick-Union，树高保持在 O(log N)。
 class WeightedQuickUnion : public UnionFind {

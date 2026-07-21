@@ -6,7 +6,7 @@
 #include "dsa_string.h"
 #include "StringST.h"
 #include "Vector.h"
-#include "../dsa/core/string/TrieAlgorithm.h"
+#include <dsa/core/string/TrieAlgorithm.h>
 
 /// 教学 R-way Trie 节点；next 保留 Vector 表示以便观察固定字母表结构。
 template<typename T>

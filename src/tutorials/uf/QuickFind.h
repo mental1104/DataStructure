@@ -5,7 +5,7 @@
 #include <fstream>
 
 #include "UnionFind.h"
-#include "../dsa/core/uf/UnionFindAlgorithm.h"
+#include <dsa/core/uf/UnionFindAlgorithm.h>
 
 /// 教学版 Quick-Find：查询 O(1)，合并需要扫描全部元素。
 class QuickFind : public UnionFind {

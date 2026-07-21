@@ -5,7 +5,7 @@
 
 #include "MatchObserver.h"
 #include "dsa_string.h"
-#include "../../dsa/algorithm/SubstringSearch.h"
+#include <dsa/algorithm/SubstringSearch.h>
 
 /// 旧教学 API 的 KMP 策略枚举。
 enum class KMPStrategy {
