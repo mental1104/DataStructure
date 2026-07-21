@@ -1,6 +1,6 @@
 # 线性表性能测试
 
-对比 `src/include/vector/Vector.h` 与 `src/include/list/List.h` 的静态（遍历、随机访问）和动态（尾插、随机插入、随机删除、前端插删）性能，并展示 List 在“已知位置 O(1) 插删”场景下的优势。
+对比 `src/tutorials/vector/Vector.h` 与 `src/tutorials/list/List.h` 的静态（遍历、随机访问）和动态（尾插、随机插入、随机删除、前端插删）性能，并展示 List 在“已知位置 O(1) 插删”场景下的优势。
 
 ## 构建
 
