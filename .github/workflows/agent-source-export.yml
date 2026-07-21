@@ -1,9 +1,8 @@
 name: Agent Source Export
 
 on:
-  push:
-    branches:
-      - agent/remove-stl-dependencies
+  pull_request:
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
