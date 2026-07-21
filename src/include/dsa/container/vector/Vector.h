@@ -19,12 +19,16 @@ namespace detail {
 
 /// 将普通指针直接转换为原始地址，兼容 C++11 环境下尚未提供的 std::to_address。
 template<typename T>
-T* toAddress(T* pointer) noexcept;
+T* toAddress(T* pointer) noexcept {
+    return pointer;
+}
 
 /// 递归解引用 fancy pointer，最终取得其指向对象的原始地址。
 template<typename Pointer>
 auto toAddress(const Pointer& pointer) noexcept
-    -> decltype(detail::toAddress(pointer.operator->()));
+    -> decltype(detail::toAddress(pointer.operator->())) {
+    return detail::toAddress(pointer.operator->());
+}
 
 } // namespace detail
 
@@ -452,19 +456,6 @@ void swap(Vector<T, Allocator>& left, Vector<T, Allocator>& right);
 // -----------------------------------------------------------------------------
 // detail 辅助函数实现
 // -----------------------------------------------------------------------------
-
-/// 实现普通指针到原始地址的直接转换。
-template<typename T>
-T* detail::toAddress(T* pointer) noexcept {
-    return pointer;
-}
-
-/// 实现 fancy pointer 到原始地址的递归转换。
-template<typename Pointer>
-auto detail::toAddress(const Pointer& pointer) noexcept
-    -> decltype(detail::toAddress(pointer.operator->())) {
-    return detail::toAddress(pointer.operator->());
-}
 
 // -----------------------------------------------------------------------------
 // Storage policy 实现
