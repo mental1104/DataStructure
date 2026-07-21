@@ -4,6 +4,7 @@ project(DSA CXX)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 include(ProjectSetup)
+include(ArchitectureChecks)
 include(IncludePaths)
 include(CoreLibrary)
 include(DemoCopy)
