@@ -33,7 +33,9 @@ jobs:
       - name: Configure CMake
         run: |
           build_dir="build-msvc-cxx${{ matrix.standard }}"
-          cmake -S . -B "$build_dir" -G "Visual Studio 17 2022" -A x64 \
+          # 使用 windows-latest 当前镜像提供的默认 Visual Studio 生成器，
+          # 避免 runner 升级后继续硬编码已不存在的 VS 版本。
+          cmake -S . -B "$build_dir" -A x64 \
             -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
 
       - name: Build
