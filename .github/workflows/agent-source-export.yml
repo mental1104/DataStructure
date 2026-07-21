@@ -1,0 +1,29 @@
+name: Agent Source Export
+
+on:
+  push:
+    branches:
+      - agent/remove-stl-dependencies
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Archive working tree and Git metadata
+        run: zip -q -r repository.zip . -x repository.zip
+
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-source
+          path: repository.zip
+          retention-days: 1
