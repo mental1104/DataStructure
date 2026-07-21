@@ -39,7 +39,20 @@ jobs:
             -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
 
       - name: Build
-        run: cmake --build "build-msvc-cxx${{ matrix.standard }}" --config Release --parallel
+        run: |
+          set -o pipefail
+          build_dir="build-msvc-cxx${{ matrix.standard }}"
+          cmake --build "$build_dir" --config Release --parallel 2 2>&1 | tee "$build_dir/build.log"
+
+      - name: Upload build log
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-log-cxx${{ matrix.standard }}
+          path: build-msvc-cxx${{ matrix.standard }}/build.log
+          retention-days: 3
+          if-no-files-found: ignore
 
       - name: Run tests
         run: ctest --test-dir "build-msvc-cxx${{ matrix.standard }}" --output-on-failure --build-config Release
