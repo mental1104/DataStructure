@@ -11,13 +11,13 @@
 src/tutorials/**
     教学表示、历史 API、兼容 facade
 
-src/include/dsa/core/**
+src/dsa/core/**
     教学版与工业版可共享的结构流程
 
-src/include/dsa/algorithm/**
+src/dsa/algorithm/**
     iterator-first / value-first 通用算法
 
-src/include/dsa/container/**
+src/dsa/container/**
     RAII、allocator-aware 的工业实现
 ```
 

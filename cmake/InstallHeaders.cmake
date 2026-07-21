@@ -1,5 +1,5 @@
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/include/
-        DESTINATION include/DSA
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/dsa/
+        DESTINATION include/DSA/dsa
         FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp")
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/tutorials/
