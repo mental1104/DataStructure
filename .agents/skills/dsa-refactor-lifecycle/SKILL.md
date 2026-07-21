@@ -80,7 +80,7 @@ refactor-container
 只依赖迭代器、值、比较器或函数对象的算法，应放在：
 
 ```text
-src/include/dsa/algorithm/
+src/dsa/algorithm/
 ```
 
 典型形态：
@@ -110,7 +110,7 @@ Result algorithm(Iterator first, Iterator last, Compare compare);
 教学版和工业版步骤相同，但存储操作不同的流程，应放到单一文件：
 
 ```text
-src/include/dsa/core/<component>/<Component>Algorithm.h
+src/dsa/core/<component>/<Component>Algorithm.h
 ```
 
 例如：

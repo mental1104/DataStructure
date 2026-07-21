@@ -75,10 +75,9 @@ if(COVERAGE)
                     --gcov-executable "${GCOVR_GCOV_EXECUTABLE}"
                     -r ${CMAKE_SOURCE_DIR}
                     --object-directory ${CMAKE_BINARY_DIR}
-                    --filter "${CMAKE_SOURCE_DIR}/src/include"
+                    --filter "${CMAKE_SOURCE_DIR}/src/dsa"
                     --filter "${CMAKE_SOURCE_DIR}/src/tutorials"
                     --exclude "\(^\|.*/\)\(test\|bench\|demo\|external\|gtest\|lib\|thirdparty\|overlay\)/"
-                    --exclude "${CMAKE_SOURCE_DIR}/src/include/print/.*"
                     --exclude "${CMAKE_SOURCE_DIR}/src/tutorials/print/.*"
                     --exclude "/usr/include/.*"
                     --exclude-directories ".*/build-\(asan\|tsan\|ubsan\|msan\).*"
@@ -101,10 +100,9 @@ if(COVERAGE)
                 COMMAND ${GCOVR_EXEC}
                     -r ${CMAKE_SOURCE_DIR}
                     --object-directory ${CMAKE_BINARY_DIR}
-                    --filter "${CMAKE_SOURCE_DIR}/src/include"
+                    --filter "${CMAKE_SOURCE_DIR}/src/dsa"
                     --filter "${CMAKE_SOURCE_DIR}/src/tutorials"
                     --exclude "\(^\|.*/\)\(test\|bench\|demo\|external\|gtest\|lib\|thirdparty\|overlay\)/"
-                    --exclude "${CMAKE_SOURCE_DIR}/src/include/print/.*"
                     --exclude "${CMAKE_SOURCE_DIR}/src/tutorials/print/.*"
                     --exclude "/usr/include/.*"
                     --exclude-directories ".*/build-\(asan\|tsan\|ubsan\|msan\).*"
