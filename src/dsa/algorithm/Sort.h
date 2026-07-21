@@ -1,13 +1,13 @@
 #ifndef DSA_ALGORITHM_SORT_H
 #define DSA_ALGORITHM_SORT_H
 
-#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <iterator>
 #include <type_traits>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace algorithm {
@@ -29,6 +29,84 @@ enum class SortStrategy {
 
 namespace detail {
 
+template<typename RandomIt>
+void swapElements(RandomIt left, RandomIt right) {
+    using std::swap;
+    swap(*left, *right);
+}
+
+template<typename RandomIt, typename Compare>
+void mergeSort(RandomIt first, RandomIt last, Compare compare) {
+    typedef typename std::iterator_traits<RandomIt>::difference_type difference_type;
+    typedef typename std::iterator_traits<RandomIt>::value_type value_type;
+    const difference_type count = last - first;
+    if (count < 2)
+        return;
+
+    RandomIt middle = first + count / 2;
+    mergeSort(first, middle, compare);
+    mergeSort(middle, last, compare);
+
+    dsa::container::Vector<value_type> merged;
+    merged.reserve(static_cast<std::size_t>(count));
+    RandomIt left = first;
+    RandomIt right = middle;
+    while (left != middle && right != last) {
+        if (compare(*right, *left)) {
+            merged.push_back(std::move(*right));
+            ++right;
+        } else {
+            merged.push_back(std::move(*left));
+            ++left;
+        }
+    }
+    while (left != middle) {
+        merged.push_back(std::move(*left));
+        ++left;
+    }
+    while (right != last) {
+        merged.push_back(std::move(*right));
+        ++right;
+    }
+
+    typename dsa::container::Vector<value_type>::iterator source = merged.begin();
+    for (RandomIt target = first; target != last; ++target, ++source)
+        *target = std::move(*source);
+}
+
+template<typename RandomIt, typename Compare>
+void siftDown(RandomIt first,
+              typename std::iterator_traits<RandomIt>::difference_type root,
+              typename std::iterator_traits<RandomIt>::difference_type count,
+              Compare compare) {
+    typedef typename std::iterator_traits<RandomIt>::difference_type difference_type;
+    while (true) {
+        difference_type child = root * 2 + 1;
+        if (child >= count)
+            return;
+        if (child + 1 < count && compare(*(first + child), *(first + child + 1)))
+            ++child;
+        if (!compare(*(first + root), *(first + child)))
+            return;
+        swapElements(first + root, first + child);
+        root = child;
+    }
+}
+
+template<typename RandomIt, typename Compare>
+void heapSort(RandomIt first, RandomIt last, Compare compare) {
+    typedef typename std::iterator_traits<RandomIt>::difference_type difference_type;
+    difference_type count = last - first;
+    if (count < 2)
+        return;
+    for (difference_type root = count / 2; root > 0; --root)
+        siftDown(first, root - 1, count, compare);
+    for (difference_type remaining = count; remaining > 1; --remaining) {
+        swapElements(first, first + remaining - 1);
+        siftDown(first, 0, remaining - 1, compare);
+    }
+}
+
 template<typename RandomIt, typename Compare>
 void bubbleSort(RandomIt first, RandomIt last, Compare compare) {
     typedef typename std::iterator_traits<RandomIt>::difference_type difference_type;
@@ -37,7 +115,7 @@ void bubbleSort(RandomIt first, RandomIt last, Compare compare) {
         bool sorted = true;
         for (difference_type i = 1; i < count; ++i) {
             if (compare(*(first + i), *(first + i - 1))) {
-                std::iter_swap(first + i, first + i - 1);
+                swapElements(first + i, first + i - 1);
                 sorted = false;
             }
         }
@@ -56,7 +134,7 @@ void selectionSort(RandomIt first, RandomIt last, Compare compare) {
                 selected = candidate;
         }
         if (selected != current)
-            std::iter_swap(current, selected);
+            swapElements(current, selected);
     }
 }
 
@@ -67,7 +145,7 @@ void insertionSort(RandomIt first, RandomIt last, Compare compare) {
     for (RandomIt current = first + 1; current != last; ++current) {
         RandomIt moving = current;
         while (moving != first && compare(*moving, *(moving - 1))) {
-            std::iter_swap(moving, moving - 1);
+            swapElements(moving, moving - 1);
             --moving;
         }
     }
@@ -84,12 +162,32 @@ void shellSort(RandomIt first, RandomIt last, Compare compare) {
         for (difference_type i = gap; i < count; ++i) {
             difference_type j = i;
             while (j >= gap && compare(*(first + j), *(first + j - gap))) {
-                std::iter_swap(first + j, first + j - gap);
+                swapElements(first + j, first + j - gap);
                 j -= gap;
             }
         }
         gap /= 3;
     }
+}
+
+template<typename RandomIt, typename Compare>
+void quickSort(RandomIt first, RandomIt last, Compare compare) {
+    if (last - first < 2)
+        return;
+
+    RandomIt pivot = last - 1;
+    swapElements(first + (last - first) / 2, pivot);
+    RandomIt boundary = first;
+    for (RandomIt current = first; current != pivot; ++current) {
+        if (compare(*current, *pivot)) {
+            swapElements(current, boundary);
+            ++boundary;
+        }
+    }
+    swapElements(boundary, pivot);
+
+    quickSort(first, boundary, compare);
+    quickSort(boundary + 1, last, compare);
 }
 
 template<typename RandomIt, typename Compare>
@@ -103,18 +201,28 @@ void quick3way(RandomIt first, RandomIt last, Compare compare) {
     RandomIt upper = last;
     while (current != upper) {
         if (compare(*current, pivot)) {
-            std::iter_swap(lower, current);
+            swapElements(lower, current);
             ++lower;
             ++current;
         } else if (compare(pivot, *current)) {
             --upper;
-            std::iter_swap(current, upper);
+            swapElements(current, upper);
         } else {
             ++current;
         }
     }
     quick3way(first, lower, compare);
     quick3way(upper, last, compare);
+}
+
+template<typename RandomIt, typename Compare>
+void quick3wayDispatch(RandomIt first, RandomIt last, Compare compare, std::true_type) {
+    quick3way(first, last, compare);
+}
+
+template<typename RandomIt, typename Compare>
+void quick3wayDispatch(RandomIt first, RandomIt last, Compare compare, std::false_type) {
+    quickSort(first, last, compare);
 }
 
 template<typename Unsigned>
@@ -136,7 +244,7 @@ bool radixSortIntegral(RandomIt first, RandomIt last, std::true_type) {
     if (count < 2)
         return true;
 
-    std::vector<value_type> buffer(static_cast<std::size_t>(count));
+    dsa::container::Vector<value_type> buffer(static_cast<std::size_t>(count));
     for (std::size_t byte = 0; byte < sizeof(value_type); ++byte) {
         std::size_t frequencies[256] = {};
         for (RandomIt it = first; it != last; ++it) {
@@ -181,18 +289,22 @@ bool sortRandomAccess(RandomIt first, RandomIt last, SortStrategy strategy, Comp
         return true;
     case SortStrategy::MergeSort:
     case SortStrategy::MergeSortB:
-        std::stable_sort(first, last, compare);
+        mergeSort(first, last, compare);
         return true;
     case SortStrategy::QuickSort:
     case SortStrategy::QuickSortB:
-        std::sort(first, last, compare);
+        quickSort(first, last, compare);
         return true;
     case SortStrategy::Quick3way:
-        std::sort(first, last, compare);
+        quick3wayDispatch(
+            first, last, compare,
+            typename std::is_copy_constructible<
+                typename std::iterator_traits<RandomIt>::value_type
+            >::type()
+        );
         return true;
     case SortStrategy::HeapSort:
-        std::make_heap(first, last, compare);
-        std::sort_heap(first, last, compare);
+        heapSort(first, last, compare);
         return true;
     case SortStrategy::RadixSort:
         return radixSortIntegral(
@@ -226,12 +338,12 @@ bool sortDispatch(
     Category
 ) {
     typedef typename std::iterator_traits<Iterator>::value_type value_type;
-    std::vector<value_type> values;
+    dsa::container::Vector<value_type> values;
     for (Iterator it = first; it != last; ++it)
         values.push_back(*it);
     if (!sortRandomAccess(values.begin(), values.end(), strategy, compare))
         return false;
-    typename std::vector<value_type>::iterator source = values.begin();
+    typename dsa::container::Vector<value_type>::iterator source = values.begin();
     for (Iterator target = first; target != last; ++target, ++source)
         *target = std::move(*source);
     return true;

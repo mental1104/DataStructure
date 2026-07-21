@@ -2,7 +2,8 @@
 #define DSA_CORE_SKIPLIST_SKIP_LIST_ALGORITHM_H
 
 #include <cstddef>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace core {
@@ -33,7 +34,7 @@ public:
         const Compare& compare,
         const KeyAccess& keyAccess,
         const ForwardAccess& forwardAccess,
-        std::vector<Node*>* path
+        dsa::container::Vector<Node*>* path
     ) {
         Node* current = head;
         for (std::size_t level = levelCount; level > 0; --level) {

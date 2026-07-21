@@ -1,13 +1,13 @@
 #ifndef DSA_CONTAINER_STRING_TRIE_H
 #define DSA_CONTAINER_STRING_TRIE_H
 
-#include <array>
 #include <cstddef>
 #include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include "../../algorithm/String.h"
 #include "../../core/string/TrieAlgorithm.h"
@@ -26,8 +26,10 @@ public:
 
 private:
     struct Node {
+        Node() : value(), children(Alphabet) {}
+
         std::unique_ptr<mapped_type> value;
-        std::array<std::unique_ptr<Node>, Alphabet> children;
+        dsa::container::Vector<std::unique_ptr<Node> > children;
     };
 
     struct Access {
@@ -72,7 +74,7 @@ private:
     static void collect(
         Node* node,
         const string_type& prefix,
-        std::vector<string_type>& output
+        dsa::container::Vector<string_type>& output
     );
 
     /// 按点号通配模式收集等长键。
@@ -82,7 +84,7 @@ private:
         const string_type& prefix,
         const Pattern& pattern,
         size_type depth,
-        std::vector<string_type>& output
+        dsa::container::Vector<string_type>& output
     );
 
     /// 将任意键序列复制为 string_type。
@@ -121,10 +123,10 @@ public:
     size_type size() const noexcept;
 
     template<typename Key>
-    std::vector<string_type> keysWithPrefix(const Key& prefix) const;
+    dsa::container::Vector<string_type> keysWithPrefix(const Key& prefix) const;
 
     template<typename Pattern>
-    std::vector<string_type> keysThatMatch(const Pattern& pattern) const;
+    dsa::container::Vector<string_type> keysThatMatch(const Pattern& pattern) const;
 
     template<typename Key>
     string_type longestPrefixOf(const Key& input) const;
@@ -246,9 +248,9 @@ Trie<T, Alphabet, CharT>::size() const noexcept {
 
 template<typename T, std::size_t Alphabet, typename CharT>
 template<typename Key>
-std::vector<typename Trie<T, Alphabet, CharT>::string_type>
+dsa::container::Vector<typename Trie<T, Alphabet, CharT>::string_type>
 Trie<T, Alphabet, CharT>::keysWithPrefix(const Key& prefix) const {
-    std::vector<string_type> output;
+    dsa::container::Vector<string_type> output;
     Node* node = ReadAlgorithm::find(root_.get(), prefix);
     collect(node, makeKey(prefix), output);
     return output;
@@ -256,9 +258,9 @@ Trie<T, Alphabet, CharT>::keysWithPrefix(const Key& prefix) const {
 
 template<typename T, std::size_t Alphabet, typename CharT>
 template<typename Pattern>
-std::vector<typename Trie<T, Alphabet, CharT>::string_type>
+dsa::container::Vector<typename Trie<T, Alphabet, CharT>::string_type>
 Trie<T, Alphabet, CharT>::keysThatMatch(const Pattern& pattern) const {
-    std::vector<string_type> output;
+    dsa::container::Vector<string_type> output;
     collectMatch(root_.get(), string_type(), pattern, 0, output);
     return output;
 }
@@ -342,7 +344,7 @@ template<typename T, std::size_t Alphabet, typename CharT>
 void Trie<T, Alphabet, CharT>::collect(
     Node* node,
     const string_type& prefix,
-    std::vector<string_type>& output
+    dsa::container::Vector<string_type>& output
 ) {
     if (node == nullptr)
         return;
@@ -365,7 +367,7 @@ void Trie<T, Alphabet, CharT>::collectMatch(
     const string_type& prefix,
     const Pattern& pattern,
     size_type depth,
-    std::vector<string_type>& output
+    dsa::container::Vector<string_type>& output
 ) {
     if (node == nullptr)
         return;

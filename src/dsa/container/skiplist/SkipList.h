@@ -10,7 +10,8 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include <dsa/core/skiplist/SkipListAlgorithm.h>
 
@@ -38,7 +39,7 @@ public:
 private:
     struct Node;
     typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<Node*> pointer_allocator_type;
-    typedef std::vector<Node*, pointer_allocator_type> forward_array_type;
+    typedef dsa::container::Vector<Node*, pointer_allocator_type> forward_array_type;
 
     struct Node {
         forward_array_type forward;
@@ -168,7 +169,7 @@ private:
         return !compare_(left, right) && !compare_(right, left);
     }
 
-    Node* lowerBoundNode(const key_type& key, std::vector<Node*>* path = 0) const {
+    Node* lowerBoundNode(const key_type& key, dsa::container::Vector<Node*>* path = 0) const {
         return dsa::core::SkipListAlgorithm::lowerBoundPath(
             head_, level_count_, key, compare_, KeyAccess(), ForwardAccess(), path
         );
@@ -301,7 +302,7 @@ public:
 
     template<typename M>
     std::pair<iterator, bool> insert_or_assign(const key_type& key, M&& value) {
-        std::vector<Node*> path(maximum_level_, static_cast<Node*>(0));
+        dsa::container::Vector<Node*> path(maximum_level_, static_cast<Node*>(0));
         Node* candidate = lowerBoundNode(key, &path);
         if (candidate && equivalent(candidate->valuePtr()->first, key)) {
             candidate->valuePtr()->second = std::forward<M>(value);
@@ -331,7 +332,7 @@ public:
     }
 
     size_type erase(const key_type& key) {
-        std::vector<Node*> path(maximum_level_, static_cast<Node*>(0));
+        dsa::container::Vector<Node*> path(maximum_level_, static_cast<Node*>(0));
         Node* candidate = lowerBoundNode(key, &path);
         if (!candidate || !equivalent(candidate->valuePtr()->first, key))
             return 0;

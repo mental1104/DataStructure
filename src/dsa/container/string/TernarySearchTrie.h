@@ -5,7 +5,8 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include "../../algorithm/String.h"
 #include "../../core/string/TrieAlgorithm.h"
@@ -87,7 +88,7 @@ private:
     static void collect(
         Node* node,
         const string_type& prefix,
-        std::vector<string_type>& output
+        dsa::container::Vector<string_type>& output
     );
 
     template<typename Pattern>
@@ -96,7 +97,7 @@ private:
         const string_type& prefix,
         const Pattern& pattern,
         size_type depth,
-        std::vector<string_type>& output
+        dsa::container::Vector<string_type>& output
     );
 
     template<typename Key>
@@ -132,10 +133,10 @@ public:
     size_type size() const noexcept;
 
     template<typename Key>
-    std::vector<string_type> keysWithPrefix(const Key& prefix) const;
+    dsa::container::Vector<string_type> keysWithPrefix(const Key& prefix) const;
 
     template<typename Pattern>
-    std::vector<string_type> keysThatMatch(const Pattern& pattern) const;
+    dsa::container::Vector<string_type> keysThatMatch(const Pattern& pattern) const;
 
     template<typename Key>
     string_type longestPrefixOf(const Key& input) const;
@@ -273,9 +274,9 @@ TernarySearchTrie<T, CharT>::size() const noexcept {
 
 template<typename T, typename CharT>
 template<typename Key>
-std::vector<typename TernarySearchTrie<T, CharT>::string_type>
+dsa::container::Vector<typename TernarySearchTrie<T, CharT>::string_type>
 TernarySearchTrie<T, CharT>::keysWithPrefix(const Key& prefix) const {
-    std::vector<string_type> output;
+    dsa::container::Vector<string_type> output;
     const size_type length = dsa::algorithm::sequenceSize(prefix);
     if (length == 0) {
         if (emptyValue_)
@@ -296,9 +297,9 @@ TernarySearchTrie<T, CharT>::keysWithPrefix(const Key& prefix) const {
 
 template<typename T, typename CharT>
 template<typename Pattern>
-std::vector<typename TernarySearchTrie<T, CharT>::string_type>
+dsa::container::Vector<typename TernarySearchTrie<T, CharT>::string_type>
 TernarySearchTrie<T, CharT>::keysThatMatch(const Pattern& pattern) const {
-    std::vector<string_type> output;
+    dsa::container::Vector<string_type> output;
     if (dsa::algorithm::sequenceSize(pattern) == 0) {
         if (emptyValue_)
             output.push_back(string_type());
@@ -415,7 +416,7 @@ template<typename T, typename CharT>
 void TernarySearchTrie<T, CharT>::collect(
     Node* node,
     const string_type& prefix,
-    std::vector<string_type>& output
+    dsa::container::Vector<string_type>& output
 ) {
     if (node == nullptr)
         return;
@@ -435,7 +436,7 @@ void TernarySearchTrie<T, CharT>::collectMatch(
     const string_type& prefix,
     const Pattern& pattern,
     size_type depth,
-    std::vector<string_type>& output
+    dsa::container::Vector<string_type>& output
 ) {
     if (node == nullptr)
         return;

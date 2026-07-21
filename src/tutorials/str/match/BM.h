@@ -69,7 +69,7 @@ private:
 
 /// 构造旧 API 所需的 256 项坏字符数组，由调用方 delete[]。
 inline int* buildBC(const String& pattern, MatchObserver* observer = nullptr) {
-    const std::array<int, 256> table =
+    const dsa::container::Vector<int> table =
         dsa::algorithm::buildBadCharacterTable(pattern);
     int* result = new int[table.size()];
     std::copy(table.begin(), table.end(), result);
@@ -80,7 +80,7 @@ inline int* buildBC(const String& pattern, MatchObserver* observer = nullptr) {
 
 /// 构造旧 API 所需的 suffix size 数组，由调用方 delete[]。
 inline int* buildSS(const String& pattern, int length) {
-    const std::vector<int> table =
+    const dsa::container::Vector<int> table =
         dsa::algorithm::buildBoyerMooreSuffixes(pattern);
     const int selected = std::min(length, static_cast<int>(table.size()));
     int* result = new int[length > 0 ? static_cast<std::size_t>(length) : 0];
@@ -97,7 +97,7 @@ inline int* buildGS(
     int length,
     MatchObserver* observer = nullptr
 ) {
-    const std::vector<int> table = dsa::algorithm::buildGoodSuffixTable(pattern);
+    const dsa::container::Vector<int> table = dsa::algorithm::buildGoodSuffixTable(pattern);
     const int selected = std::min(length, static_cast<int>(table.size()));
     int* result = new int[length > 0 ? static_cast<std::size_t>(length) : 0];
     for (int index = 0; index < selected; ++index)
