@@ -1,0 +1,45 @@
+name: Apply and validate no-STL patch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-test-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout temporary branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Apply clean commits onto baseline
+        shell: bash
+        run: |
+          cat .agent/patch/part* > /tmp/changes.patch.gz.b64
+          base64 -d /tmp/changes.patch.gz.b64 | gzip -d > /tmp/changes.patch
+          git fetch origin refactor-container
+          git checkout -B agent/remove-stl-dependencies-clean origin/refactor-container
+          git config user.name mental1104
+          git config user.email 64130690+mental1104@users.noreply.github.com
+          git am /tmp/changes.patch
+
+      - name: Static architecture check
+        run: python3 tools/check_dsa_stl_dependencies.py
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=11 -DCOVERAGE=OFF -DENABLE_COVERAGE=OFF
+
+      - name: Build
+        run: cmake --build build --parallel 2
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Publish clean branch
+        run: git push origin HEAD:refs/heads/agent/remove-stl-dependencies-clean
