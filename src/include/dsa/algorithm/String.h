@@ -55,8 +55,8 @@ std::size_t sequenceSizeDispatch(
 /// 在支持 reserve() 时预留容量，避免构造结果时反复扩容。
 template<typename Result>
 auto reserveIfSupported(Result& result, std::size_t count, int)
-    -> decltype(result.reserve(count), void()) {
-    result.reserve(count);
+    -> decltype(result.reserve(static_cast<decltype(result.size())>(count)), void()) {
+    result.reserve(static_cast<decltype(result.size())>(count));
 }
 
 /// 不支持 reserve() 的结果类型保持原行为。
@@ -76,11 +76,37 @@ std::size_t sequenceSize(const Sequence& sequence) {
     );
 }
 
+namespace detail {
+
+/// 对具有 size() 的序列使用其原生下标类型，避免窄化告警。
+template<typename Sequence>
+auto sequenceAtDispatch(const Sequence& sequence, std::size_t index, std::false_type)
+    -> decltype(sequence[static_cast<decltype(sequence.size())>(index)]) {
+    return sequence[static_cast<decltype(sequence.size())>(index)];
+}
+
+/// 数组和指针保持 std::size_t 下标。
+template<typename Sequence>
+auto sequenceAtDispatch(const Sequence& sequence, std::size_t index, std::true_type)
+    -> decltype(sequence[index]) {
+    return sequence[index];
+}
+
+} // namespace detail
+
 /// 返回序列指定位置的只读元素，不负责越界检查。
 template<typename Sequence>
 auto sequenceAt(const Sequence& sequence, std::size_t index)
-    -> decltype(sequence[index]) {
-    return sequence[index];
+    -> decltype(detail::sequenceAtDispatch(
+        sequence, index,
+        typename std::integral_constant<bool,
+            std::is_array<Sequence>::value || std::is_pointer<Sequence>::value
+        >::type()
+    )) {
+    typedef typename std::integral_constant<bool,
+        std::is_array<Sequence>::value || std::is_pointer<Sequence>::value
+    >::type raw_sequence_tag;
+    return detail::sequenceAtDispatch(sequence, index, raw_sequence_tag());
 }
 
 /// 将输入序列追加到提供 push_back() 的结果对象中。

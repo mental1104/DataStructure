@@ -100,7 +100,7 @@ public:
         vertex_type value(std::forward<Args>(args)...);
         vertices_.push_back(VertexRecord(std::move(value)));
         try {
-            adjacency_.push_back(adjacency_map());
+            adjacency_.emplace_back();
         } catch (...) {
             vertices_.pop_back();
             throw;
