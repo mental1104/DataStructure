@@ -4,7 +4,8 @@
 #include "Entry.h"
 #include "List.h"
 #include "Dictionary.h"
-#include "Quadlist.h" 
+#include "Quadlist.h"
+#include <dsa/core/skiplist/SkipListAlgorithm.h>
 
 
 template<typename K, typename V>
@@ -70,7 +71,8 @@ bool Skiplist<K, V>::put(K k, V v){
     qlist = this->last();//紧邻p右侧一座新塔开始成长
     QuadlistNode<Entry<K, V>>* b = qlist->data->insertAfterAbove(e, p);
 
-    while(dis(eng)&1) {//随机向上生长
+    const std::size_t towerHeight = dsa::core::SkipListAlgorithm::randomLevel(eng, 0.5, 64);
+    for (std::size_t towerLevel = 1; towerLevel < towerHeight; ++towerLevel) { //随机向上生长
         while(qlist->data->valid(p) && !p->above) p = p->pred;
         if(!qlist->data->valid(p)){
             if(qlist == this->first())

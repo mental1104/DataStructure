@@ -4,7 +4,7 @@
 #include "dsa_string.h"
 #include "StringST.h"
 #include "Vector.h"
-#include "../dsa/core/string/TrieAlgorithm.h"
+#include <dsa/core/string/TrieAlgorithm.h>
 
 /// 教学 Ternary Search Trie 节点。
 template<typename T>

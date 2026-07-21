@@ -1,12 +1,14 @@
 #ifndef __DSA_VECTOR
 #define __DSA_VECTOR
 
+#include <cstddef>
+#include <iterator>
 #include <utility>
 
 #include "utils.h"
-#include "../dsa/core/vector/VectorAlgorithm.h"
-#include "../dsa/algorithm/Search.h"
-#include "../dsa/algorithm/Sequence.h"
+#include <dsa/core/vector/VectorAlgorithm.h>
+#include <dsa/algorithm/Search.h>
+#include <dsa/algorithm/Sequence.h>
 
 template<typename T>
 class Vector {
@@ -385,23 +387,39 @@ void Vector<T>::range(int k) {
 
 template<typename T>
 struct Vector<T>::iterator {
+    typedef std::random_access_iterator_tag iterator_category;
+    typedef T value_type;
+    typedef std::ptrdiff_t difference_type;
+    typedef T* pointer;
+    typedef T& reference;
+
     T* cur;
 
-    explicit iterator(T* rhs)
-        : cur(rhs) {}
+    explicit iterator(T* rhs = nullptr) : cur(rhs) {}
 
-    bool operator!=(const iterator& other) {
-        return cur != other.cur;
-    }
+    reference operator*() const { return *cur; }
+    pointer operator->() const { return cur; }
+    reference operator[](difference_type offset) const { return cur[offset]; }
 
-    T& operator*() {
-        return *cur;
-    }
+    iterator& operator++() { ++cur; return *this; }
+    iterator operator++(int) { iterator old(*this); ++cur; return old; }
+    iterator& operator--() { --cur; return *this; }
+    iterator operator--(int) { iterator old(*this); --cur; return old; }
+    iterator& operator+=(difference_type offset) { cur += offset; return *this; }
+    iterator& operator-=(difference_type offset) { cur -= offset; return *this; }
 
-    iterator& operator++() {
-        ++cur;
-        return *this;
+    friend iterator operator+(iterator it, difference_type offset) { it += offset; return it; }
+    friend iterator operator+(difference_type offset, iterator it) { it += offset; return it; }
+    friend iterator operator-(iterator it, difference_type offset) { it -= offset; return it; }
+    friend difference_type operator-(const iterator& left, const iterator& right) {
+        return left.cur - right.cur;
     }
+    friend bool operator==(const iterator& left, const iterator& right) { return left.cur == right.cur; }
+    friend bool operator!=(const iterator& left, const iterator& right) { return !(left == right); }
+    friend bool operator<(const iterator& left, const iterator& right) { return left.cur < right.cur; }
+    friend bool operator>(const iterator& left, const iterator& right) { return right < left; }
+    friend bool operator<=(const iterator& left, const iterator& right) { return !(right < left); }
+    friend bool operator>=(const iterator& left, const iterator& right) { return !(left < right); }
 };
 
 template<typename T>

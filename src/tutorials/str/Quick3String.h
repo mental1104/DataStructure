@@ -3,7 +3,7 @@
 
 #include "Vector.h"
 #include "dsa_string.h"
-#include "../dsa/algorithm/StringSort.h"
+#include <dsa/algorithm/StringSort.h>
 
 /// 保留教学版类门面，排序核心转发到泛型三向字符串快排。
 class Quick3String {

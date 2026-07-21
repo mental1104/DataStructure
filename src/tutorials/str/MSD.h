@@ -3,7 +3,7 @@
 
 #include "Vector.h"
 #include "dsa_string.h"
-#include "../dsa/algorithm/StringSort.h"
+#include <dsa/algorithm/StringSort.h>
 
 /// 保留教学版类门面，排序核心转发到泛型 MSD 字符串排序。
 class MSD {

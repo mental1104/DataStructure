@@ -5,7 +5,7 @@
 #include <fstream>
 
 #include "UnionFind.h"
-#include "../dsa/core/uf/UnionFindAlgorithm.h"
+#include <dsa/core/uf/UnionFindAlgorithm.h>
 
 /// 教学版 Quick-Union：使用父指针森林表示连通分量。
 class QuickUnion : public UnionFind {
