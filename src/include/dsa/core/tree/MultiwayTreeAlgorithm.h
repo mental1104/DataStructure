@@ -16,7 +16,7 @@ public:
         while (count > 0) {
             const std::size_t step = count / 2;
             const std::size_t middle = first + step;
-            if (compare(values[middle], key)) {
+            if (compare(values[static_cast<decltype(values.size())>(middle)], key)) {
                 first = middle + 1;
                 count -= step + 1;
             } else {
@@ -33,7 +33,7 @@ public:
         while (count > 0) {
             const std::size_t step = count / 2;
             const std::size_t middle = first + step;
-            if (!compare(key, values[middle])) {
+            if (!compare(key, values[static_cast<decltype(values.size())>(middle)])) {
                 first = middle + 1;
                 count -= step + 1;
             } else {

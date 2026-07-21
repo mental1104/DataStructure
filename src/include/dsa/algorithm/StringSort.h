@@ -171,7 +171,7 @@ void lsdStringSort(Collection& values, std::size_t width) {
     std::vector<value_type> auxiliary(count);
 
     for (std::size_t index = 0; index < count; ++index) {
-        if (sequenceSize(values[index]) < width)
+        if (sequenceSize(values[static_cast<decltype(values.size())>(index)]) < width)
             throw std::invalid_argument("lsdStringSort requires fixed-width strings");
     }
 
