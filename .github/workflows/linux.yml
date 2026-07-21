@@ -77,10 +77,9 @@ jobs:
               --object-directory "$build_dir" \
               --gcov-executable "$GCOV" \
               --xml-pretty -o coverage.xml \
-              --filter '^src/include' \
+              --filter '^src/dsa' \
               --filter '^src/tutorials' \
               --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/' \
-              --exclude 'src/include/print/.*' \
               --exclude 'src/tutorials/print/.*' \
               --exclude '/usr/include/.*' \
               --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*' \
