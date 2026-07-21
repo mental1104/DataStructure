@@ -2,10 +2,8 @@ name: Linux
 
 on:
   workflow_call: {}
-  push:
-    branches-ignore:
-      - main
   pull_request:
+    types: [ready_for_review, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -13,6 +11,7 @@ permissions:
 
 jobs:
   build-and-test:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     name: ${{ matrix.compiler.name }}-cxx${{ matrix.standard }}
     runs-on: ubuntu-latest
     strategy:
@@ -78,9 +77,10 @@ jobs:
               --object-directory "$build_dir" \
               --gcov-executable "$GCOV" \
               --xml-pretty -o coverage.xml \
-              --filter '^src/include' \
+              --filter '^src/dsa' \
+              --filter '^src/tutorials' \
               --exclude '(^|.*/)(test|bench|demo|external|gtest|lib|thirdparty|overlay)/' \
-              --exclude 'src/include/print/.*' \
+              --exclude 'src/tutorials/print/.*' \
               --exclude '/usr/include/.*' \
               --exclude-directories '.*/build-(asan|tsan|ubsan|msan).*' \
               --exclude-directories '.*/CMakeFiles/.*' \
