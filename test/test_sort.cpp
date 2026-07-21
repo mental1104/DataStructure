@@ -3,6 +3,7 @@
 #include "Sort.h"      // 包含 Sort(Vector<T>&, SortStrategy) 与 Sort(List<T>&, SortStrategy)
 #include "Vector.h"    // 自定义 Vector 类（测试时用于存放 int 数据）
 #include "List.h"      // 自定义 List 类（测试时用于存放 int 数据）
+#include <functional>
 #include <vector>
 #include <iostream>
 
@@ -99,6 +100,20 @@ TEST(VectorSortTest, SmallVectorStrategies) {
     quickBVec.insert(0);
     Sort(quickBVec, SortStrategy::QuickSortB);
     EXPECT_TRUE(isSorted(quickBVec));
+}
+
+// 验证全局兼容入口可直接接收标准随机访问迭代器和自定义比较器。
+TEST(IteratorFirstSortTest, GlobalFacadeSupportsIteratorRange) {
+    std::vector<int> values{1, 4, 2, 3};
+
+    Sort(
+        values.begin(),
+        values.end(),
+        SortStrategy::Quick3way,
+        std::greater<int>()
+    );
+
+    EXPECT_EQ(values, (std::vector<int>{4, 3, 2, 1}));
 }
 
 // ======================== List 排序单元测试 =========================
