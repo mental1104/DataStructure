@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "utils.h"
-#include "../dsa/algorithm/String.h"
+#include <dsa/algorithm/String.h>
 
 /// 教学字符串容器：保留原有 API，并将可复用序列算法转发到 dsa::algorithm。
 class String {

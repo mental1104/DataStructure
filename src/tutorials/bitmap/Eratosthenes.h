@@ -1,25 +1,35 @@
 #ifndef __DSA_ERATOSTHENES
 #define __DSA_ERATOSTHENES
 
-#include "Bitmap.h"
+#include <stdexcept>
+#include <vector>
 
-Bitmap* eratosthenes(int n){
-    Bitmap* B = new Bitmap(n);
-    B->set(0);
-    B->set(1);
-    for(int i = 2; i < n; i++)
-        if(!B->test(i))
-            for(int j = 2*i; j < n; j += i)
-                B->set(j);
-    return B;
+#include "Bitmap.h"
+#include <dsa/algorithm/Prime.h>
+
+// 教学 Bitmap 门面：置位表示非素数，所有权由调用方接管。
+inline Bitmap* eratosthenes(int n) {
+    if (n < 0)
+        throw std::invalid_argument("eratosthenes limit must be non-negative");
+    Bitmap* bitmap = new Bitmap(n);
+    const std::vector<bool> composite =
+        dsa::algorithm::eratosthenesComposite(static_cast<std::size_t>(n));
+    for (int i = 0; i < n; ++i) {
+        if (composite[static_cast<std::size_t>(i)])
+            bitmap->set(i);
+    }
+    return bitmap;
 }
 
-void eratosthenes_to_file(int n, const char* file){
-    Bitmap* B = eratosthenes(n);
-    B->dump(file);
-    delete B;
-    B = nullptr;
-    return;
+inline void eratosthenes_to_file(int n, const char* file) {
+    Bitmap* bitmap = eratosthenes(n);
+    try {
+        bitmap->dump(file);
+    } catch (...) {
+        delete bitmap;
+        throw;
+    }
+    delete bitmap;
 }
 
 #endif
