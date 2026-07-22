@@ -1,19 +1,15 @@
 name: Linux Performance
 
 on:
-  push:
-    branches:
-      - main
-      - master
-      - develop
   pull_request:
-  workflow_dispatch:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
 
 jobs:
   discover-benches:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     outputs:
       bench_dirs: ${{ steps.set-matrix.outputs.bench_dirs }}
@@ -41,6 +37,7 @@ jobs:
           PY
 
   run-benches:
+    if: github.event.pull_request.draft == false
     needs: discover-benches
     runs-on: ubuntu-latest
     strategy:
