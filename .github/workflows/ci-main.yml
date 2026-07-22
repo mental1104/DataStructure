@@ -1,26 +1,28 @@
 name: CI Main
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
   linux:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/linux.yml
     secrets: inherit
 
   macos:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/macos.yml
     secrets: inherit
 
   windows:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/windows.yml
     secrets: inherit
 
   pages:
     needs: [linux, macos, windows]
-    if: always()
+    if: ${{ always() && github.event.pull_request.draft == false }}
     uses: ./.github/workflows/pages.yml
     secrets: inherit
     permissions:
