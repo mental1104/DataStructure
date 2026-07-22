@@ -28,7 +28,7 @@ TEST(FibonacciAlgorithmTest, ReportsOverflow) {
 }
 
 TEST(PrimeAlgorithmTest, SieveAndCongruence) {
-    const std::vector<bool> composite = dsa::algorithm::eratosthenesComposite(32);
+    const dsa::container::Vector<bool> composite = dsa::algorithm::eratosthenesComposite(32);
     EXPECT_TRUE(composite[0]);
     EXPECT_TRUE(composite[1]);
     EXPECT_FALSE(composite[2]);

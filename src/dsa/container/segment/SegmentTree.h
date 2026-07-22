@@ -5,7 +5,8 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include <dsa/core/segment/SegmentTreeAlgorithm.h>
 
@@ -32,7 +33,7 @@ public:
     typedef std::size_t size_type;
 
 private:
-    typedef std::vector<value_type, allocator_type> storage_type;
+    typedef dsa::container::Vector<value_type, allocator_type> storage_type;
 
     class Access {
     public:

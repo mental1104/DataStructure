@@ -59,7 +59,7 @@ private:
 
 /// 保留旧返回类型，将通用 next 表复制到调用方负责释放的数组。
 inline int* buildNext(const String& pattern) {
-    const std::vector<int> table = dsa::algorithm::buildKmpNext(pattern);
+    const dsa::container::Vector<int> table = dsa::algorithm::buildKmpNext(pattern);
     int* result = new int[table.size()];
     for (std::size_t index = 0; index < table.size(); ++index)
         result[index] = table[index];
@@ -68,7 +68,7 @@ inline int* buildNext(const String& pattern) {
 
 /// 保留旧返回类型，将改进 next 表复制到调用方负责释放的数组。
 inline int* buildNextImproved(const String& pattern) {
-    const std::vector<int> table = dsa::algorithm::buildKmpNextImproved(pattern);
+    const dsa::container::Vector<int> table = dsa::algorithm::buildKmpNextImproved(pattern);
     int* result = new int[table.size()];
     for (std::size_t index = 0; index < table.size(); ++index)
         result[index] = table[index];

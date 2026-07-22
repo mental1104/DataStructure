@@ -225,10 +225,12 @@ void Graph<Tv, Te>::applyState(const dsa::core::graph::TraversalState& state) {
         priority(vertex_index) = state.priority[static_cast<std::size_t>(vertex_index)];
     }
 
-    for (typename std::map<std::pair<int, int>, EType>::const_iterator it = state.edge_type.begin();
+    for (typename dsa::container::Vector<
+             dsa::core::graph::TraversalState::EdgeClassification
+         >::const_iterator it = state.edge_type.begin();
          it != state.edge_type.end(); ++it) {
-        if (exists(it->first.first, it->first.second))
-            type(it->first.first, it->first.second) = it->second;
+        if (exists(it->from, it->to))
+            type(it->from, it->to) = it->type;
     }
 }
 
@@ -255,7 +257,7 @@ Stack<Tv>* Graph<Tv, Te>::tSort(int start) {
     if (!result.acyclic)
         return stack;
 
-    for (typename std::vector<int>::const_reverse_iterator it = result.order.rbegin();
+    for (typename dsa::container::Vector<int>::const_reverse_iterator it = result.order.rbegin();
          it != result.order.rend(); ++it) {
         stack->push(vertex(*it));
     }
@@ -303,7 +305,7 @@ bool Graph<Tv, Te>::connectedComponents(int lhs, int rhs) {
 template<typename Tv, typename Te>
 void Graph<Tv, Te>::reachableComponents(int source) {
     AlgorithmView view(*this);
-    const std::vector<bool> marked = SharedAlgorithm::reachable(view, source);
+    const dsa::container::Vector<bool> marked = SharedAlgorithm::reachable(view, source);
     if (!observer)
         return;
 
@@ -381,7 +383,7 @@ void Graph<Tv, Te>::TSort(int vertex, int& clock, Stack<Tv>* stack) {
         clock = std::max(clock, result.state.finish_time[index]);
     if (!result.acyclic)
         return;
-    for (typename std::vector<int>::const_reverse_iterator it = result.order.rbegin();
+    for (typename dsa::container::Vector<int>::const_reverse_iterator it = result.order.rbegin();
          it != result.order.rend(); ++it) {
         stack->push(this->vertex(*it));
     }

@@ -1,32 +1,34 @@
 #ifndef DSA_ALGORITHM_SUFFIX_ARRAY_H
 #define DSA_ALGORITHM_SUFFIX_ARRAY_H
 
-#include <algorithm>
 #include <functional>
 #include <stdexcept>
-#include <string>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
+
+#include "Sort.h"
 
 namespace dsa {
 namespace algorithm {
 
 // 倍增法构建后缀下标；返回按字典序排列的起点，复杂度 O(n log n)。
 template<typename Text, typename Less>
-std::vector<int> buildSuffixIndices(const Text& text, Less less) {
+dsa::container::Vector<int> buildSuffixIndices(const Text& text, Less less) {
     const int count = static_cast<int>(text.size());
-    std::vector<int> suffixes(static_cast<std::size_t>(count));
+    dsa::container::Vector<int> suffixes(static_cast<std::size_t>(count));
     if (count == 0)
         return suffixes;
 
-    std::vector<int> ranks(static_cast<std::size_t>(count));
-    std::vector<int> nextRanks(static_cast<std::size_t>(count));
-    std::vector<int> temporary(static_cast<std::size_t>(count));
+    dsa::container::Vector<int> ranks(static_cast<std::size_t>(count));
+    dsa::container::Vector<int> nextRanks(static_cast<std::size_t>(count));
+    dsa::container::Vector<int> temporary(static_cast<std::size_t>(count));
     for (int i = 0; i < count; ++i)
         suffixes[static_cast<std::size_t>(i)] = i;
 
-    std::stable_sort(
+    dsa::algorithm::sort(
         suffixes.begin(), suffixes.end(),
+        dsa::algorithm::SortStrategy::MergeSort,
         [&text, &less](int left, int right) {
             return less(text[static_cast<std::size_t>(left)], text[static_cast<std::size_t>(right)]);
         }
@@ -45,9 +47,10 @@ std::vector<int> buildSuffixIndices(const Text& text, Less less) {
         ranks[static_cast<std::size_t>(current)] = rankCount;
     }
 
-    std::vector<int> counts(static_cast<std::size_t>(count + 1));
+    dsa::container::Vector<int> counts(static_cast<std::size_t>(count + 1));
     const auto countingSort = [&](int offset) {
-        std::fill(counts.begin(), counts.end(), 0);
+        for (std::size_t index = 0; index < counts.size(); ++index)
+            counts[index] = 0;
         for (int i = 0; i < count; ++i) {
             const int position = suffixes[static_cast<std::size_t>(i)];
             const int bucket = position + offset < count
@@ -92,12 +95,12 @@ std::vector<int> buildSuffixIndices(const Text& text, Less less) {
 }
 
 template<typename Text>
-std::vector<int> buildSuffixIndices(const Text& text) {
+dsa::container::Vector<int> buildSuffixIndices(const Text& text) {
     typedef typename Text::value_type value_type;
     return buildSuffixIndices(text, std::less<value_type>());
 }
 
-// 只拥有文本副本和后缀下标的工业算法对象；不依赖仓库容器。
+// 只拥有文本副本和仓库 Vector 后缀下标的工业算法对象。
 template<typename Text, typename Less = std::less<typename Text::value_type> >
 class SuffixArray {
 public:
@@ -145,11 +148,11 @@ public:
     }
 
     const Text& text() const { return text_; }
-    const std::vector<int>& indices() const { return suffixes_; }
+    const dsa::container::Vector<int>& indices() const { return suffixes_; }
 
 private:
     Text text_;
-    std::vector<int> suffixes_;
+    dsa::container::Vector<int> suffixes_;
     Less less_;
 
     void checkIndex(int position) const {

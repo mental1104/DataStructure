@@ -1,10 +1,11 @@
 #ifndef DSA_ALGORITHM_STRING_SORT_H
 #define DSA_ALGORITHM_STRING_SORT_H
 
-#include <algorithm>
 #include <cstddef>
 #include <stdexcept>
-#include <vector>
+#include <utility>
+
+#include <dsa/container/vector/Vector.h>
 
 #include "String.h"
 
@@ -66,7 +67,7 @@ void insertionStringSort(
 template<typename Collection, typename Value>
 void msdStringSortImpl(
     Collection& values,
-    std::vector<Value>& auxiliary,
+    dsa::container::Vector<Value>& auxiliary,
     std::ptrdiff_t low,
     std::ptrdiff_t high,
     std::size_t depth
@@ -80,7 +81,7 @@ void msdStringSortImpl(
         return;
     }
 
-    std::vector<std::size_t> count(alphabet + 2, 0);
+    dsa::container::Vector<std::size_t> count(alphabet + 2, 0);
     for (std::ptrdiff_t index = low; index <= high; ++index) {
         const int symbol = stringSymbolAt(
             values[static_cast<std::size_t>(index)],
@@ -91,7 +92,7 @@ void msdStringSortImpl(
     for (std::size_t index = 0; index < alphabet + 1; ++index)
         count[index + 1] += count[index];
 
-    const std::vector<std::size_t> starts = count;
+    const dsa::container::Vector<std::size_t> starts = count;
     for (std::ptrdiff_t index = low; index <= high; ++index) {
         const int symbol = stringSymbolAt(
             values[static_cast<std::size_t>(index)],
@@ -168,7 +169,7 @@ void lsdStringSort(Collection& values, std::size_t width) {
     static const std::size_t alphabet = 256;
     typedef typename Collection::value_type value_type;
     const std::size_t count = static_cast<std::size_t>(values.size());
-    std::vector<value_type> auxiliary(count);
+    dsa::container::Vector<value_type> auxiliary(count);
 
     for (std::size_t index = 0; index < count; ++index) {
         if (sequenceSize(values[static_cast<decltype(values.size())>(index)]) < width)
@@ -177,7 +178,7 @@ void lsdStringSort(Collection& values, std::size_t width) {
 
     for (std::size_t depth = width; depth > 0; --depth) {
         const std::size_t currentDepth = depth - 1;
-        std::vector<std::size_t> frequency(alphabet + 1, 0);
+        dsa::container::Vector<std::size_t> frequency(alphabet + 1, 0);
         for (std::size_t index = 0; index < count; ++index) {
             const unsigned char symbol = static_cast<unsigned char>(
                 sequenceAt(values[index], currentDepth)
@@ -204,7 +205,7 @@ void msdStringSort(Collection& values) {
     const std::size_t count = static_cast<std::size_t>(values.size());
     if (count < 2)
         return;
-    std::vector<value_type> auxiliary(count);
+    dsa::container::Vector<value_type> auxiliary(count);
     detail::msdStringSortImpl(
         values,
         auxiliary,

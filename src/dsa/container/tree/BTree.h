@@ -11,14 +11,15 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace container {
 
 // allocator-aware 的唯一键 B-Tree。
 // order 表示节点最大孩子数，最小合法值为 3；非根节点至少保持 ceil(order / 2) 个孩子。
-// 插入和删除保持迭代器整体失效语义，因为节点内 vector 可能移动键值。
+// 插入和删除保持迭代器整体失效语义，因为节点内 Vector 可能移动键值。
 template<
     typename T,
     typename Compare = std::less<T>,
@@ -37,10 +38,10 @@ public:
     class Node {
         friend class BTree;
 
-        typedef std::vector<value_type, allocator_type> key_container_type;
+        typedef dsa::container::Vector<value_type, allocator_type> key_container_type;
         typedef typename std::allocator_traits<allocator_type>::template rebind_alloc<Node*>
             child_allocator_type;
-        typedef std::vector<Node*, child_allocator_type> child_container_type;
+        typedef dsa::container::Vector<Node*, child_allocator_type> child_container_type;
 
         Node* parent_;
         key_container_type keys_;

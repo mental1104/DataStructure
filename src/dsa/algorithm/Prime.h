@@ -3,14 +3,15 @@
 
 #include <cstddef>
 #include <stdexcept>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace algorithm {
 
 // 返回 [0, limit) 的合数标记；0 和 1 同样标记为非素数。
-inline std::vector<bool> eratosthenesComposite(std::size_t limit) {
-    std::vector<bool> composite(limit, false);
+inline dsa::container::Vector<bool> eratosthenesComposite(std::size_t limit) {
+    dsa::container::Vector<bool> composite(limit, false);
     if (limit > 0)
         composite[0] = true;
     if (limit > 1)
@@ -26,9 +27,9 @@ inline std::vector<bool> eratosthenesComposite(std::size_t limit) {
     return composite;
 }
 
-inline std::vector<std::size_t> primesBelow(std::size_t limit) {
-    const std::vector<bool> composite = eratosthenesComposite(limit);
-    std::vector<std::size_t> result;
+inline dsa::container::Vector<std::size_t> primesBelow(std::size_t limit) {
+    const dsa::container::Vector<bool> composite = eratosthenesComposite(limit);
+    dsa::container::Vector<std::size_t> result;
     for (std::size_t value = 2; value < limit; ++value) {
         if (!composite[value])
             result.push_back(value);

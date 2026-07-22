@@ -8,7 +8,8 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include <dsa/core/tree/MultiwayTreeAlgorithm.h>
 
@@ -41,9 +42,9 @@ private:
         Node* parent;
         Node* next;
         Node* previous;
-        std::vector<const key_type*> keys;
-        std::vector<value_type*> values;
-        std::vector<Node*> children;
+        dsa::container::Vector<const key_type*> keys;
+        dsa::container::Vector<value_type*> values;
+        dsa::container::Vector<Node*> children;
 
         explicit Node(bool isLeaf)
             : leaf(isLeaf), parent(0), next(0), previous(0), keys(), values(), children() {}
@@ -53,7 +54,7 @@ private:
     typedef typename value_allocator_traits::template rebind_alloc<Node> node_allocator_type;
     typedef std::allocator_traits<node_allocator_type> node_allocator_traits;
     typedef typename value_allocator_traits::template rebind_alloc<value_type*> pointer_allocator_type;
-    typedef std::vector<value_type*, pointer_allocator_type> entry_array_type;
+    typedef dsa::container::Vector<value_type*, pointer_allocator_type> entry_array_type;
 
 public:
     class const_iterator {
@@ -258,10 +259,10 @@ private:
         if (entries_.empty())
             return result;
 
-        std::vector<Node*> allNodes;
+        dsa::container::Vector<Node*> allNodes;
         try {
-            std::vector<Node*> level;
-            const std::vector<size_type> leafCounts = dsa::core::MultiwayTreeAlgorithm::partitionCounts(
+            dsa::container::Vector<Node*> level;
+            const dsa::container::Vector<size_type> leafCounts = dsa::core::MultiwayTreeAlgorithm::partitionCounts(
                 entries_.size(), maxKeys(), minLeafKeys()
             );
             size_type offset = 0;
@@ -282,13 +283,13 @@ private:
             }
 
             while (level.size() > 1) {
-                const std::vector<size_type> parentCounts =
+                const dsa::container::Vector<size_type> parentCounts =
                     level.size() <= order_
-                    ? std::vector<size_type>(1, level.size())
+                    ? dsa::container::Vector<size_type>(1, level.size())
                     : dsa::core::MultiwayTreeAlgorithm::partitionCounts(
                         level.size(), order_, minChildren()
                     );
-                std::vector<Node*> parents;
+                dsa::container::Vector<Node*> parents;
                 size_type childOffset = 0;
                 for (size_type group = 0; group < parentCounts.size(); ++group) {
                     Node* parent = createNode(false);

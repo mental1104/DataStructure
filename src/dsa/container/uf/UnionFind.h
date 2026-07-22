@@ -1,14 +1,13 @@
 #ifndef DSA_CONTAINER_UF_UNION_FIND_H
 #define DSA_CONTAINER_UF_UNION_FIND_H
 
-#include <algorithm>
 #include <cstddef>
 #include <memory>
-#include <numeric>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include "../../core/uf/UnionFindAlgorithm.h"
 
@@ -29,7 +28,7 @@ public:
     typedef typename allocator_traits::difference_type difference_type;
 
 private:
-    typedef std::vector<value_type, allocator_type> storage_type;
+    typedef dsa::container::Vector<value_type, allocator_type> storage_type;
 
     storage_type parent_;
     storage_type componentSize_;
@@ -231,7 +230,8 @@ UnionFind<Allocator>::UnionFind(
 ) : parent_(count, value_type(), allocator),
     componentSize_(count, value_type(1), allocator),
     componentCount_(count) {
-    std::iota(parent_.begin(), parent_.end(), value_type());
+    for (size_type index = 0; index < parent_.size(); ++index)
+        parent_[index] = static_cast<value_type>(index);
 }
 
 template<typename Allocator>
@@ -337,8 +337,10 @@ UnionFind<Allocator>::componentSize(value_type index) const {
 
 template<typename Allocator>
 void UnionFind<Allocator>::reset() noexcept {
-    std::iota(parent_.begin(), parent_.end(), value_type());
-    std::fill(componentSize_.begin(), componentSize_.end(), value_type(1));
+    for (size_type index = 0; index < parent_.size(); ++index) {
+        parent_[index] = static_cast<value_type>(index);
+        componentSize_[index] = value_type(1);
+    }
     componentCount_ = parent_.size();
 }
 

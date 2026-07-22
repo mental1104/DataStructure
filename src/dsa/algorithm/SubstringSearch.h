@@ -2,10 +2,10 @@
 #define DSA_ALGORITHM_SUBSTRING_SEARCH_H
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include "String.h"
 
@@ -36,12 +36,12 @@ struct NullSubstringSearchObserver {
 
 /// 构造基础 KMP next 表；空模式返回空表。
 template<typename Pattern>
-std::vector<int> buildKmpNext(const Pattern& pattern) {
+dsa::container::Vector<int> buildKmpNext(const Pattern& pattern) {
     const std::size_t length = sequenceSize(pattern);
     if (length == 0)
-        return std::vector<int>();
+        return dsa::container::Vector<int>();
 
-    std::vector<int> next(length, 0);
+    dsa::container::Vector<int> next(length, 0);
     int patternIndex = 0;
     int fallback = -1;
     next[0] = -1;
@@ -61,12 +61,12 @@ std::vector<int> buildKmpNext(const Pattern& pattern) {
 
 /// 构造改进 KMP next 表，跳过必然重复失败的比较位置。
 template<typename Pattern>
-std::vector<int> buildKmpNextImproved(const Pattern& pattern) {
+dsa::container::Vector<int> buildKmpNextImproved(const Pattern& pattern) {
     const std::size_t length = sequenceSize(pattern);
     if (length == 0)
-        return std::vector<int>();
+        return dsa::container::Vector<int>();
 
-    std::vector<int> next(length, 0);
+    dsa::container::Vector<int> next(length, 0);
     int patternIndex = 0;
     int fallback = -1;
     next[0] = -1;
@@ -106,7 +106,7 @@ std::size_t kmpSearch(
     if (patternSize > textSize)
         return stringNpos;
 
-    std::vector<int> next = strategy == KmpStrategy::Improved
+    dsa::container::Vector<int> next = strategy == KmpStrategy::Improved
         ? buildKmpNextImproved(pattern)
         : buildKmpNext(pattern);
     observer.onKmpTable(next.data(), next.size());
@@ -150,9 +150,8 @@ std::size_t kmpSearch(
 
 /// 构造 Boyer-Moore 坏字符表；当前实现面向单字节字符序列。
 template<typename Pattern>
-std::array<int, 256> buildBadCharacterTable(const Pattern& pattern) {
-    std::array<int, 256> table;
-    table.fill(-1);
+dsa::container::Vector<int> buildBadCharacterTable(const Pattern& pattern) {
+    dsa::container::Vector<int> table(256, -1);
     const std::size_t length = sequenceSize(pattern);
     for (std::size_t index = 0; index < length; ++index) {
         table[static_cast<unsigned char>(sequenceAt(pattern, index))] =
@@ -163,12 +162,12 @@ std::array<int, 256> buildBadCharacterTable(const Pattern& pattern) {
 
 /// 构造 Boyer-Moore suffix size 表。
 template<typename Pattern>
-std::vector<int> buildBoyerMooreSuffixes(const Pattern& pattern) {
+dsa::container::Vector<int> buildBoyerMooreSuffixes(const Pattern& pattern) {
     const int length = static_cast<int>(sequenceSize(pattern));
     if (length <= 0)
-        return std::vector<int>();
+        return dsa::container::Vector<int>();
 
-    std::vector<int> suffixes(static_cast<std::size_t>(length), 0);
+    dsa::container::Vector<int> suffixes(static_cast<std::size_t>(length), 0);
     suffixes[static_cast<std::size_t>(length - 1)] = length;
     int low = length - 1;
     int high = length - 1;
@@ -197,13 +196,13 @@ std::vector<int> buildBoyerMooreSuffixes(const Pattern& pattern) {
 
 /// 构造 Boyer-Moore 好后缀位移表。
 template<typename Pattern>
-std::vector<int> buildGoodSuffixTable(const Pattern& pattern) {
+dsa::container::Vector<int> buildGoodSuffixTable(const Pattern& pattern) {
     const int length = static_cast<int>(sequenceSize(pattern));
     if (length <= 0)
-        return std::vector<int>();
+        return dsa::container::Vector<int>();
 
-    const std::vector<int> suffixes = buildBoyerMooreSuffixes(pattern);
-    std::vector<int> shifts(static_cast<std::size_t>(length), length);
+    const dsa::container::Vector<int> suffixes = buildBoyerMooreSuffixes(pattern);
+    dsa::container::Vector<int> shifts(static_cast<std::size_t>(length), length);
     int fill = 0;
     for (int index = length - 1; index >= 0; --index) {
         if (index + 1 == suffixes[static_cast<std::size_t>(index)]) {
@@ -236,10 +235,10 @@ std::size_t boyerMooreSearch(
     if (patternSize > textSize)
         return stringNpos;
 
-    const std::array<int, 256> badCharacter = buildBadCharacterTable(pattern);
+    const dsa::container::Vector<int> badCharacter = buildBadCharacterTable(pattern);
     observer.onBadCharacterTable(badCharacter.data(), badCharacter.size());
 
-    std::vector<int> goodSuffix;
+    dsa::container::Vector<int> goodSuffix;
     if (strategy == BoyerMooreStrategy::Full) {
         goodSuffix = buildGoodSuffixTable(pattern);
         observer.onGoodSuffixTable(goodSuffix.data(), goodSuffix.size());
