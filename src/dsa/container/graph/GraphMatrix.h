@@ -5,14 +5,15 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 #include "Graph.h"
 
 namespace dsa {
 namespace container {
 
-/// allocator 由内部 std::vector/std::unique_ptr 管理的邻接矩阵图。
+/// 由仓库 Vector 管理连续表格、由 std::unique_ptr 管理边对象的邻接矩阵图。
 ///
 /// 顶点 ID 等于当前连续下标；删除顶点会使其后的 ID 减一。该行为被明确暴露，
 /// 避免把“稳定 ID”伪装成未实现的保证。边对象独占所有权，复制时深拷贝，移动为 O(1)。
@@ -58,7 +59,7 @@ private:
     };
 
     typedef std::unique_ptr<EdgeRecord> edge_pointer;
-    typedef std::vector<edge_pointer> edge_row;
+    typedef dsa::container::Vector<edge_pointer> edge_row;
 
 public:
     GraphMatrix()
@@ -295,8 +296,8 @@ public:
     }
 
 private:
-    std::vector<VertexRecord> vertices_;
-    std::vector<edge_row> edges_;
+    dsa::container::Vector<VertexRecord> vertices_;
+    dsa::container::Vector<edge_row> edges_;
     size_type edge_count_;
 
     bool validVertex(vertex_id vertex) const noexcept {

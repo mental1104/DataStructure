@@ -12,7 +12,7 @@ inline Bitmap* eratosthenes(int n) {
     if (n < 0)
         throw std::invalid_argument("eratosthenes limit must be non-negative");
     Bitmap* bitmap = new Bitmap(n);
-    const std::vector<bool> composite =
+    const dsa::container::Vector<bool> composite =
         dsa::algorithm::eratosthenesComposite(static_cast<std::size_t>(n));
     for (int i = 0; i < n; ++i) {
         if (composite[static_cast<std::size_t>(i)])

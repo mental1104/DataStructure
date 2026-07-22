@@ -4,7 +4,8 @@
 #include <cstddef>
 #include <limits>
 #include <utility>
-#include <vector>
+
+#include <dsa/container/vector/Vector.h>
 
 namespace dsa {
 namespace core {
@@ -98,7 +99,7 @@ public:
             return first;
         }
 
-        std::vector<node_type*> path;
+        dsa::container::Vector<node_type*> path;
         while (first && second) {
             if (higher(Access::value(second), Access::value(first)))
                 std::swap(first, second);
@@ -152,7 +153,7 @@ public:
             return first;
         }
 
-        std::vector<node_type*> path;
+        dsa::container::Vector<node_type*> path;
         while (first && second) {
             if (higher(Access::value(second), Access::value(first)))
                 std::swap(first, second);
@@ -234,7 +235,7 @@ public:
         if (!firstSibling)
             return nullptr;
 
-        std::vector<node_type*> roots;
+        dsa::container::Vector<node_type*> roots;
         for (node_type* node = firstSibling; node; node = Access::sibling(node))
             roots.push_back(node);
         if (roots.size() == 1) {
@@ -243,9 +244,9 @@ public:
             return roots[0];
         }
 
-        std::vector<node_type*> paired;
+        dsa::container::Vector<node_type*> paired;
         paired.reserve((roots.size() + 1) / 2);
-        std::vector<LinkPlan> plans;
+        dsa::container::Vector<LinkPlan> plans;
         plans.reserve(roots.size() - 1);
 
         std::size_t index = 0;
@@ -318,7 +319,7 @@ private:
 
     // 对候选根集合规划度数合并；比较和内存申请失败时尚未修改节点。
     static node_type* consolidateCandidates(
-        const std::vector<node_type*>& candidates,
+        const dsa::container::Vector<node_type*>& candidates,
         node_type*& head,
         node_type*& tail,
         const Higher& higher
@@ -331,8 +332,8 @@ private:
 
         const std::size_t initialBound =
             static_cast<std::size_t>(std::numeric_limits<size_type>::digits) * 2U + 4U;
-        std::vector<PlannedTree> table(initialBound);
-        std::vector<LinkPlan> plans;
+        dsa::container::Vector<PlannedTree> table(initialBound);
+        dsa::container::Vector<LinkPlan> plans;
         plans.reserve(candidates.size());
 
         for (std::size_t i = 0; i < candidates.size(); ++i) {
@@ -359,7 +360,7 @@ private:
             }
         }
 
-        std::vector<node_type*> finalRoots;
+        dsa::container::Vector<node_type*> finalRoots;
         finalRoots.reserve(candidates.size());
         node_type* best = nullptr;
         for (std::size_t i = 0; i < table.size(); ++i) {
@@ -420,7 +421,7 @@ public:
         node_type*& best,
         const Higher& higher
     ) {
-        std::vector<node_type*> candidates;
+        dsa::container::Vector<node_type*> candidates;
         for (node_type* root = head; root; root = Access::sibling(root))
             candidates.push_back(root);
         best = consolidateCandidates(candidates, head, tail, higher);
@@ -438,7 +439,7 @@ public:
             return nullptr;
 
         node_type* removed = best;
-        std::vector<node_type*> candidates;
+        dsa::container::Vector<node_type*> candidates;
         if (size > 0)
             candidates.reserve(static_cast<std::size_t>(size - 1));
 
@@ -471,7 +472,7 @@ void forEachBinaryHeapNode(typename Access::node_type* root, Visitor visitor) {
     typedef typename Access::node_type node_type;
     if (!root)
         return;
-    std::vector<node_type*> stack;
+    dsa::container::Vector<node_type*> stack;
     stack.push_back(root);
     while (!stack.empty()) {
         node_type* node = stack.back();
@@ -517,7 +518,7 @@ void forEachChildSiblingHeapNode(typename Access::node_type* head, Visitor visit
     typedef typename Access::node_type node_type;
     if (!head)
         return;
-    std::vector<node_type*> stack;
+    dsa::container::Vector<node_type*> stack;
     stack.push_back(head);
     while (!stack.empty()) {
         node_type* node = stack.back();
