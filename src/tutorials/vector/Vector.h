@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <iterator>
+#include <limits>
+#include <stdexcept>
 #include <utility>
 
 #include "utils.h"
@@ -22,27 +24,62 @@ protected:
     void expand();
     void shrink();
 
+    /**
+     * 将教学版 Vector 的字段、扩缩容和元素搬移操作，
+     * 适配为 VectorAlgorithm 所需的 Storage 操作合同。
+     *
+     * 这里使用适配器模式连接旧教学存储模型，并通过模板策略实现
+     * 静态多态：VectorAlgorithm 负责编排增删流程，TeachingStorage
+     * 负责 new T[] 存储模型下的具体操作。
+     */
     class TeachingStorage {
     public:
         typedef Rank size_type;
 
+        /// 绑定当前要执行增删流程的教学版 Vector。
         explicit TeachingStorage(Vector<T>& vector)
             : vector_(vector) {
         }
 
+        /// 返回当前逻辑元素数量。
         size_type size() const {
             return vector_._size;
         }
 
+        /**
+         * 返回教学版 Vector 逻辑元素数量的理论上限。
+         *
+         * 该值用于插入流程检查 size 增长是否越界，不表示当前 capacity，
+         * 也不保证系统能够实际分配如此大的数组。
+         */
         size_type maxSize() const {
             return std::numeric_limits<size_type>::max();
         }
 
+        /// 反复执行教学版 expand，直到容量能够容纳 required 个元素。
         void ensureCapacity(size_type required) {
             while (required > vector_._capacity)
                 vector_.expand();
         }
 
+        /**
+         * 将 [position, oldSize) 中的元素从右向左搬移 count 位，
+         * 为待插入值打开连续槽位，但暂不修改 _size。
+         *
+         * 示例：position = 1，count = 1
+         *
+         * 搬移前：
+         * 下标  0   1   2   3   4
+         *      [A] [B] [C] [D] [_]
+         *
+         * 搬移后：
+         * 下标  0   1   2   3   4
+         *      [A] [B] [B] [C] [D]
+         *           ^
+         *       待写入槽位
+         *
+         * 必须从右向左搬移，否则先写入右侧位置会覆盖尚未搬走的元素。
+         */
         void openGap(
             size_type position,
             size_type count,
@@ -52,11 +89,32 @@ protected:
                 vector_._elem[i + count - 1] = vector_._elem[i - 1];
         }
 
+        /// 将待插入值写入已经打开的槽位。
         template<typename Value>
         void writeGap(size_type position, Value&& value) {
             vector_._elem[position] = std::forward<Value>(value);
         }
 
+        /**
+         * writeGap 抛出异常时，将 openGap 右移的原元素重新向左搬回。
+         *
+         * openGap 后：
+         *      [A] [_] [B] [C] [D]
+         *           ^
+         *       写入失败
+         *
+         * 回滚过程：
+         *      elem[1] = elem[2]  // B
+         *      elem[2] = elem[3]  // C
+         *      elem[3] = elem[4]  // D
+         *
+         * 回滚后：
+         *      [A] [B] [C] [D] [D]
+         *       └──逻辑区间──┘
+         *
+         * _size 尚未提交，尾部重复元素位于逻辑区间之外。
+         * 从左向右恢复不会覆盖后续仍需读取的来源元素。
+         */
         void rollbackGap(
             size_type position,
             size_type count,
@@ -66,6 +124,23 @@ protected:
                 vector_._elem[i] = vector_._elem[i + count];
         }
 
+        /**
+         * 删除区间 [first, last) 后，将右侧后缀向左搬移以关闭空隙。
+         *
+         * 示例：删除 [1, 3)
+         *
+         * 删除前：
+         * 下标  0   1   2   3   4
+         *      [A] [B] [C] [D] [E]
+         *           └──删除──┘
+         *
+         * 搬移后：
+         *      [A] [D] [E] [D] [E]
+         *       └─新逻辑区间─┘
+         *
+         * 此函数只恢复元素布局，不提交新的 _size；逻辑尾部的旧值由
+         * 教学版数组对象模型保留，随后 commitSize 决定新的有效区间。
+         */
         void closeGap(
             size_type first,
             size_type last,
@@ -75,10 +150,12 @@ protected:
                 vector_._elem[first++] = vector_._elem[last++];
         }
 
+        /// 提交增删操作成功后的新逻辑大小。
         void commitSize(size_type newSize) {
             vector_._size = newSize;
         }
 
+        /// 保留教学版“删除后按旧策略自动缩容”的行为。
         void afterErase() {
             vector_.shrink();
         }
@@ -159,6 +236,13 @@ public:
         return insert(_size, e);
     }
 
+    /**
+     * 返回当前 Vector 的多数候选。
+     *
+     * 该函数只完成候选筛选，不保证返回值一定是多数元素；
+     * 调用方仍需统计出现次数并验证其是否超过 size / 2。
+     * 空 Vector 不存在可返回的候选。
+     */
     T majEleCandidate();
     void range(int k);
     void unsort(Rank lo, Rank hi);
@@ -208,8 +292,7 @@ void Vector<T>::expand() {
     _capacity = MutationAlgorithm::recommendCapacity(
         _capacity,
         _size + 1,
-        DEFAULT_CAPACITY,
-        std::numeric_limits<int>::max()
+        DEFAULT_CAPACITY
     );
     _elem = new T[_capacity];
 
@@ -317,6 +400,9 @@ Rank Vector<T>::search(T const& e, Rank lo, Rank hi) const {
         _elem + hi,
         e
     );
+
+    // upperBound 返回第一个大于 e 的元素；向前一位就是教材 search
+    // 所要求的“最后一个不大于 e 的元素”。
     return static_cast<Rank>(result - _elem) - 1;
 }
 
@@ -327,6 +413,8 @@ Rank Vector<T>::binSearch(
     Rank lo,
     Rank hi
 ) const {
+    // 教材 binSearch 使用二分策略寻找第一个大于 e 的位置，
+    // 再减一得到“最后一个不大于 e 的元素”，不是仅查找精确匹配。
     return static_cast<Rank>(
         dsa::algorithm::upperBound(A + lo, A + hi, e) - A
     ) - 1;
@@ -339,6 +427,8 @@ Rank Vector<T>::fibSearch(
     Rank lo,
     Rank hi
 ) const {
+    // fibonacciUpperBound 与普通 upperBound 返回语义相同，
+    // 但使用斐波那契分割区间；减一后得到最后一个不大于 e 的位置。
     return static_cast<Rank>(
         dsa::algorithm::fibonacciUpperBound(A + lo, A + hi, e) - A
     ) - 1;
@@ -346,6 +436,9 @@ Rank Vector<T>::fibSearch(
 
 template<typename T>
 T Vector<T>::majEleCandidate() {
+    if (_size == 0)
+        throw std::logic_error("majEleCandidate requires a non-empty vector");
+
     T* const candidate = dsa::algorithm::majorityCandidate(
         _elem,
         _elem + _size
@@ -401,10 +494,28 @@ struct Vector<T>::iterator {
     pointer operator->() const { return cur; }
     reference operator[](difference_type offset) const { return cur[offset]; }
 
-    iterator& operator++() { ++cur; return *this; }
-    iterator operator++(int) { iterator old(*this); ++cur; return old; }
-    iterator& operator--() { --cur; return *this; }
-    iterator operator--(int) { iterator old(*this); --cur; return old; }
+    iterator& operator++() {
+        ++cur;
+        return *this;
+    }
+
+    iterator operator++(int) {
+        iterator old(*this);
+        ++(*this);
+        return old;
+    }
+
+    iterator& operator--() {
+        --cur;
+        return *this;
+    }
+
+    iterator operator--(int) {
+        iterator old(*this);
+        --(*this);
+        return old;
+    }
+
     iterator& operator+=(difference_type offset) { cur += offset; return *this; }
     iterator& operator-=(difference_type offset) { cur -= offset; return *this; }
 
