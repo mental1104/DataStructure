@@ -1,28 +1,48 @@
-name: CI Main
+name: Main Gate
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
+  validate-main:
+    name: Validate main ref
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main branch
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+            echo "::error::Main Gate can only run against main."
+            exit 1
+          fi
+
   linux:
-    if: github.event.pull_request.draft == false
+    needs: validate-main
     uses: ./.github/workflows/linux.yml
     secrets: inherit
 
   macos:
-    if: github.event.pull_request.draft == false
+    needs: validate-main
     uses: ./.github/workflows/macos.yml
     secrets: inherit
 
   windows:
-    if: github.event.pull_request.draft == false
+    needs: validate-main
     uses: ./.github/workflows/windows.yml
     secrets: inherit
 
   pages:
-    needs: [linux, macos, windows]
-    if: ${{ always() && github.event.pull_request.draft == false }}
+    needs: [validate-main, linux, macos, windows]
+    if: ${{ github.event_name == 'push' && success() }}
     uses: ./.github/workflows/pages.yml
     secrets: inherit
     permissions:
@@ -30,3 +50,28 @@ jobs:
       pages: write
       id-token: write
       actions: read
+
+  notify-manual-failure:
+    name: Notify manual failure
+    needs: [validate-main, linux, macos, windows]
+    if: >-
+      always() &&
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send failure email
+        uses: dawidd6/action-send-mail@v6
+        with:
+          connection_url: ${{ secrets.SMTP_CONNECTION_URL }}
+          from: ${{ secrets.MAIL_FROM }}
+          to: ${{ secrets.MAIL_TO }}
+          subject: "[CI Failed] ${{ github.repository }} main manual gate"
+          body: |
+            main 分支手动门禁执行失败。
+
+            仓库：${{ github.repository }}
+            提交：${{ github.sha }}
+            执行人：${{ github.actor }}
+            运行地址：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
