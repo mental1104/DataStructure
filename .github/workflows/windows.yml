@@ -9,7 +9,8 @@ permissions:
 jobs:
   build-and-test:
     name: msvc-cxx${{ matrix.standard }}
-    runs-on: windows-latest
+    # windows-latest 已迁移到 VS 2026；这里固定 VS 2022，确保与下方 CMake 生成器一致。
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
