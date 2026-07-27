@@ -1,6 +1,9 @@
 name: Main Gate
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
@@ -9,39 +12,45 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
-  validate-main:
-    name: Validate main ref
+  validate-target:
+    name: Validate target ref
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
-      - name: Require main branch
+      - name: Require main target
         shell: bash
         run: |
-          if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            if [[ "${GITHUB_BASE_REF}" != "main" ]]; then
+              echo "::error::Pull request gate only supports the main target."
+              exit 1
+            fi
+          elif [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
             echo "::error::Main Gate can only run against main."
             exit 1
           fi
 
   linux:
-    needs: validate-main
+    needs: validate-target
     uses: ./.github/workflows/linux.yml
     secrets: inherit
 
   macos:
-    needs: validate-main
+    needs: validate-target
     uses: ./.github/workflows/macos.yml
     secrets: inherit
 
   windows:
-    needs: validate-main
+    needs: validate-target
     uses: ./.github/workflows/windows.yml
     secrets: inherit
 
   pages:
-    needs: [validate-main, linux, macos, windows]
+    needs: [validate-target, linux, macos, windows]
     if: ${{ github.event_name == 'push' && success() }}
     uses: ./.github/workflows/pages.yml
     secrets: inherit
@@ -53,7 +62,7 @@ jobs:
 
   notify-manual-failure:
     name: Notify manual failure
-    needs: [validate-main, linux, macos, windows]
+    needs: [validate-target, linux, macos, windows]
     if: >-
       always() &&
       github.event_name == 'workflow_dispatch' &&
