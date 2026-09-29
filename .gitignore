@@ -9,3 +9,14 @@
 /cov.json
 /_cov/
 /build/
+
+# 大规模演示数据只保留 tiny 和 medium 样本
+/demo/uf/dataset/largeUF.txt
+
+# 旧版 Visual Studio 工作目录及构建输出
+**/.vs/
+/dsacpp-src/_executable/
+/extern/dsacpp-src/_executable/
+/dsacpp-src/_output/
+/extern/dsacpp-src/_output/
+**/*.suo
